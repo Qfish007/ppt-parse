@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>双语逐页朗读器</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="页面列表">
+        <div class="brand">
+          <div>
+            <h1>双语逐页朗读器</h1>
+            <p id="bookTitle">未加载内容</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>页码</span>
+          <input id="pageInput" type="number" min="1" value="1">
+        </label>
+
+        <label class="field">
+          <span>英文语速 <output id="rateValue">0.90x</output></span>
+          <input id="rateInput" type="range" min="0.6" max="1.2" step="0.05" value="0.9">
+        </label>
+
+        <label class="field">
+          <span>发音平台</span>
+          <select id="sentenceVoiceInput">
+            <option value="youdao">有道</option>
+            <option value="baidu">百度</option>
+          </select>
+        </label>
+
+        <nav id="pageList" class="page-list" aria-label="页面"></nav>
+      </aside>
+
+      <section class="reader" aria-live="polite">
+        <div class="page-stage">
+          <div id="imagePanel" class="image-panel" hidden>
+            <img id="pageImage" alt="">
+          </div>
+          <article id="pageContent" class="page-content"></article>
+        </div>
+      </section>
+    </main>
+
+    <script src="./content.generated.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

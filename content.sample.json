@@ -1,0 +1,33 @@
+{
+  "title": "示例内容",
+  "pages": [
+    {
+      "page": 1,
+      "image": "",
+      "lines": [
+        {
+          "en": "Good morning, everyone.",
+          "zh": "大家早上好。"
+        },
+        {
+          "en": "Let's read and listen together.",
+          "zh": "我们一起读、一起听。"
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "image": "",
+      "lines": [
+        {
+          "en": "Point to a word to hear it.",
+          "zh": "点击一个单词来听它的读音。"
+        },
+        {
+          "en": "Use the page button to read everything on this page.",
+          "zh": "使用本页朗读按钮朗读整页内容。"
+        }
+      ]
+    }
+  ]
+}
