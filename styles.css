@@ -417,6 +417,7 @@ input:focus-visible,
 }
 
 .word-popup-sound,
+.word-popup-translate,
 .word-popup-close {
   display: inline-flex;
   align-items: center;
@@ -442,6 +443,19 @@ input:focus-visible,
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
+}
+
+.word-popup-translate {
+  padding: 0 11px;
+  border: 1px solid #bed0ca;
+  background: #f2faf7;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.word-popup-translate:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 .word-popup-close {

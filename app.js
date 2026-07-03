@@ -25,6 +25,8 @@ let currentIndex = 0;
 let activeAudio = null;
 let speechRunId = 0;
 let wordPopup = null;
+const WORD_TRANSLATION_CACHE_KEY = "bilingual-reader-word-translations";
+const WORD_FALLBACK_MEANING = "释义待补充，可以继续点喇叭听发音。";
 
 const dictionary = {
   a: "一个；一件",
@@ -88,6 +90,15 @@ const dictionary = {
   with: "和；带有",
   world: "世界"
 };
+
+try {
+  const savedWordTranslations = JSON.parse(localStorage.getItem(WORD_TRANSLATION_CACHE_KEY) || "{}");
+  Object.entries(savedWordTranslations).forEach(([word, meaning]) => {
+    if (typeof meaning === "string" && meaning.trim()) dictionary[word] = meaning.trim();
+  });
+} catch {
+  localStorage.removeItem(WORD_TRANSLATION_CACHE_KEY);
+}
 
 const els = {
   bookTitle: document.querySelector("#bookTitle"),
@@ -282,7 +293,35 @@ function tokenize(text) {
 
 function lookupWord(word) {
   const key = String(word || "").toLowerCase();
-  return dictionary[key] || "释义待补充，可以继续点喇叭听发音。";
+  return dictionary[key] || WORD_FALLBACK_MEANING;
+}
+
+function saveWordMeaning(word, meaning) {
+  const key = String(word || "").toLowerCase().trim();
+  const value = String(meaning || "").trim();
+  if (!key || !value) return;
+
+  dictionary[key] = value;
+  const saved = JSON.parse(localStorage.getItem(WORD_TRANSLATION_CACHE_KEY) || "{}");
+  saved[key] = value;
+  localStorage.setItem(WORD_TRANSLATION_CACHE_KEY, JSON.stringify(saved));
+}
+
+async function translateWordToChinese(word) {
+  const value = String(word || "").trim();
+  if (!value) return "";
+
+  if (getSentenceVoiceMode() === "youdao" && window.location.protocol.startsWith("http")) {
+    const response = await fetch(`/youdao/translate?word=${encodeURIComponent(value)}`);
+    if (response.ok) {
+      const data = await response.json();
+      const meaning = data?.data?.meaning;
+      if (meaning) return String(meaning).trim();
+    }
+  }
+
+  const [translation] = await translateWithIciba([value], "en", "zh");
+  return String(translation || "").trim();
 }
 
 function closeWordPopup() {
@@ -320,13 +359,41 @@ function showWordPopup(anchor, word) {
     speak(cleanWord, "en-US");
   });
 
+  const translate = document.createElement("button");
+  translate.type = "button";
+  translate.className = "word-popup-translate";
+  translate.textContent = "翻译";
+  async function runWordTranslation() {
+    translate.disabled = true;
+    const originalText = translate.textContent;
+    translate.textContent = "翻译中";
+    meaning.textContent = "正在查询中文释义...";
+
+    try {
+      const translated = await translateWordToChinese(cleanWord);
+      if (!translated) throw new Error("empty translation");
+      saveWordMeaning(cleanWord, translated);
+      meaning.textContent = translated;
+      translate.textContent = "已翻译";
+    } catch {
+      meaning.textContent = "翻译失败。请确认已通过本地服务打开页面，或稍后再试。";
+      translate.disabled = false;
+      translate.textContent = originalText;
+    }
+  }
+
+  translate.addEventListener("click", async (event) => {
+    event.stopPropagation();
+    await runWordTranslation();
+  });
+
   const close = document.createElement("button");
   close.type = "button";
   close.className = "word-popup-close";
   close.textContent = "关闭";
   close.addEventListener("click", closeWordPopup);
 
-  actions.append(sound, close);
+  actions.append(sound, translate, close);
   popup.append(title, meaning, actions);
   document.body.append(popup);
 
@@ -337,6 +404,9 @@ function showWordPopup(anchor, word) {
   popup.style.left = `${left}px`;
   wordPopup = popup;
   speak(cleanWord, "en-US");
+  if (meaning.textContent === WORD_FALLBACK_MEANING) {
+    runWordTranslation();
+  }
 }
 
 function speakWithBrowser(text, lang = "en-US") {

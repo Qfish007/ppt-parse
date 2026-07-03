@@ -94,6 +94,62 @@ async function handleIcibaTranslate(req, res) {
   }
 }
 
+function decodeHtml(value) {
+  return String(value || "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function parseYoudaoMeaning(html) {
+  const items = [];
+  const entryPattern = /<li class="word-exp"[^>]*>\s*<span class="pos"[^>]*>([\s\S]*?)<\/span>\s*<span class="trans"[^>]*>([\s\S]*?)<\/span>/g;
+  let match;
+  while ((match = entryPattern.exec(html))) {
+    const pos = decodeHtml(match[1]);
+    const trans = decodeHtml(match[2]);
+    if (trans) items.push(pos ? `${pos} ${trans}` : trans);
+    if (items.length >= 2) break;
+  }
+
+  return items.join("\n");
+}
+
+async function handleYoudaoTranslate(req, res) {
+  if (req.method !== "GET") return json(res, 405, { error: "Method not allowed" });
+
+  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+  const word = String(requestUrl.searchParams.get("word") || "").trim();
+  if (!word) return json(res, 400, { error: "word is required" });
+
+  try {
+    const upstreamUrl = new URL("https://www.youdao.com/result");
+    upstreamUrl.searchParams.set("word", word);
+    upstreamUrl.searchParams.set("lang", "en");
+
+    const upstream = await fetch(upstreamUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Referer: "https://www.youdao.com/"
+      }
+    });
+    const html = await upstream.text();
+    if (!upstream.ok) return json(res, upstream.status, { error: `Youdao failed: ${upstream.status}` });
+
+    const meaning = parseYoudaoMeaning(html);
+    if (!meaning) return json(res, 404, { error: "No Youdao translation found" });
+    json(res, 200, { code: 1, data: { word, meaning, url: upstreamUrl.toString() } });
+  } catch (error) {
+    json(res, 500, { error: error.message });
+  }
+}
+
 async function pipeAudio(res, upstream) {
   const contentType = upstream.headers.get("content-type") || "";
   if (!upstream.ok || !contentType.includes("audio")) {
@@ -258,6 +314,8 @@ async function serveStatic(req, res) {
 createServer((req, res) => {
   if (req.url?.startsWith("/iciba/translate")) {
     handleIcibaTranslate(req, res);
+  } else if (req.url?.startsWith("/youdao/translate")) {
+    handleYoudaoTranslate(req, res);
   } else if (req.url?.startsWith("/tts/youdao")) {
     handleTts(req, res, "youdao");
   } else if (req.url?.startsWith("/tts/baidu")) {

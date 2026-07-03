@@ -14,39 +14,31 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Contents",
-          "zh": ""
-        },
-        {
-          "en": "he",
-          "zh": ""
+          "zh": "目录"
         },
         {
           "en": "Paying Through History",
-          "zh": ""
+          "zh": "货币变迁史"
         },
         {
           "en": "What Do You Think?",
-          "zh": ""
+          "zh": "你怎么看？"
         },
         {
           "en": "The Top of the World",
-          "zh": ""
+          "zh": "世界之巅"
         },
         {
           "en": "The Modern Bi Sheng",
-          "zh": ""
+          "zh": "现代毕昇"
         },
         {
-          "en": "Magic Needles j",
-          "zh": ""
+          "en": "Magic Needles",
+          "zh": "神奇的针"
         },
         {
           "en": "Along the Grand Canal",
-          "zh": ""
-        },
-        {
-          "en": "au",
-          "zh": ""
+          "zh": "沿着大运河"
         }
       ]
     },
@@ -55,36 +47,15 @@ window.generatedBook = {
       "image": "./images/page-003-b213524dc156d938e2c2bf257d15a900.webp",
       "lines": [
         {
-          "en": "Paying",
-          "zh": ""
-        },
-        {
-          "en": "Through History",
-          "zh": ""
-        },
-        {
-          "en": "aoa Me",
-          "zh": ""
-        },
-        {
-          "en": "x m",
-          "zh": ""
+          "en": "Paying Through History",
+          "zh": "货币变迁史"
         }
       ]
     },
     {
       "page": 4,
       "image": "./images/page-004-36f89a0e102cdafb8486540701c0b5e4.webp",
-      "lines": [
-        {
-          "en": "@e",
-          "zh": ""
-        },
-        {
-          "en": "My",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 5,
@@ -135,32 +106,12 @@ window.generatedBook = {
       "image": "./images/page-007-69dcec9637c26e8ca3a2b68697c10d15.webp",
       "lines": [
         {
-          "en": "\"I've got an axe. What have you got?\"",
-          "zh": ""
+          "en": "\"I've got an axe. What have you got?\" \"I've got a rabbit.\" \"Great! I want a rabbit. Let's trade!\"",
+          "zh": "“我有一把斧头。你有什么？”“我有一只兔子。”“太好了！我想要一只兔子。我们交换吧！”"
         },
         {
-          "en": "\"I've got a rabbit.\"",
-          "zh": ""
-        },
-        {
-          "en": "\"Great! |wantarabbit. Let'strade!l\"",
-          "zh": ""
-        },
-        {
-          "en": "But this didn't always work. One persor",
-          "zh": ""
-        },
-        {
-          "en": "might not have an axe, or might not wa ta",
-          "zh": ""
-        },
-        {
-          "en": "rabbit. Then the other person wouldn't be ible",
-          "zh": ""
-        },
-        {
-          "en": "to trade. a hil",
-          "zh": ""
+          "en": "But this didn't always work. One person might not have an axe, or might not want a rabbit. Then the other person wouldn't be able to trade.",
+          "zh": "但这种办法并不总是行得通。一个人可能没有斧头，或者可能不想要兔子。那么另一个人就无法进行交换了。"
         }
       ]
     },
@@ -170,27 +121,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Seashells as Money",
-          "zh": ""
+          "zh": "作为货币的贝壳"
         },
         {
-          "en": "People then found certain things to",
-          "zh": ""
-        },
-        {
-          "en": "exchange and used them as money.",
-          "zh": ""
-        },
-        {
-          "en": "In ancient China, one of the first forms of",
-          "zh": ""
-        },
-        {
-          "en": "'fa",
-          "zh": ""
-        },
-        {
-          "en": "2G",
-          "zh": ""
+          "en": "People then found certain things to exchange and used them as money. In ancient China, one of the first forms of",
+          "zh": "后来，人们找到了一些特定的东西用来交换，并把它们当作钱使用。在古代中国，最早的货币形式之一是……"
         }
       ]
     },
@@ -199,60 +134,15 @@ window.generatedBook = {
       "image": "./images/page-009-ee5550b18fcbb602ebce79b3bfc28ee2.webp",
       "lines": [
         {
-          "en": "money was seashells. They were small, light and",
-          "zh": ""
-        },
-        {
-          "en": "easy to carry around. These seashells came",
-          "zh": ""
-        },
-        {
-          "en": "from faraway seas. This made them rare and",
-          "zh": ""
-        },
-        {
-          "en": "valuable.",
-          "zh": ""
-        },
-        {
-          "en": "ey",
-          "zh": ""
-        },
-        {
-          "en": "Ege",
-          "zh": ""
+          "en": "money was seashells. They were small, light and easy to carry around. These seashells came from faraway seas. This made them rare and valuable.",
+          "zh": "……钱就是贝壳。它们小巧、轻便，容易随身携带。这些贝壳来自遥远的海域，因此变得稀少而珍贵。"
         }
       ]
     },
     {
       "page": 10,
       "image": "./images/page-010-eb6db4c549a1f53b95e3a1c6a3c14b3f.webp",
-      "lines": [
-        {
-          "en": "Z os",
-          "zh": ""
-        },
-        {
-          "en": "BR aX",
-          "zh": ""
-        },
-        {
-          "en": "hs",
-          "zh": ""
-        },
-        {
-          "en": "gr",
-          "zh": ""
-        },
-        {
-          "en": "'he",
-          "zh": ""
-        },
-        {
-          "en": "a a J",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 11,
