@@ -3,7 +3,6 @@
     <div class="project-header">
       <h2 class="project-title">📚 我的书籍</h2>
       <div class="project-header-actions">
-        <el-button text size="small" :icon="Setting" @click="goSetting">设置</el-button>
         <el-button type="primary" size="small" :icon="Plus" @click="openAddDialog">添加</el-button>
       </div>
     </div>
@@ -94,7 +93,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Delete, Document, Picture, DocumentCopy,
-  Reading, Files, Setting
+  Reading, Files
 } from '@element-plus/icons-vue'
 import { useProjectsStore } from '../stores/projects.js'
 
@@ -125,10 +124,6 @@ function openAddDialog() {
   formData.type = 'pdf'
   dialogVisible.value = true
   nextTick(() => nameInputRef.value?.focus())
-}
-
-function goSetting() {
-  router.push('/setting')
 }
 
 function confirmAdd() {
@@ -191,9 +186,9 @@ async function deleteProject(id) {
 
 .project-header {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 12px 16px;
   border-bottom: 1px solid #e3e9e6;
   flex-shrink: 0;
@@ -213,6 +208,7 @@ async function deleteProject(id) {
   align-items: center;
   justify-content: flex-start;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .project-header-actions :deep(.el-button) {

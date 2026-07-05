@@ -1,106 +1,115 @@
 <template>
   <div class="main-page">
-    <!-- 最左侧：项目列表 -->
-    <aside class="project-panel" :style="{ width: projectPanelWidth + 'px' }">
-      <ProjectSidebar />
-    </aside>
+    <header v-if="!isToolbarHidden" class="top-toolbar">
+      <div class="top-toolbar-spacer"></div>
+      <el-button text size="large" :icon="Setting" @click="goSetting">设置</el-button>
+      <el-button size="small" @click="cycleColumnVisibility">{{ columnToggleLabel }}</el-button>
+      <el-button size="small" text @click="isToolbarHidden = true">折叠</el-button>
+    </header>
 
-    <!-- 项目栏与页面列表分隔条 -->
-    <div class="resize-handle-project" @mousedown="startResizeProject">
-      <div class="resize-bar"></div>
-    </div>
+    <div class="main-workspace">
+      <!-- 最左侧：项目列表 -->
+      <aside v-if="!isProjectColumnHidden" class="project-panel" :style="{ width: projectPanelWidth + 'px' }">
+        <ProjectSidebar />
+      </aside>
 
-    <!-- 第二列：根据项目类型显示不同内容 -->
-    <!-- 默认内置书籍 → 原有页面列表 -->
-    <aside v-if="projectsStore.activeProjectId === 'default-book'" class="sidebar" :style="{ width: sidebarWidth + 'px' }">
-      <div class="sidebar-header">
-        <h1 class="brand-title">{{ bookStore.book?.title || '双语逐页朗读器' }}</h1>
+      <!-- 项目栏与页面列表分隔条 -->
+      <div v-if="!isProjectColumnHidden && !isIndexColumnHidden" class="resize-handle-project" @mousedown="startResizeProject">
+        <div class="resize-bar"></div>
       </div>
 
-      <label class="field">
-        <span>跳转到页码</span>
-        <el-input-number
-          v-model="pageInputVal"
-          :min="1"
-          :max="bookStore.book?.pages?.length || 1"
-          size="small"
-          @change="goToPage"
-          style="width: 100%"
-        />
-      </label>
+      <!-- 第二列：根据项目类型显示不同内容 -->
+      <!-- 默认内置书籍 → 原有页面列表 -->
+      <aside v-if="!isIndexColumnHidden && projectsStore.activeProjectId === 'default-book'" class="sidebar" :style="{ width: sidebarWidth + 'px' }">
+        <div class="sidebar-header">
+          <h1 class="brand-title">{{ bookStore.book?.title || '双语逐页朗读器' }}</h1>
+        </div>
 
-      <nav class="page-list" ref="pageListRef">
-        <button
-          v-for="(page, index) in bookStore.book?.pages"
-          :key="page.page"
-          type="button"
-          class="page-link"
-          :class="{ active: index === bookStore.currentIndex }"
-          @click="selectPage(index)"
-        >
-          第 {{ page.page }} 页
-        </button>
-      </nav>
-    </aside>
-
-    <!-- 用户项目 → ProjectDetail（文件上传/解析） -->
-    <aside v-else class="detail-panel" :style="{ width: sidebarWidth + 'px' }">
-      <ProjectDetail />
-    </aside>
-
-    <!-- 左右拖拽分隔条 -->
-    <div class="resize-handle-left" @mousedown="startResizeLeft">
-      <div class="resize-bar"></div>
-    </div>
-
-    <!-- 中间：原始图片 -->
-    <section class="panel-center" :style="{ flex: centerFlex }">
-      <div class="image-panel" v-if="currentPage?.image">
-        <img :src="currentPage.image" :alt="'第 ' + currentPage.page + ' 页'" />
-        <!-- 用户项目的图片页，显示OCR解析按钮 -->
-        <div
-          v-if="isUserProjectPage"
-          class="image-ocr-action"
-        >
-          <el-button
-            type="warning"
+        <label class="field">
+          <span>跳转到页码</span>
+          <el-input-number
+            v-model="pageInputVal"
+            :min="1"
+            :max="bookStore.book?.pages?.length || 1"
             size="small"
-            :icon="Aim"
-            :loading="isOcrParsing"
-            @click="parseCurrentImageOcr"
+            @change="goToPage"
+            style="width: 100%"
+          />
+        </label>
+
+        <nav class="page-list" ref="pageListRef">
+          <button
+            v-for="(page, index) in bookStore.book?.pages"
+            :key="page.page"
+            type="button"
+            class="page-link"
+            :class="{ active: index === bookStore.currentIndex }"
+            @click="selectPage(index)"
           >
-            {{ isOcrParsing ? ocrMessage : (currentPage.lines?.length ? '重新 OCR 识别此页' : 'OCR 识别此页') }}
-          </el-button>
-        </div>
-      </div>
-      <div class="empty-state" v-else-if="!currentPage?.lines?.length">
-        <p>这一页还没有内容。</p>
-      </div>
-      <div class="page-text-center" v-else>
-        <div class="study-header-center">
-          <span>第 {{ currentPage.page }} 页</span>
-          <strong>原文</strong>
-        </div>
-        <div v-for="(group, gi) in displayGroups" :key="gi" class="text-block">
-          <p class="text-en">{{ group.en }}</p>
-          <p class="text-zh">{{ group.zh }}</p>
-        </div>
-      </div>
-    </section>
+            第 {{ page.page }} 页
+          </button>
+        </nav>
+      </aside>
 
-    <!-- 中间右分隔条 -->
-    <div class="resize-handle-right" @mousedown="startResizeRight">
-      <div class="resize-bar"></div>
-    </div>
+      <!-- 用户项目 → ProjectDetail（文件上传/解析） -->
+      <aside v-else-if="!isIndexColumnHidden" class="detail-panel" :style="{ width: sidebarWidth + 'px' }">
+        <ProjectDetail />
+      </aside>
 
-    <!-- 右侧：双语对照朗读区 -->
-    <section class="panel-right" :style="{ flex: rightFlex }">
+      <!-- 左右拖拽分隔条 -->
+      <div v-if="!isIndexColumnHidden && !isPreviewColumnHidden" class="resize-handle-left" @mousedown="startResizeLeft">
+        <div class="resize-bar"></div>
+      </div>
+
+      <!-- 中间：原始图片 -->
+      <section v-if="!isPreviewColumnHidden" class="panel-center" :style="{ flex: centerFlex }">
+        <div class="image-panel" v-if="currentPage?.image">
+          <img :src="currentPage.image" :alt="'第 ' + currentPage.page + ' 页'" />
+          <!-- 用户项目的图片页，显示OCR解析按钮 -->
+          <div
+            v-if="isUserProjectPage"
+            class="image-ocr-action"
+          >
+            <el-button
+              type="warning"
+              size="small"
+              :icon="Aim"
+              :loading="isOcrParsing"
+              @click="parseCurrentImageOcr"
+            >
+              {{ isOcrParsing ? ocrMessage : (currentPage.lines?.length ? '重新 OCR 识别此页' : 'OCR 识别此页') }}
+            </el-button>
+          </div>
+        </div>
+        <div class="empty-state" v-else-if="!currentPage?.lines?.length">
+          <p>这一页还没有内容。</p>
+        </div>
+        <div class="page-text-center" v-else>
+          <div class="study-header-center">
+            <span>第 {{ currentPage.page }} 页</span>
+            <strong>原文</strong>
+          </div>
+          <div v-for="(group, gi) in displayGroups" :key="gi" class="text-block">
+            <p class="text-en">{{ group.en }}</p>
+            <p class="text-zh">{{ group.zh }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 中间右分隔条 -->
+      <div v-if="!isPreviewColumnHidden" class="resize-handle-right" @mousedown="startResizeRight">
+        <div class="resize-bar"></div>
+      </div>
+
+      <!-- 右侧：双语对照朗读区 -->
+      <section class="panel-right" :style="{ flex: rightFlex }">
       <div class="reader-header">
         <div class="reader-header-info">
           <span>第 {{ currentPage?.page || 0 }} 页 / {{ bookStore.book?.pages?.length || 0 }} 页</span>
-          <strong>逐段朗读</strong>
+          <!-- <strong>逐段朗读</strong> -->
         </div>
         <div class="reader-actions">
+          <el-button v-if="isToolbarHidden" size="small" @click="isToolbarHidden = false">显示设置栏</el-button>
           <el-button size="small" @click="prevPage" :disabled="bookStore.currentIndex <= 0">
             <el-icon><ArrowLeft /></el-icon>
           </el-button>
@@ -178,7 +187,8 @@
           </div>
         </div>
       </Teleport>
-    </section>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -186,7 +196,7 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
+import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { speak, stopSpeech, speakEnglishQueue } from '../../api/voice/index.js'
@@ -201,11 +211,29 @@ const projectsStore = useProjectsStore()
 const route = useRoute()
 const router = useRouter()
 
+function goSetting() {
+  router.push('/setting')
+}
+
 // ============ 页面数据 ============
 
 const pageInputVal = ref(1)
 const pageListRef = ref(null)
 const contentRef = ref(null)
+const hiddenColumnStep = ref(0)
+const isToolbarHidden = ref(false)
+
+const isProjectColumnHidden = computed(() => hiddenColumnStep.value >= 1)
+const isIndexColumnHidden = computed(() => hiddenColumnStep.value >= 2)
+const isPreviewColumnHidden = computed(() => hiddenColumnStep.value >= 3)
+const columnToggleLabel = computed(() => {
+  const labels = ['隐藏第1栏', '隐藏第1,2栏', '隐藏第1,2,3栏', '显示全部栏']
+  return labels[hiddenColumnStep.value] || labels[0]
+})
+
+function cycleColumnVisibility() {
+  hiddenColumnStep.value = (hiddenColumnStep.value + 1) % 4
+}
 
 const currentPage = computed(() => {
   return bookStore.book?.pages?.[bookStore.currentIndex] || null
@@ -751,10 +779,40 @@ onBeforeUnmount(() => {
 <style scoped>
 .main-page {
   display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100vh;
   overflow: hidden;
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
+}
+
+.top-toolbar {
+  flex-shrink: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 14px;
+  border-bottom: 1px solid #d7dfdc;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px);
+}
+
+.top-toolbar :deep(.el-button) {
+  margin-left: 0;
+}
+
+.top-toolbar-spacer {
+  flex: 1;
+}
+
+.main-workspace {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  width: 100%;
+  overflow: hidden;
 }
 
 /* ============ 项目面板 ============ */
@@ -762,7 +820,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   border-right: 1px solid #d7dfdc;
 }
@@ -788,7 +846,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   border-right: 1px solid #d7dfdc;
 }
@@ -798,7 +856,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100%;
   overflow: hidden;
   padding: 16px;
   border-right: 1px solid #d7dfdc;
@@ -949,7 +1007,7 @@ onBeforeUnmount(() => {
 .image-panel img {
   display: block;
   width: 100%;
-  max-height: calc(100vh - 80px);
+  max-height: calc(100vh - 118px);
   object-fit: contain;
 }
 
@@ -1306,8 +1364,14 @@ onBeforeUnmount(() => {
 
 /* ============ 响应式 ============ */
 @media (max-width: 920px) {
-  .main-page {
+  .main-workspace {
     flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .top-toolbar {
+    height: 38px;
+    padding: 0 12px;
   }
 
   .project-panel {
