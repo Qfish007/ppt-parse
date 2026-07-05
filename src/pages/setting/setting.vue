@@ -45,11 +45,13 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
+import { useProjectsStore } from '../../stores/projects.js'
 
 const router = useRouter()
+const projectsStore = useProjectsStore()
 
 // 从 localStorage 读取设置，若无则使用默认值
 const speechRate = ref(
@@ -66,7 +68,8 @@ const formatTooltip = (val) => {
 
 // 返回主页面
 const goBack = () => {
-  router.push('/main')
+  const active = projectsStore.getActiveProject()
+  router.push(`/main/${active?.index || '001'}`)
 }
 
 // 监听语速变化，实时保存到 localStorage

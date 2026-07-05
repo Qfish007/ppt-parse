@@ -2,7 +2,10 @@
   <div class="project-sidebar">
     <div class="project-header">
       <h2 class="project-title">📚 我的书籍</h2>
-      <el-button type="primary" size="small" :icon="Plus" @click="openAddDialog">添加</el-button>
+      <div class="project-header-actions">
+        <el-button text size="small" :icon="Setting" @click="goSetting">设置</el-button>
+        <el-button type="primary" size="small" :icon="Plus" @click="openAddDialog">添加</el-button>
+      </div>
     </div>
 
     <!-- 项目列表 -->
@@ -87,16 +90,16 @@
 
 <script setup>
 import { ref, reactive, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Delete, Document, Picture, DocumentCopy,
-  Reading, Files
+  Reading, Files, Setting
 } from '@element-plus/icons-vue'
 import { useProjectsStore } from '../stores/projects.js'
-import { useBookStore } from '../stores/book.js'
 
 const projectsStore = useProjectsStore()
-const bookStore = useBookStore()
+const router = useRouter()
 
 const nameInputRef = ref(null)
 const dialogVisible = ref(false)
@@ -124,6 +127,10 @@ function openAddDialog() {
   nextTick(() => nameInputRef.value?.focus())
 }
 
+function goSetting() {
+  router.push('/setting')
+}
+
 function confirmAdd() {
   if (!formData.name.trim()) {
     ElMessage.warning('请输入项目名称')
@@ -134,32 +141,22 @@ function confirmAdd() {
     return
   }
 
-  projectsStore.addProject({
+  const project = projectsStore.addProject({
     name: formData.name.trim(),
     type: formData.type,
     status: 'empty'
   })
-  projectsStore.setActiveProject(projectsStore.projects[projectsStore.projects.length - 1].id)
+  projectsStore.setActiveProject(project.id)
+  router.push(`/main/${project.index}`)
   dialogVisible.value = false
   ElMessage.success(`项目「${formData.name.trim()}」已创建，请在右侧上传文件`)
 }
 
 function selectProject(id) {
-  projectsStore.setActiveProject(id)
-  const project = projectsStore.getActiveProject()
+  const project = projectsStore.projects.find(item => item.id === id)
   if (!project) return
-
-  if (project.id === 'default-book') {
-    bookStore.loadBook()
-  } else if (project.parsedData) {
-    // 已有解析数据，加载
-    bookStore.book = bookStore.normalizeBook(project.parsedData)
-    bookStore.currentIndex = 0
-  } else {
-    // 未解析的项目，清空 bookStore 避免显示旧数据
-    bookStore.book = null
-    bookStore.currentIndex = 0
-  }
+  projectsStore.setActiveProject(project.id)
+  router.push(`/main/${project.index}`)
 }
 
 async function deleteProject(id) {
@@ -169,14 +166,12 @@ async function deleteProject(id) {
       cancelButtonText: '取消',
       type: 'warning'
     })
+    const wasActive = projectsStore.activeProjectId === id
     projectsStore.removeProject(id)
     ElMessage.success('已删除')
-    const active = projectsStore.getActiveProject()
-    if (active?.id === 'default-book') {
-      bookStore.loadBook()
-    } else if (active?.parsedData) {
-      bookStore.book = bookStore.normalizeBook(active.parsedData)
-      bookStore.currentIndex = 0
+    if (wasActive) {
+      const active = projectsStore.getActiveProject()
+      if (active?.index) router.push(`/main/${active.index}`)
     }
   } catch {
     // 用户取消
@@ -196,8 +191,9 @@ async function deleteProject(id) {
 
 .project-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 12px 16px;
   border-bottom: 1px solid #e3e9e6;
   flex-shrink: 0;
@@ -208,6 +204,19 @@ async function deleteProject(id) {
   font-size: 15px;
   font-weight: 700;
   color: #16201f;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.project-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+}
+
+.project-header-actions :deep(.el-button) {
+  margin-left: 0;
 }
 
 .project-list {

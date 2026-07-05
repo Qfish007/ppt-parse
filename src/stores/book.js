@@ -8,6 +8,7 @@ import { reactive } from 'vue';
 const WORD_TRANSLATION_CACHE_KEY = 'bilingual-reader-word-translations';
 /** localStorage 存储键 - 书籍编辑数据 */
 const BOOK_EDITS_KEY = 'bilingual-reader-edits';
+let bookStoreInstance = null;
 
 /** 默认释义 */
 const WORD_FALLBACK_MEANING = '释义待补充，可以继续点喇叭听发音。';
@@ -114,6 +115,8 @@ function lineLooksLikeHeading(text) {
  * @returns {Object} 响应式书籍对象
  */
 export function useBookStore() {
+  if (bookStoreInstance) return bookStoreInstance;
+
   // 加载 localStorage 中的词典缓存
   const dictionary = reactive({ ...defaultDictionary });
   try {
@@ -336,5 +339,6 @@ export function useBookStore() {
     }
   });
 
+  bookStoreInstance = store;
   return store;
 }

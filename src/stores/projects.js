@@ -7,6 +7,7 @@ import { reactive } from 'vue';
 
 const PROJECTS_STORAGE_KEY = 'bilingual-reader-projects';
 const ACTIVE_PROJECT_KEY = 'bilingual-reader-active-project';
+let projectsStoreInstance = null;
 
 /** 默认项目：《新标准小学衔接读本》，索引固定为001，不可删除 */
 const defaultProjects = [
@@ -44,6 +45,8 @@ function getNextIndex(projects) {
  * 项目 store
  */
 export function useProjectsStore() {
+  if (projectsStoreInstance) return projectsStoreInstance;
+
   const store = reactive({
     /** 项目列表 */
     projects: [],
@@ -157,6 +160,11 @@ export function useProjectsStore() {
       this.projects.splice(index, 1);
       if (this.activeProjectId === id) {
         this.activeProjectId = this.projects[0]?.id || null;
+        if (this.activeProjectId) {
+          localStorage.setItem(ACTIVE_PROJECT_KEY, this.activeProjectId);
+        } else {
+          localStorage.removeItem(ACTIVE_PROJECT_KEY);
+        }
       }
       this.saveProjects();
       return true;
@@ -174,5 +182,6 @@ export function useProjectsStore() {
   });
 
   store.loadProjects();
+  projectsStoreInstance = store;
   return store;
 }

@@ -6,10 +6,14 @@ const SettingView = () => import('../pages/setting/setting.vue')
 const routes = [
   {
     path: '/',
-    redirect: '/main'
+    redirect: '/main/001'
   },
   {
     path: '/main',
+    redirect: '/main/001'
+  },
+  {
+    path: '/main/:index',
     name: 'Main',
     component: MainView
   },

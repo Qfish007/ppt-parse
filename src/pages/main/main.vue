@@ -15,9 +15,6 @@
     <aside v-if="projectsStore.activeProjectId === 'default-book'" class="sidebar" :style="{ width: sidebarWidth + 'px' }">
       <div class="sidebar-header">
         <h1 class="brand-title">{{ bookStore.book?.title || '双语逐页朗读器' }}</h1>
-        <el-button text size="small" @click="router.push('/setting')">
-          <el-icon><Setting /></el-icon> 设置
-        </el-button>
       </div>
 
       <label class="field">
@@ -187,9 +184,9 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { speak, stopSpeech, speakEnglishQueue } from '../../api/voice/index.js'
@@ -199,9 +196,10 @@ import { recognizeText } from '../../utils/ocr.js'
 import ProjectSidebar from '../../components/ProjectSidebar.vue'
 import ProjectDetail from '../../components/ProjectDetail.vue'
 
-const router = useRouter()
 const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
+const route = useRoute()
+const router = useRouter()
 
 // ============ 页面数据 ============
 
@@ -258,6 +256,22 @@ async function syncActiveProject(projectId = projectsStore.activeProjectId) {
   bookStore.currentIndex = 0
   pageInputVal.value = 1
   scrollContentToTop()
+}
+
+async function syncProjectFromRoute(index = route.params.index) {
+  const routeIndex = String(index || '001').padStart(3, '0')
+  const project = projectsStore.projects.find(item => item.index === routeIndex)
+
+  if (!project) {
+    await router.replace('/main/001')
+    return
+  }
+
+  if (projectsStore.activeProjectId !== project.id) {
+    projectsStore.setActiveProject(project.id)
+  }
+
+  await syncActiveProject(project.id)
 }
 
 // ============ 用户项目 OCR ============
@@ -713,7 +727,7 @@ function handleKeydown(e) {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  await syncActiveProject()
+  await syncProjectFromRoute()
   pageInputVal.value = bookStore.currentIndex + 1
   document.addEventListener('click', handleClickOutside, true)
   document.addEventListener('mousemove', handleMouseMove)
@@ -721,8 +735,8 @@ onMounted(async () => {
   document.addEventListener('keydown', handleKeydown)
 })
 
-watch(() => projectsStore.activeProjectId, (id) => {
-  syncActiveProject(id)
+watch(() => route.params.index, (index) => {
+  syncProjectFromRoute(index)
 })
 
 onBeforeUnmount(() => {
