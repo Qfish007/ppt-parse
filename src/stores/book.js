@@ -138,17 +138,31 @@ export function useBookStore() {
     WORD_FALLBACK_MEANING,
 
     /**
-     * 从 localStorage 或动态导入 generatedBook 加载书籍
+     * 加载书籍
+     * 默认书籍从 /parse/ocr/demo001/content.json 加载
      */
     async loadBook() {
       // 先尝试从 localStorage 恢复编辑
       this.loadEdits();
-      // 动态导入书籍数据（src/data/content.generated.js 导出 default）
+      // 从新的文件路径加载默认书籍
+      try {
+        const response = await fetch('/parse/ocr/demo001/content.json');
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.pages?.length) {
+            this.book = this.normalizeBook(data);
+            this.loadEdits();
+            return;
+          }
+        }
+      } catch {
+        // fall through to fallback
+      }
+      // 回退到原来的方式
       try {
         const mod = await import('../data/content.generated.js');
         if (mod?.default && mod.default.pages?.length) {
           this.book = this.normalizeBook(mod.default);
-          // 如果 localStorage 有编辑数据，恢复编辑
           this.loadEdits();
           return;
         }
@@ -173,7 +187,8 @@ export function useBookStore() {
           lines: Array.isArray(page.lines)
             ? page.lines.map((line) => ({
                 en: String(line.en || '').trim(),
-                zh: String(line.zh || '').trim()
+                zh: String(line.zh || '').trim(),
+                breakAfter: Boolean(line.breakAfter)
               })).filter((line) => line.en || line.zh)
             : []
         })).filter((page) => page.lines.length || page.image)
@@ -279,6 +294,8 @@ export function useBookStore() {
         const nextLooksNew = lineLooksLikeHeading(next);
 
         if (line.zh || current.length >= 5 || (endOfThought && joined.length > 120) || (endOfThought && nextLooksNew)) {
+          pushCurrent();
+        } else if (line.breakAfter) {
           pushCurrent();
         }
       });

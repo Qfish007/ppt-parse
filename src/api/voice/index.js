@@ -55,6 +55,19 @@ function pickVoice(lang = 'en-US') {
     || null;
 }
 
+function waitForVoices() {
+  if (!window.speechSynthesis) return Promise.resolve();
+  if (window.speechSynthesis.getVoices().length) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(resolve, 500);
+    window.speechSynthesis.addEventListener('voiceschanged', () => {
+      window.clearTimeout(timer);
+      resolve();
+    }, { once: true });
+  });
+}
+
 /**
  * 获取当前语速
  * @param {number} [rate] - 可选的覆盖速率
@@ -180,6 +193,7 @@ export function playAudioUrl(text, runId, url, fallbackProvider = 'browser') {
 export function speakWithBrowser(text, lang = 'en-US') {
   const value = String(text || '').trim();
   if (!value) return;
+  if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(value);
   utterance.lang = lang;
@@ -198,17 +212,30 @@ export function speakWithBrowser(text, lang = 'en-US') {
 export function speakWithBrowserOnce(text, runId, lang = 'en-US') {
   const value = String(text || '').trim();
   if (!value) return Promise.resolve();
-  window.speechSynthesis.cancel();
+  if (!window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') return Promise.resolve();
 
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     if (runId !== speechRunId.value) return resolve();
+    await waitForVoices();
+    if (runId !== speechRunId.value) return resolve();
+
+    window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(value);
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      window.clearTimeout(timeout);
+      resolve();
+    };
+    const timeout = window.setTimeout(done, Math.max(4000, value.length * 180));
     utterance.lang = lang;
     utterance.voice = pickVoice(lang);
     utterance.rate = getSpeechRate();
-    utterance.addEventListener('end', () => resolve(), { once: true });
-    utterance.addEventListener('error', () => resolve(), { once: true });
+    utterance.addEventListener('end', done, { once: true });
+    utterance.addEventListener('error', done, { once: true });
     window.speechSynthesis.speak(utterance);
+    window.speechSynthesis.resume();
   });
 }
 
@@ -329,6 +356,7 @@ export async function speakEnglishQueue(items) {
   speechRunId.value = runId;
 
   const chunks = items.flatMap((item) => splitSpeechText(item)).filter(Boolean);
+  if (!chunks.length) return;
 
   for (const item of chunks) {
     if (runId !== speechRunId.value) break;

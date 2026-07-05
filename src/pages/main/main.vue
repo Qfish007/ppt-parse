@@ -1,7 +1,18 @@
 <template>
   <div class="main-page">
-    <!-- 左侧：页面列表 -->
-    <aside class="sidebar" :style="{ width: sidebarWidth + 'px' }">
+    <!-- 最左侧：项目列表 -->
+    <aside class="project-panel" :style="{ width: projectPanelWidth + 'px' }">
+      <ProjectSidebar />
+    </aside>
+
+    <!-- 项目栏与页面列表分隔条 -->
+    <div class="resize-handle-project" @mousedown="startResizeProject">
+      <div class="resize-bar"></div>
+    </div>
+
+    <!-- 第二列：根据项目类型显示不同内容 -->
+    <!-- 默认内置书籍 → 原有页面列表 -->
+    <aside v-if="projectsStore.activeProjectId === 'default-book'" class="sidebar" :style="{ width: sidebarWidth + 'px' }">
       <div class="sidebar-header">
         <h1 class="brand-title">{{ bookStore.book?.title || '双语逐页朗读器' }}</h1>
         <el-button text size="small" @click="router.push('/setting')">
@@ -35,6 +46,11 @@
       </nav>
     </aside>
 
+    <!-- 用户项目 → ProjectDetail（文件上传/解析） -->
+    <aside v-else class="detail-panel" :style="{ width: sidebarWidth + 'px' }">
+      <ProjectDetail />
+    </aside>
+
     <!-- 左右拖拽分隔条 -->
     <div class="resize-handle-left" @mousedown="startResizeLeft">
       <div class="resize-bar"></div>
@@ -44,6 +60,21 @@
     <section class="panel-center" :style="{ flex: centerFlex }">
       <div class="image-panel" v-if="currentPage?.image">
         <img :src="currentPage.image" :alt="'第 ' + currentPage.page + ' 页'" />
+        <!-- 用户项目的图片页，显示OCR解析按钮 -->
+        <div
+          v-if="isUserProjectPage"
+          class="image-ocr-action"
+        >
+          <el-button
+            type="warning"
+            size="small"
+            :icon="Aim"
+            :loading="isOcrParsing"
+            @click="parseCurrentImageOcr"
+          >
+            {{ isOcrParsing ? ocrMessage : (currentPage.lines?.length ? '重新 OCR 识别此页' : 'OCR 识别此页') }}
+          </el-button>
+        </div>
       </div>
       <div class="empty-state" v-else-if="!currentPage?.lines?.length">
         <p>这一页还没有内容。</p>
@@ -155,14 +186,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
 import { useBookStore } from '../../stores/book.js'
+import { useProjectsStore } from '../../stores/projects.js'
 import { speak, stopSpeech, speakEnglishQueue } from '../../api/voice/index.js'
+import { translateWithIciba } from '../../api/voice/iciba.js'
+import { md5 } from '../../api/voice/youdao.js'
+import { recognizeText } from '../../utils/ocr.js'
+import ProjectSidebar from '../../components/ProjectSidebar.vue'
+import ProjectDetail from '../../components/ProjectDetail.vue'
 
 const router = useRouter()
 const bookStore = useBookStore()
+const projectsStore = useProjectsStore()
 
 // ============ 页面数据 ============
 
@@ -180,6 +219,260 @@ const displayGroups = computed(() => {
   return bookStore.groupLines(page.lines)
 })
 
+async function syncActiveProject(projectId = projectsStore.activeProjectId) {
+  const project = projectsStore.projects.find(p => p.id === projectId) || projectsStore.getActiveProject()
+  stopSpeech()
+  closePopup()
+  isOcrParsing.value = false
+
+  if (!project || project.id === 'default-book') {
+    await bookStore.loadBook()
+    bookStore.currentIndex = 0
+    pageInputVal.value = 1
+    scrollContentToTop()
+    return
+  }
+
+  if (project.parsedData?.pages?.length) {
+    bookStore.book = bookStore.normalizeBook(project.parsedData)
+    bookStore.currentIndex = 0
+    pageInputVal.value = 1
+    scrollContentToTop()
+    return
+  }
+
+  if (project.type === 'image' && project.files?.length) {
+    const imageBook = {
+      title: project.name,
+      pages: project.files.map((file, index) => ({
+        page: index + 1,
+        image: file.path || file.dataUrl || '',
+        lines: file.lines || [],
+        parsed: !!file.lines?.length
+      }))
+    }
+    bookStore.book = bookStore.normalizeBook(imageBook)
+  } else {
+    bookStore.book = null
+  }
+  bookStore.currentIndex = 0
+  pageInputVal.value = 1
+  scrollContentToTop()
+}
+
+// ============ 用户项目 OCR ============
+
+const isUserProjectPage = computed(() => {
+  return projectsStore.activeProjectId !== 'default-book' && !!currentPage.value?.image
+})
+
+const isOcrParsing = ref(false)
+const ocrMessage = ref('')
+
+function cleanupOcrLine(line) {
+  return String(line || '')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/([("])\s+/g, '$1')
+    .replace(/\s+([)”"'])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function lineHasChinese(text) {
+  return /[\u4e00-\u9fff]/.test(text)
+}
+
+function lineLooksLikeOcrTitle(text, index) {
+  const value = cleanupOcrLine(text)
+  if (index > 1 || !value) return false
+  if (/[.!?。！？]$/.test(value)) return false
+  const words = value.match(/[A-Za-z0-9]+/g) || []
+  const chineseCount = (value.match(/[\u4e00-\u9fff]/g) || []).length
+  return value.length <= 48 && (words.length <= 8 || chineseCount <= 16)
+}
+
+function lineEndsSentence(text) {
+  return /[.!?。！？]["'”’)]?$/.test(cleanupOcrLine(text))
+}
+
+function shouldStartNewOcrParagraph(currentText, nextLine) {
+  const next = cleanupOcrLine(nextLine)
+  if (!next) return false
+  if (!lineEndsSentence(currentText)) return false
+  if (lineHasChinese(currentText) || lineHasChinese(next)) return true
+  if (cleanupOcrLine(currentText).length > 120 && /^(more|nowadays|today|however|therefore|finally|first|second|third)\b/i.test(next)) return true
+  return false
+}
+
+function normalizeTesseractParagraph(paragraph, paragraphIndex) {
+  const lines = String(paragraph || '')
+    .replace(/\r/g, '')
+    .split('\n')
+    .map(line => cleanupOcrLine(line))
+    .filter(Boolean)
+
+  if (!lines.length) return []
+  if (lineLooksLikeOcrTitle(lines[0], paragraphIndex)) {
+    const body = cleanupOcrLine(lines.slice(1).join(' '))
+    return body ? [lines[0], body] : [lines[0]]
+  }
+
+  return [cleanupOcrLine(lines.join(' '))]
+}
+
+function splitOcrTextIntoParagraphs(text, tesseractParagraphs = []) {
+  const paragraphsFromOcr = (Array.isArray(tesseractParagraphs) ? tesseractParagraphs : [])
+    .flatMap((paragraph, index) => normalizeTesseractParagraph(paragraph, index))
+    .filter(Boolean)
+
+  if (paragraphsFromOcr.length > 0) {
+    return paragraphsFromOcr
+  }
+
+  const rawLines = String(text || '').replace(/\r/g, '').split('\n')
+  const paragraphs = []
+  let current = ''
+
+  function pushCurrent() {
+    const value = cleanupOcrLine(current)
+    if (value) paragraphs.push(value)
+    current = ''
+  }
+
+  rawLines.forEach((rawLine, index) => {
+    const line = cleanupOcrLine(rawLine)
+    if (!line) {
+      pushCurrent()
+      return
+    }
+
+    if (lineLooksLikeOcrTitle(line, index)) {
+      pushCurrent()
+      paragraphs.push(line)
+      return
+    }
+
+    if (!current) {
+      current = line
+      return
+    }
+
+    if (shouldStartNewOcrParagraph(current, line)) {
+      pushCurrent()
+      current = line
+      return
+    }
+
+    current = `${current} ${line}`
+  })
+
+  pushCurrent()
+  return paragraphs
+}
+
+function ocrParagraphsToLines(text, tesseractParagraphs = []) {
+  return splitOcrTextIntoParagraphs(text, tesseractParagraphs).map(paragraph => {
+    const zh = (paragraph.match(/[\u4e00-\u9fff]/g) || []).length
+    const en = (paragraph.match(/[a-zA-Z]/g) || []).length
+    return zh > en
+      ? { en: '', zh: paragraph, breakAfter: true }
+      : { en: paragraph, zh: '', breakAfter: true }
+  })
+}
+
+async function translateOcrLines(lines) {
+  const englishLines = lines.filter(line => line.en?.trim() && !line.zh?.trim())
+  if (!englishLines.length) return lines
+
+  const translations = await translateWithIciba(
+    englishLines.map(line => line.en),
+    'en',
+    'zh',
+    md5
+  )
+
+  englishLines.forEach((line, index) => {
+    const translated = String(translations[index] || '').trim()
+    if (translated) line.zh = translated
+  })
+  return lines
+}
+
+async function parseCurrentImageOcr() {
+  const page = currentPage.value
+  if (!page?.image) return
+
+  isOcrParsing.value = true
+  ocrMessage.value = '识别中...'
+  try {
+    const ocrResult = await recognizeText(page.image)
+    const lines = ocrParagraphsToLines(ocrResult.text, ocrResult.paragraphs)
+    ocrMessage.value = '翻译中...'
+    await translateOcrLines(lines)
+
+    // 更新 bookStore 中当前页的 lines
+    if (bookStore.book?.pages?.[bookStore.currentIndex]) {
+      bookStore.book.pages[bookStore.currentIndex] = {
+        ...bookStore.book.pages[bookStore.currentIndex],
+        lines
+      }
+    }
+
+    // 同步更新 projectsStore 中的 parsedData
+    const project = projectsStore.getActiveProject()
+    if (project) {
+      const parsedData = project.parsedData?.pages?.length
+        ? project.parsedData
+        : bookStore.book
+      const nextPages = (parsedData?.pages || []).map((item, index) => (
+        index === bookStore.currentIndex
+          ? { ...item, lines, parsed: true }
+          : item
+      ))
+      projectsStore.updateProject(project.id, {
+        parsedData: {
+          title: parsedData?.title || project.name,
+          pages: nextPages
+        },
+        status: 'ready',
+        pageCount: nextPages.length
+      })
+      const updatedProject = projectsStore.getActiveProject()
+      if (updatedProject?.parsedData) {
+        bookStore.book = bookStore.normalizeBook(updatedProject.parsedData)
+      }
+    }
+
+    const updatedProject = projectsStore.getActiveProject()
+    if (updatedProject?.files?.[bookStore.currentIndex]) {
+      const files = updatedProject.files.map((file, index) => (
+        index === bookStore.currentIndex
+          ? { ...file, lines }
+          : file
+      ))
+      projectsStore.updateProject(updatedProject.id, { files })
+    }
+
+    // 保存解析结果到后端
+    try {
+      if (updatedProject?.index) {
+        await fetch('/api/parse/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ index: updatedProject.index, result: bookStore.book })
+        })
+      }
+    } catch (e) { /* ignore */ }
+
+    ElMessage.success('OCR 识别和翻译完成')
+  } catch (error) {
+    ElMessage.error('OCR 识别/翻译失败: ' + error.message)
+  } finally {
+    isOcrParsing.value = false
+    ocrMessage.value = ''
+  }
+}
+
 // ============ 页面导航 ============
 
 function selectPage(index) {
@@ -195,12 +488,18 @@ function goToPage(val) {
 }
 
 function prevPage() {
-  if (bookStore.currentIndex > 0) selectPage(bookStore.currentIndex - 1)
+  if (bookStore.currentIndex > 0) {
+    bookStore.currentIndex--
+    pageInputVal.value = bookStore.currentIndex + 1
+    scrollContentToTop()
+  }
 }
 
 function nextPage() {
   if (bookStore.currentIndex < (bookStore.book?.pages?.length || 1) - 1) {
-    selectPage(bookStore.currentIndex + 1)
+    bookStore.currentIndex++
+    pageInputVal.value = bookStore.currentIndex + 1
+    scrollContentToTop()
   }
 }
 
@@ -213,7 +512,12 @@ function scrollContentToTop() {
 function readCurrentPage() {
   const page = currentPage.value
   if (!page) return
-  speakEnglishQueue(displayGroups.value.map(g => g.en))
+  const items = displayGroups.value.map(g => g.en).filter(text => String(text || '').trim())
+  if (!items.length) {
+    ElMessage.warning('当前页没有可朗读的英文内容')
+    return
+  }
+  speakEnglishQueue(items)
 }
 
 function handleStop() {
@@ -332,16 +636,27 @@ function handleClickOutside(e) {
 
 // ============ 拖拽调整宽度 ============
 
+const projectPanelWidth = ref(220)
 const sidebarWidth = ref(200)
 const centerFlex = ref(1)
 const rightFlex = ref(1)
 
+let isResizingProject = false
 let isResizingLeft = false
 let isResizingRight = false
 let startX = 0
+let startProjectWidth = 0
 let startSidebarWidth = 0
 let startCenterFlex = 0
 let startRightFlex = 0
+
+function startResizeProject(e) {
+  isResizingProject = true
+  startX = e.clientX
+  startProjectWidth = projectPanelWidth.value
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
 
 function startResizeLeft(e) {
   isResizingLeft = true
@@ -361,13 +676,18 @@ function startResizeRight(e) {
 }
 
 function handleMouseMove(e) {
+  if (isResizingProject) {
+    const diff = e.clientX - startX
+    const newWidth = Math.max(160, Math.min(350, startProjectWidth + diff))
+    projectPanelWidth.value = newWidth
+  }
   if (isResizingLeft) {
     const diff = e.clientX - startX
     const newWidth = Math.max(120, Math.min(400, startSidebarWidth + diff))
     sidebarWidth.value = newWidth
   }
   if (isResizingRight) {
-    const containerWidth = window.innerWidth - sidebarWidth.value - 8 // 8 = 两根分隔条宽度
+    const containerWidth = window.innerWidth - projectPanelWidth.value - sidebarWidth.value - 12 // 12 = 三根分隔条宽度
     const diff = e.clientX - startX
     const totalFlex = startCenterFlex + startRightFlex
     const ratio = diff / containerWidth * totalFlex
@@ -377,6 +697,7 @@ function handleMouseMove(e) {
 }
 
 function handleMouseUp() {
+  isResizingProject = false
   isResizingLeft = false
   isResizingRight = false
   document.body.style.cursor = ''
@@ -392,12 +713,16 @@ function handleKeydown(e) {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  await bookStore.loadBook()
+  await syncActiveProject()
   pageInputVal.value = bookStore.currentIndex + 1
   document.addEventListener('click', handleClickOutside, true)
   document.addEventListener('mousemove', handleMouseMove)
   document.addEventListener('mouseup', handleMouseUp)
   document.addEventListener('keydown', handleKeydown)
+})
+
+watch(() => projectsStore.activeProjectId, (id) => {
+  syncActiveProject(id)
 })
 
 onBeforeUnmount(() => {
@@ -418,7 +743,43 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
 }
 
-/* ============ 左侧边栏 ============ */
+/* ============ 项目面板 ============ */
+.project-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  border-right: 1px solid #d7dfdc;
+}
+
+/* ============ 项目栏分隔条 ============ */
+.resize-handle-project {
+  flex-shrink: 0;
+  width: 4px;
+  cursor: col-resize;
+  position: relative;
+  background: transparent;
+  z-index: 5;
+  transition: background 0.2s;
+}
+
+.resize-handle-project:hover,
+.resize-handle-project:active {
+  background: rgba(18, 107, 98, 0.2);
+}
+
+/* ============ 详情面板（第二列 - 用户项目） ============ */
+.detail-panel {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  border-right: 1px solid #d7dfdc;
+}
+
+/* ============ 原有侧边栏（第二列 - 默认书籍） ============ */
 .sidebar {
   flex-shrink: 0;
   display: flex;
@@ -536,8 +897,12 @@ onBeforeUnmount(() => {
   transition: height 0.2s;
 }
 
+.resize-handle-project:hover .resize-bar,
 .resize-handle-left:hover .resize-bar,
-.resize-handle-right:hover .resize-bar {
+.resize-handle-right:hover .resize-bar,
+.resize-handle-project:active .resize-bar,
+.resize-handle-left:active .resize-bar,
+.resize-handle-right:active .resize-bar {
   height: 60px;
   background: #126b62;
 }
@@ -570,8 +935,16 @@ onBeforeUnmount(() => {
 .image-panel img {
   display: block;
   width: 100%;
-  max-height: calc(100vh - 32px);
+  max-height: calc(100vh - 80px);
   object-fit: contain;
+}
+
+.image-ocr-action {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+  background: rgba(255, 255, 255, 0.9);
+  border-top: 1px solid #e3e9e6;
 }
 
 .page-text-center {
@@ -923,9 +1296,19 @@ onBeforeUnmount(() => {
     flex-direction: column;
   }
 
+  .project-panel {
+    height: auto;
+    max-height: 180px;
+    width: 100% !important;
+    border-right: none;
+    border-bottom: 1px solid #d7dfdc;
+  }
+
+  .detail-panel,
   .sidebar {
     height: auto;
     max-height: 200px;
+    width: 100% !important;
     border-right: none;
     border-bottom: 1px solid #d7dfdc;
   }
@@ -935,20 +1318,10 @@ onBeforeUnmount(() => {
     flex: none !important;
   }
 
+  .resize-handle-project,
   .resize-handle-left,
   .resize-handle-right {
     display: none;
-  }
-
-  .page-list {
-    flex-direction: row;
-    flex-wrap: wrap;
-    max-height: 120px;
-  }
-
-  .page-link {
-    min-height: 28px;
-    font-size: 11px;
   }
 }
 </style>
