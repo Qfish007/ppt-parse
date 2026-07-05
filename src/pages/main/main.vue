@@ -106,7 +106,6 @@
       <div class="reader-header">
         <div class="reader-header-info">
           <span>第 {{ currentPage?.page || 0 }} 页 / {{ bookStore.book?.pages?.length || 0 }} 页</span>
-          <!-- <strong>逐段朗读</strong> -->
         </div>
         <div class="reader-actions">
           <el-button v-if="isToolbarHidden" size="small" @click="isToolbarHidden = false">显示设置栏</el-button>
