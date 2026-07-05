@@ -150,179 +150,22 @@ window.generatedBook = {
       "lines": [
         {
           "en": "From Seashells to Metal Coins",
-          "zh": ""
+          "zh": "从贝壳到金属钱币"
         },
         {
-          "en": "After a while, there weren't enough",
-          "zh": ""
+          "en": "After a while, there weren't enough seashells for everyone to use. People started making their own seashells. To do this, they used materials such as clay, stone, bone, jade, bronze and even gold! The bronze seashells became China's first-ever metal coins.",
+          "zh": "过了一段时间，贝壳不够每个人使用了。人们开始自己制作贝壳。为此，他们使用陶土、石头、骨头、玉石、青铜甚至黄金等材料。青铜贝壳成了中国最早的金属钱币。"
         },
         {
-          "en": "seashells for everyone to use. People started",
-          "zh": ""
-        },
-        {
-          "en": "making their own seashells. To do this, they",
-          "zh": ""
-        },
-        {
-          "en": "used materials such as clay, stone, bone, jade,",
-          "zh": ""
-        },
-        {
-          "en": "bronze and even gold! The bronze seashells",
-          "zh": ""
-        },
-        {
-          "en": "became China's first-ever metal coins.",
-          "zh": ""
-        },
-        {
-          "en": "After that, metal coins came in many",
-          "zh": ""
-        },
-        {
-          "en": "different shapes and sizes. One common bronze",
-          "zh": ""
-        },
-        {
-          "en": "coin during the Warring States",
-          "zh": ""
-        },
-        {
-          "en": "Period BCE) was",
-          "zh": ""
-        },
-        {
-          "en": "round with a square hole in",
-          "zh": ""
-        },
-        {
-          "en": "the middle. The ancient",
-          "zh": ""
-        },
-        {
-          "en": "Chinese believed the sky an i",
-          "zh": ""
-        },
-        {
-          "en": "was round and the earth id at",
-          "zh": ""
-        },
-        {
-          "en": "was square. Thissmall coin",
-          "zh": ""
-        },
-        {
-          "en": "showed both the",
-          "zh": ""
-        },
-        {
-          "en": "earth.",
-          "zh": ""
+          "en": "After that, metal coins came in many different shapes and sizes. One common bronze coin during the Warring States Period (475-221 BCE) was round with a square hole in the middle. The ancient Chinese believed the sky was round and the earth was square. This small coin showed both the sky and the earth.",
+          "zh": "此后，金属钱币出现了许多不同的形状和大小。战国时期（公元前475年至公元前221年）一种常见的青铜钱币是圆形的，中间有一个方孔。古代中国人认为天是圆的，地是方的。这枚小小的钱币同时体现了天空和大地。"
         }
       ]
     },
     {
       "page": 12,
       "image": "./images/page-012-663e9b06b53091b2b701480d16a5472c.webp",
-      "lines": [
-        {
-          "en": "Z SS ee oe",
-          "zh": ""
-        },
-        {
-          "en": "Sh ee Bees Ss Se RZ",
-          "zh": ""
-        },
-        {
-          "en": "ay aa) Bre ea es SSS SS SS",
-          "zh": ""
-        },
-        {
-          "en": "ae aE SS a",
-          "zh": ""
-        },
-        {
-          "en": "Se See oe a",
-          "zh": ""
-        },
-        {
-          "en": "SS SS eer A eee)",
-          "zh": ""
-        },
-        {
-          "en": "a wo See",
-          "zh": ""
-        },
-        {
-          "en": "aa eA Pe",
-          "zh": ""
-        },
-        {
-          "en": "SSE ee ee SS ee",
-          "zh": ""
-        },
-        {
-          "en": "Se ee ES SS Se SSS a",
-          "zh": ""
-        },
-        {
-          "en": "SS SSS SS SS AN FOS ee BS SSS",
-          "zh": ""
-        },
-        {
-          "en": "SS Ss SS",
-          "zh": ""
-        },
-        {
-          "en": "SS SS SS SS ee SS SS I Ss",
-          "zh": ""
-        },
-        {
-          "en": "es SS SSS SS 6S) SS S255",
-          "zh": ""
-        },
-        {
-          "en": "a eS SS SS",
-          "zh": ""
-        },
-        {
-          "en": "SSS aaa SSS fe (J",
-          "zh": ""
-        },
-        {
-          "en": "SSS EE SSS ao oe SS",
-          "zh": ""
-        },
-        {
-          "en": "ee ean SS ee st SS BASS ee SS eee",
-          "zh": ""
-        },
-        {
-          "en": "SS ee ae as er",
-          "zh": ""
-        },
-        {
-          "en": "gee sty ie BS SS rae ge eee",
-          "zh": ""
-        },
-        {
-          "en": "as SS SS eS a aa ae",
-          "zh": ""
-        },
-        {
-          "en": "OS SS ee SS pes Se SSS ee",
-          "zh": ""
-        },
-        {
-          "en": "=i sabi aa oi",
-          "zh": ""
-        },
-        {
-          "en": "ae SS as \"eh",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 13,
@@ -330,75 +173,23 @@ window.generatedBook = {
       "lines": [
         {
           "en": "The Rise of Paper Money",
-          "zh": ""
+          "zh": "纸币的兴起"
         },
         {
-          "en": "Bronze and iron coins were popular in",
-          "zh": ""
+          "en": "Bronze and iron coins were popular in ancient China. However, these metal coins were not very valuable. They were heavy and carrying lots of them around was hard work.",
+          "zh": "青铜币和铁币在古代中国很流行。然而，这些金属钱币价值并不高。它们很重，随身携带很多枚非常费力。"
         },
         {
-          "en": "China. However, these metal coins were",
-          "zh": ""
+          "en": "During the Northern Song Dynasty (960-1127), people in Sichuan area made a special kind of ticket called jiaozi for easier trading. Later on, the government began issuing the official jiaozi. It is the earliest paper money in the world.",
+          "zh": "北宋时期（960-1127年），四川地区的人们制作了一种叫作“交子”的特殊票据，方便交易。后来，政府开始发行官方交子。它是世界上最早的纸币。"
         },
         {
-          "en": "not very valuable. They were heavy and carrying",
-          "zh": ""
+          "en": "By the time of the Yuan Dynasty (1271-1368), paper money was used all over the country.",
+          "zh": "到了元朝（1271-1368年）时，纸币已经在全国范围内使用。"
         },
         {
-          "en": "lots of them around was hard work.",
-          "zh": ""
-        },
-        {
-          "en": "the Northern Song Dynasty",
-          "zh": ""
-        },
-        {
-          "en": "people in Sichuan area made a special",
-          "zh": ""
-        },
-        {
-          "en": "kind of ticket called jiaozi for easier trading.",
-          "zh": ""
-        },
-        {
-          "en": "_Later on, the government began issuing the",
-          "zh": ""
-        },
-        {
-          "en": "official jiaozi. Itis the earliest i",
-          "zh": ""
-        },
-        {
-          "en": "paper money inthe world. sa alae cers",
-          "zh": ""
-        },
-        {
-          "en": "ma the time of the Yuan io",
-          "zh": ""
-        },
-        {
-          "en": "Dynasty paper a hie ae",
-          "zh": ""
-        },
-        {
-          "en": "was used all over the eee",
-          "zh": ""
-        },
-        {
-          "en": "country. aay) aa",
-          "zh": ""
-        },
-        {
-          "en": "Did you know: Paper money was not",
-          "zh": ""
-        },
-        {
-          "en": "used until in Europe.",
-          "zh": ""
-        },
-        {
-          "en": "oO",
-          "zh": ""
+          "en": "Did you know: Paper money was not used until 1661 in Europe.",
+          "zh": "你知道吗：欧洲直到1661年才开始使用纸币。"
         }
       ]
     },
@@ -408,55 +199,19 @@ window.generatedBook = {
       "lines": [
         {
           "en": "The Road to E-CNY",
-          "zh": ""
+          "zh": "通往数字人民币之路"
         },
         {
-          "en": "As China continued to develop and change,",
-          "zh": ""
+          "en": "As China continued to develop and change, its money also changed.",
+          "zh": "随着中国不断发展和变化，中国的货币也发生了变化。"
         },
         {
-          "en": "its money also changed.",
-          "zh": ""
+          "en": "In 1948, the People's Bank of China (PBC) issued the first series of the renminbi (RMB), or the \"people's currency\". The RMB then became the official currency of the People's Republic of China.",
+          "zh": "1948年，中国人民银行发行了第一套人民币。人民币的意思是“人民的货币”。此后，人民币成为中华人民共和国的法定货币。"
         },
         {
-          "en": "In the People's Bank of China (PBC)",
-          "zh": ""
-        },
-        {
-          "en": "issued the first series of the renminbi (RMB), or",
-          "zh": ""
-        },
-        {
-          "en": "the \"people's currency\". The RMB then became",
-          "zh": ""
-        },
-        {
-          "en": "the official currency of the People's Republic of",
-          "zh": ""
-        },
-        {
-          "en": "China.",
-          "zh": ""
-        },
-        {
-          "en": "More recently, mobile payments have",
-          "zh": ""
-        },
-        {
-          "en": "spread throughout the country. China has",
-          "zh": ""
-        },
-        {
-          "en": "quickly become a world leader in this field.",
-          "zh": ""
-        },
-        {
-          "en": "Nowadays, people all over China use their",
-          "zh": ""
-        },
-        {
-          "en": "phones to pay for almost everything!",
-          "zh": ""
+          "en": "More recently, mobile payments have spread throughout the country. China has quickly become a world leader in this field. Nowadays, people all over China use their phones to pay for almost everything!",
+          "zh": "近些年来，移动支付已经普及到全国各地。中国迅速成为这一领域的世界领先者。如今，中国各地的人们几乎用手机支付一切东西！"
         }
       ]
     },
@@ -465,20 +220,8 @@ window.generatedBook = {
       "image": "./images/page-015-ce5364bfd3108085eb2e6872a8fac0b7.webp",
       "lines": [
         {
-          "en": "more, the PBC has now also",
-          "zh": ""
-        },
-        {
-          "en": "issued the nation's digitalcurrency, or the",
-          "zh": ""
-        },
-        {
-          "en": "e-CNY. It is fast, cheap, safe and good for",
-          "zh": ""
-        },
-        {
-          "en": "the environment.",
-          "zh": ""
+          "en": "What's more, the PBC has now also issued the nation's digital currency, or the e-CNY. It is fast, cheap, safe and good for the environment.",
+          "zh": "此外，中国人民银行现在还发行了国家的数字货币，也就是数字人民币。它快捷、成本低、安全，而且有利于环境。"
         }
       ]
     },
@@ -488,23 +231,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "The Future of Money",
-          "zh": ""
+          "zh": "货币的未来"
         },
         {
-          "en": "The development of money in China isn't",
-          "zh": ""
-        },
-        {
-          "en": "just part of its history. From seashells to metal",
-          "zh": ""
-        },
-        {
-          "en": "coins and digital currency, changing",
-          "zh": ""
-        },
-        {
-          "en": "money is a story of innovation.",
-          "zh": ""
+          "en": "The development of money in China isn't just part of its history. From seashells to metal coins and digital currency, China's changing money is a story of innovation.",
+          "zh": "中国货币的发展并不只是历史的一部分。从贝壳到金属钱币，再到数字货币，中国不断变化的货币是一部创新的故事。"
         }
       ]
     },
@@ -513,60 +244,8 @@ window.generatedBook = {
       "image": "./images/page-017-70500428406dc6eed9e408a58682d443.webp",
       "lines": [
         {
-          "en": "ae",
-          "zh": ""
-        },
-        {
-          "en": "x i.",
-          "zh": ""
-        },
-        {
-          "en": "ero iy Ol",
-          "zh": ""
-        },
-        {
-          "en": "ry ES",
-          "zh": ""
-        },
-        {
-          "en": "Vi A",
-          "zh": ""
-        },
-        {
-          "en": "a (EO",
-          "zh": ""
-        },
-        {
-          "en": "\\E",
-          "zh": ""
-        },
-        {
-          "en": "re See ef Af",
-          "zh": ""
-        },
-        {
-          "en": "(ee lel",
-          "zh": ""
-        },
-        {
-          "en": "awe",
-          "zh": ""
-        },
-        {
-          "en": "=i Pa J) a",
-          "zh": ""
-        },
-        {
-          "en": "a a ae",
-          "zh": ""
-        },
-        {
-          "en": "'Rad a",
-          "zh": ""
-        },
-        {
-          "en": "—=—=Q",
-          "zh": ""
+          "en": "And what will be the next chapter? China is exploring new possibilities. One thing is for sure: the future of China's money promises to get more interesting and exciting.",
+          "zh": "那么下一章会是什么呢？中国正在探索新的可能。有一点可以肯定：中国货币的未来一定会变得更加有趣、更加令人兴奋。"
         }
       ]
     },
@@ -580,40 +259,8 @@ window.generatedBook = {
       "image": "./images/page-019-7e78273998170b20d7bf683b3e9c8d6e.webp",
       "lines": [
         {
-          "en": "i fi",
-          "zh": ""
-        },
-        {
-          "en": "Ane NS S",
-          "zh": ""
-        },
-        {
-          "en": "RN i",
-          "zh": ""
-        },
-        {
-          "en": "es",
-          "zh": ""
-        },
-        {
-          "en": "awe",
-          "zh": ""
-        },
-        {
-          "en": "(yy we es e",
-          "zh": ""
-        },
-        {
-          "en": "a»)",
-          "zh": ""
-        },
-        {
-          "en": "pee r",
-          "zh": ""
-        },
-        {
-          "en": "Oo.",
-          "zh": ""
+          "en": "What Do You Think?",
+          "zh": "你怎么看？"
         }
       ]
     },
@@ -623,51 +270,19 @@ window.generatedBook = {
       "lines": [
         {
           "en": "The Frog in the Well",
-          "zh": ""
+          "zh": "井底之蛙"
         },
         {
-          "en": "Once upon a time, there was a frog. It lived",
-          "zh": ""
-        },
-        {
-          "en": "in a well.",
-          "zh": ""
+          "en": "Once upon a time, there was a frog. It lived in a well.",
+          "zh": "从前，有一只青蛙。它住在一口井里。"
         },
         {
           "en": "One day, a turtle went by the well.",
-          "zh": ""
+          "zh": "一天，一只乌龟路过这口井。"
         },
         {
-          "en": "\"Welcome to my home!\" said the frog proudly.",
-          "zh": ""
-        },
-        {
-          "en": "\"It's a great place! can jump to the top of the",
-          "zh": ""
-        },
-        {
-          "en": "well. can dive into the water. Oh, and love",
-          "zh": ""
-        },
-        {
-          "en": "stepping in the mud at the bottom of the well!",
-          "zh": ""
-        },
-        {
-          "en": "It's soft and comfortable. There isn't a better",
-          "zh": ""
-        },
-        {
-          "en": "place to live. So, where do you live?\"",
-          "zh": ""
-        },
-        {
-          "en": "on",
-          "zh": ""
-        },
-        {
-          "en": "V4",
-          "zh": ""
+          "en": "\"Welcome to my home!\" said the frog proudly. \"It's a great place! I can jump to the top of the well. I can dive into the water. Oh, and I love stepping in the mud at the bottom of the well! It's soft and comfortable. There isn't a better place to live. So, where do you live?\"",
+          "zh": "“欢迎来到我家！”青蛙自豪地说。“这是个好地方！我可以跳到井顶，也可以潜到水里。哦，我还喜欢踩在井底的泥巴里！它又软又舒服。没有比这里更适合居住的地方了。那么，你住在哪里呢？”"
         }
       ]
     },
@@ -681,36 +296,16 @@ window.generatedBook = {
       "image": "./images/page-022-bb70f6cbb8de85cecbf95dc9eb4fb853.webp",
       "lines": [
         {
-          "en": "\"I live in the East Sea,\" said the",
-          "zh": ""
-        },
-        {
-          "en": "turtle. \"The East Sea is bigger than",
-          "zh": ""
-        },
-        {
-          "en": "the well. It is so big you can't see",
-          "zh": ""
-        },
-        {
-          "en": "where it ends!\"",
-          "zh": ""
+          "en": "\"I live in the East Sea,\" said the turtle. \"The East Sea is bigger than the well. It is so big you can't see where it ends!\"",
+          "zh": "“我住在东海。”乌龟说。“东海比这口井大。它大到你看不到尽头！”"
         },
         {
           "en": "\"Impossible!\" thought the frog.",
-          "zh": ""
+          "zh": "“不可能！”青蛙想。"
         },
         {
-          "en": "\"And the East Sea is deeper",
-          "zh": ""
-        },
-        {
-          "en": "y than the well. It is so deep you can't",
-          "zh": ""
-        },
-        {
-          "en": "w Wo'",
-          "zh": ""
+          "en": "\"And the East Sea is deeper than the well. It is so deep you can't",
+          "zh": "“而且东海比这口井深。它深到你无法……"
         }
       ]
     },
@@ -719,32 +314,24 @@ window.generatedBook = {
       "image": "./images/page-023-24dec20eb241a1630b8aaa3f27ad4a64.webp",
       "lines": [
         {
-          "en": "Nes",
-          "zh": ""
-        },
-        {
           "en": "reach its bottom,\" said the turtle.",
-          "zh": ""
+          "zh": "……到达它的底部。”乌龟说。"
         },
         {
           "en": "\"No way!\" thought the frog.",
-          "zh": ""
+          "zh": "“没门！”青蛙想。"
         },
         {
-          "en": "\"Living in the East Sea makes me so happy.",
-          "zh": ""
+          "en": "\"Living in the East Sea makes me so happy. There isn't a better place to live,\" said the turtle.",
+          "zh": "“住在东海让我非常快乐。没有比那里更适合居住的地方了。”乌龟说。"
         },
         {
-          "en": "a better place to live,\" said the turtle.",
-          "zh": ""
+          "en": "\"The turtle's words can't be true,\" thought the frog. He stopped talking and jumped back into the well.",
+          "zh": "“乌龟的话不可能是真的。”青蛙想。它不再说话，跳回了井里。"
         },
         {
-          "en": "\"The turtle's words can't be true,\" thought",
-          "zh": ""
-        },
-        {
-          "en": "the frog. He talking and jumped back",
-          "zh": ""
+          "en": "What are the facts and opinions in this story?",
+          "zh": "这个故事中的事实和观点分别是什么？"
         }
       ]
     },
@@ -759,59 +346,19 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Learning to Walk in Handan",
-          "zh": ""
+          "zh": "邯郸学步"
         },
         {
-          "en": "During the Warring States Period",
-          "zh": ""
+          "en": "During the Warring States Period (475-221 BCE), there was a young man in the Yan State. He always wanted to be perfect. In his eyes, other people were always better than him.",
+          "zh": "战国时期（公元前475年至公元前221年），燕国有一个年轻人。他总想变得完美。在他眼里，别人总是比自己强。"
         },
         {
-          "en": "BCE), there was a young man in the Yan State.",
-          "zh": ""
+          "en": "One day he heard some people talking in the street. \"People from Handan, the capital of the Zhao State, are very elegant,\" said one. \"That's true. They all walk beautifully,\" said another.",
+          "zh": "一天，他听见街上有人在谈话。一个人说：“赵国都城邯郸的人很优雅。”另一个人说：“确实如此。他们走路都很美。”"
         },
         {
-          "en": "He always wanted to be perfect. In his eyes,",
-          "zh": ""
-        },
-        {
-          "en": "other people were always better than him.",
-          "zh": ""
-        },
-        {
-          "en": "One day he heard some people talking in",
-          "zh": ""
-        },
-        {
-          "en": "the street. \"People from Handan, the capital of",
-          "zh": ""
-        },
-        {
-          "en": "the Zhao State, are very elegant,\" said one.",
-          "zh": ""
-        },
-        {
-          "en": "\"That's true. They all walk",
-          "zh": ""
-        },
-        {
-          "en": "beautifully,\" said another.",
-          "zh": ""
-        },
-        {
-          "en": "The young man decided",
-          "zh": ""
-        },
-        {
-          "en": "to learn the beautiful wa",
-          "zh": ""
-        },
-        {
-          "en": "walk. yr ee Ln",
-          "zh": ""
-        },
-        {
-          "en": "an)",
-          "zh": ""
+          "en": "The young man decided to learn the beautiful way Handan people walked.",
+          "zh": "这个年轻人决定去学习邯郸人优美的走路方式。"
         }
       ]
     },
@@ -820,48 +367,12 @@ window.generatedBook = {
       "image": "./images/page-026-b05ff382e05eb96c813b0d28ad410803.webp",
       "lines": [
         {
-          "en": "The young man got to Handan. He was",
-          "zh": ""
+          "en": "The young man got to Handan. He was quite surprised. Everyone here walked in a different but beautiful way.",
+          "zh": "年轻人到了邯郸。他非常惊讶。这里每个人走路的方式都不同，但都很好看。"
         },
         {
-          "en": "quite surprised. Everyone here walked in a",
-          "zh": ""
-        },
-        {
-          "en": "different but beautiful way.",
-          "zh": ""
-        },
-        {
-          "en": "The young man tried to copy each of them,",
-          "zh": ""
-        },
-        {
-          "en": "but he learn all the different walks.",
-          "zh": ""
-        },
-        {
-          "en": "What's more, he forgot his own way of walking!",
-          "zh": ""
-        },
-        {
-          "en": "In the end, the young man had to crawl",
-          "zh": ""
-        },
-        {
-          "en": "back to his home.",
-          "zh": ""
-        },
-        {
-          "en": "be NA",
-          "zh": ""
-        },
-        {
-          "en": "cele nS",
-          "zh": ""
-        },
-        {
-          "en": "hs",
-          "zh": ""
+          "en": "The young man tried to copy each of them, but he couldn't learn all the different walks. What's more, he forgot his own way of walking! In the end, the young man had to crawl back to his home.",
+          "zh": "年轻人试着模仿每一个人，但他学不会所有不同的走路方式。更糟的是，他还忘记了自己原本走路的方式！最后，这个年轻人只好爬回家。"
         }
       ]
     },
@@ -870,8 +381,8 @@ window.generatedBook = {
       "image": "./images/page-027-5e2207f5c04e9f3e6356c760fd6ee715.webp",
       "lines": [
         {
-          "en": "ZN",
-          "zh": ""
+          "en": "What are the facts and opinions in this story?",
+          "zh": "这个故事中的事实和观点分别是什么？"
         }
       ]
     },
@@ -881,47 +392,15 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Naming the Cat",
-          "zh": ""
+          "zh": "给猫取名"
         },
         {
-          "en": "There was once a man called Oi Yan. He",
-          "zh": ""
+          "en": "There was once a man called Qi Yan. He had a cat named Tiger Cat.",
+          "zh": "从前有一个名叫齐奄的人。他有一只猫，名叫“虎猫”。"
         },
         {
-          "en": "had a cat named Tiger Cat. N=",
-          "zh": ""
-        },
-        {
-          "en": "One day, Oi Yan had some guests at his",
-          "zh": ""
-        },
-        {
-          "en": "house. One guest said, \"Tigers are fierce.",
-          "zh": ""
-        },
-        {
-          "en": "However, they are not as powerful as the",
-          "zh": ""
-        },
-        {
-          "en": "Chinese dragons. In my opinion, you should call",
-          "zh": ""
-        },
-        {
-          "en": "your cat Dragon Cat.\"",
-          "zh": ""
-        },
-        {
-          "en": "ah",
-          "zh": ""
-        },
-        {
-          "en": "f°",
-          "zh": ""
-        },
-        {
-          "en": "ar L",
-          "zh": ""
+          "en": "One day, Qi Yan had some guests at his house. One guest said, \"Tigers are fierce. However, they are not as powerful as the Chinese dragons. In my opinion, you should call your cat Dragon Cat.\"",
+          "zh": "一天，齐奄家里来了几位客人。一位客人说：“老虎很凶猛。不过，它们没有中国龙那么强大。在我看来，你应该把你的猫叫作‘龙猫’。”"
         }
       ]
     },
@@ -930,92 +409,39 @@ window.generatedBook = {
       "image": "./images/page-029-df266bda0dd8e4220bcdd513ad2896ba.webp",
       "lines": [
         {
-          "en": "\"But without clouds, dragons can't rise into",
-          "zh": ""
+          "en": "\"But without clouds, dragons can't rise into the sky,\" said another guest. \"Clouds are greater than dragons. In my opinion, you should call your cat Cloud Cat.\"",
+          "zh": "另一位客人说：“可是没有云，龙就不能升上天空。云比龙更厉害。在我看来，你应该把你的猫叫作‘云猫’。”"
         },
         {
-          "en": "the sky,\" said another guest. \"Clouds are",
-          "zh": ""
-        },
-        {
-          "en": "greater than dragons. In my opinion, you should",
-          "zh": ""
-        },
-        {
-          "en": "call your cat Cloud Cat.\"",
-          "zh": ""
-        },
-        {
-          "en": "\"Cloud Cat?\" said another guest. \"But the",
-          "zh": ""
-        },
-        {
-          "en": "wind can blow clouds away. think you should",
-          "zh": ""
-        },
-        {
-          "en": "call your cat Wind Cat.\"",
-          "zh": ""
-        },
-        {
-          "en": "We",
-          "zh": ""
+          "en": "\"Cloud Cat?\" said another guest. \"But the wind can blow clouds away. I think you should call your cat Wind Cat.\"",
+          "zh": "另一位客人说：“云猫？可是风能把云吹走。我觉得你应该把你的猫叫作‘风猫’。”"
         }
       ]
     },
     {
       "page": 30,
       "image": "./images/page-030-e4db3a9999f8d006364d279265217237.webp",
-      "lines": [
-        {
-          "en": "oe q",
-          "zh": ""
-        },
-        {
-          "en": "Fol",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 31,
       "image": "./images/page-031-6b7809b54c1b02705429a2b3a9f25a17.webp",
       "lines": [
         {
-          "en": "Then another guest said, \"Walls can",
-          "zh": ""
+          "en": "Then another guest said, \"Walls can block the wind, so why not call your cat Wall Cat?\"",
+          "zh": "接着，另一位客人说：“墙可以挡住风，那为什么不把你的猫叫作‘墙猫’呢？”"
         },
         {
-          "en": "block the wind, so why not call your cat",
-          "zh": ""
+          "en": "Yet another guest added, \"But mice can make holes in walls. You should call your cat Mouse Cat.\"",
+          "zh": "又一位客人补充道：“可是老鼠会在墙上打洞。你应该把你的猫叫作‘鼠猫’。”"
         },
         {
-          "en": "Wall Cat?\"",
-          "zh": ""
+          "en": "An old man laughed, \"Mouse Cat? Cats catch mice, don't they? A cat is just a cat. Why call it anything else?\"",
+          "zh": "一位老人笑着说：“鼠猫？猫会抓老鼠，不是吗？猫就是猫，为什么还要叫别的名字呢？”"
         },
         {
-          "en": "Yet another guest added, \"But mice can",
-          "zh": ""
-        },
-        {
-          "en": "make holes in walls. You should call your cat",
-          "zh": ""
-        },
-        {
-          "en": "Mouse Cat.\"",
-          "zh": ""
-        },
-        {
-          "en": "An old man laughed, \"Mouse Cat? Cats",
-          "zh": ""
-        },
-        {
-          "en": "catch mice, don't they? A cat is just a cat. Why",
-          "zh": ""
-        },
-        {
-          "en": "call it anything else?\"",
-          "zh": ""
+          "en": "What are the facts and opinions in this story?",
+          "zh": "这个故事中的事实和观点分别是什么？"
         }
       ]
     },
@@ -1025,87 +451,22 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Stories Make Us Think",
-          "zh": ""
+          "zh": "故事让我们思考"
         },
         {
-          "en": "These three stories are fun and easy to",
-          "zh": ""
+          "en": "These three stories are fun and easy to remember. They also make us think for a long time after reading them. Why didn't the frog believe the turtle? What lesson did the young man learn in Handan? What should Qi Yan call his cat?",
+          "zh": "这三个故事有趣又容易记住。读完之后，它们也会让我们思考很久。青蛙为什么不相信乌龟？那个年轻人在邯郸学到了什么教训？齐奄应该给他的猫取什么名字呢？"
         },
         {
-          "en": "remember. They also make us think for a long",
-          "zh": ""
-        },
-        {
-          "en": "time after reading them. Why didn't the frog",
-          "zh": ""
-        },
-        {
-          "en": "believe the turtle? What lesson did the young",
-          "zh": ""
-        },
-        {
-          "en": "man learn in Handan? What should Qi Yan call",
-          "zh": ""
-        },
-        {
-          "en": "his cat?",
-          "zh": ""
-        },
-        {
-          "en": "There are many other old Chinese stories",
-          "zh": ""
-        },
-        {
-          "en": "like these. They have been passed down",
-          "zh": ""
-        },
-        {
-          "en": "through generations and tell of life lessons. Try",
-          "zh": ""
-        },
-        {
-          "en": "to read them and learn more!",
-          "zh": ""
+          "en": "There are many other old Chinese stories like these. They have been passed down through generations and tell of life lessons. Try to read them and learn more!",
+          "zh": "还有许多像这样的中国古老故事。它们代代相传，讲述着人生道理。试着读一读，了解更多吧！"
         }
       ]
     },
     {
       "page": 33,
       "image": "./images/page-033-804e76183fcdfd61aa2cfe78e44c9c0d.webp",
-      "lines": [
-        {
-          "en": "Ge",
-          "zh": ""
-        },
-        {
-          "en": "A ya =a",
-          "zh": ""
-        },
-        {
-          "en": "yoke one",
-          "zh": ""
-        },
-        {
-          "en": "ww' woe",
-          "zh": ""
-        },
-        {
-          "en": "wey",
-          "zh": ""
-        },
-        {
-          "en": "Pe",
-          "zh": ""
-        },
-        {
-          "en": "oa",
-          "zh": ""
-        },
-        {
-          "en": "on.",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 34,
@@ -1117,40 +478,8 @@ window.generatedBook = {
       "image": "./images/page-035-d24cf7b863eccdcc9d8b3b9466a65ca8.webp",
       "lines": [
         {
-          "en": "ee ae",
-          "zh": ""
-        },
-        {
-          "en": "LZ",
-          "zh": ""
-        },
-        {
-          "en": "me ek,",
-          "zh": ""
-        },
-        {
-          "en": "ey",
-          "zh": ""
-        },
-        {
-          "en": "Se ee",
-          "zh": ""
-        },
-        {
-          "en": "s 7S, ah",
-          "zh": ""
-        },
-        {
-          "en": "a ey",
-          "zh": ""
-        },
-        {
-          "en": "Vv,",
-          "zh": ""
-        },
-        {
-          "en": "rr pe",
-          "zh": ""
+          "en": "The Top of the World",
+          "zh": "世界之巅"
         }
       ]
     },
@@ -1159,28 +488,12 @@ window.generatedBook = {
       "image": "./images/page-036-57d079778c7d1a5222646ff8ab2d7fcd.webp",
       "lines": [
         {
-          "en": "Hi, everyone! am Mount Qomolangma.",
-          "zh": ""
+          "en": "The Highest Mountain in the World",
+          "zh": "世界最高峰"
         },
         {
-          "en": "You know, am the highest mountain in the",
-          "zh": ""
-        },
-        {
-          "en": "world.",
-          "zh": ""
-        },
-        {
-          "en": "ae NG oe GL WE",
-          "zh": ""
-        },
-        {
-          "en": "aa Eo SS",
-          "zh": ""
-        },
-        {
-          "en": "eee",
-          "zh": ""
+          "en": "Hi, everyone! I am Mount Qomolangma. You know, I am the highest mountain in the world.",
+          "zh": "大家好！我是珠穆朗玛峰。你们知道，我是世界上最高的山峰。"
         }
       ]
     },
@@ -1189,44 +502,12 @@ window.generatedBook = {
       "image": "./images/page-037-493776831e44b67c6c0b8d32bce3a12b.webp",
       "lines": [
         {
-          "en": "About million years ago, two of the",
-          "zh": ""
+          "en": "About 60 million years ago, two of the earth's huge plates went into each other. This formed the over 2400-kilometre-long Himalayas.",
+          "zh": "大约6000万年前，地球上的两大板块相互碰撞，形成了绵延2400多千米的喜马拉雅山脉。"
         },
         {
-          "en": "earth's huge plates went into each other. This",
-          "zh": ""
-        },
-        {
-          "en": "formed the over 2400-kilometre-long",
-          "zh": ""
-        },
-        {
-          "en": "Himalayas.",
-          "zh": ""
-        },
-        {
-          "en": "lam the tallest peak",
-          "zh": ""
-        },
-        {
-          "en": "inthis mountain range,",
-          "zh": ""
-        },
-        {
-          "en": "growing!",
-          "zh": ""
-        },
-        {
-          "en": "Be: a",
-          "zh": ""
-        },
-        {
-          "en": "ON",
-          "zh": ""
-        },
-        {
-          "en": "ALY",
-          "zh": ""
+          "en": "I am the tallest peak in this mountain range, and I am still growing!",
+          "zh": "我是这条山脉中的最高峰，而且我还在继续长高！"
         }
       ]
     },
@@ -1235,32 +516,12 @@ window.generatedBook = {
       "image": "./images/page-038-cab04d047a1737f94aae9800c2b5be9f.webp",
       "lines": [
         {
-          "en": "Snow always covers my peak, but am not",
-          "zh": ""
+          "en": "My Natural Treasures",
+          "zh": "我的自然宝藏"
         },
         {
-          "en": "completely cold. From my base to my peak,",
-          "zh": ""
-        },
-        {
-          "en": "there are three different climates: warm, cool",
-          "zh": ""
-        },
-        {
-          "en": "and cold. Lots of plants grow in my forests",
-          "zh": ""
-        },
-        {
-          "en": "and grasslands. also home to",
-          "zh": ""
-        },
-        {
-          "en": "ow =i",
-          "zh": ""
-        },
-        {
-          "en": "ox: a",
-          "zh": ""
+          "en": "Snow always covers my peak, but I am not completely cold. From my base to my peak, there are three different climates: warm, cool and cold. Lots of plants grow in my forests and grasslands. I am also home to",
+          "zh": "白雪总是覆盖着我的山顶，但我并不是完全寒冷的。从山脚到山顶，这里有三种不同的气候：温暖、凉爽和寒冷。许多植物生长在我的森林和草地中。我也是……的家园。"
         }
       ]
     },
@@ -1269,56 +530,8 @@ window.generatedBook = {
       "image": "./images/page-039-4e0b3c4dc5158df559a22664740e8186.webp",
       "lines": [
         {
-          "en": "many cute animals, such as the Tibetan",
-          "zh": ""
-        },
-        {
-          "en": "snowcock and the Himalayan blue sheep.",
-          "zh": ""
-        },
-        {
-          "en": "My wetlands, lakes,",
-          "zh": ""
-        },
-        {
-          "en": "and glaciers provide fresh",
-          "zh": ""
-        },
-        {
-          "en": "x ter for people",
-          "zh": ""
-        },
-        {
-          "en": "water people.",
-          "zh": ""
-        },
-        {
-          "en": "Bess",
-          "zh": ""
-        },
-        {
-          "en": "ee. me",
-          "zh": ""
-        },
-        {
-          "en": "Ly), i,",
-          "zh": ""
-        },
-        {
-          "en": "eee eT ey",
-          "zh": ""
-        },
-        {
-          "en": "as Se ES cs f A y",
-          "zh": ""
-        },
-        {
-          "en": "seas 7S Se Himalayan blue sheep",
-          "zh": ""
-        },
-        {
-          "en": "eS eS, mack",
-          "zh": ""
+          "en": "many cute animals, such as the Tibetan snowcock and the Himalayan blue sheep. My wetlands, lakes, and glaciers provide fresh water for people.",
+          "zh": "……许多可爱动物的家园，比如藏雪鸡和喜马拉雅岩羊。我的湿地、湖泊和冰川为人们提供淡水。"
         }
       ]
     },
@@ -1328,51 +541,15 @@ window.generatedBook = {
       "lines": [
         {
           "en": "How I Got My Name",
-          "zh": ""
+          "zh": "我是如何得名的"
         },
         {
-          "en": "The first people to discover me were from",
-          "zh": ""
+          "en": "The first people to discover me were from southern Xizang. They gave me a beautiful name \"Qomolangma\", which means \"Goddess Mother of the World\". This name shows their love and respect for me.",
+          "zh": "最早发现我的人来自西藏南部。他们给了我一个美丽的名字“Qomolangma”，意思是“世界女神之母”。这个名字表达了他们对我的爱与尊敬。"
         },
         {
-          "en": "southern Xizang. They gave me a beautiful",
-          "zh": ""
-        },
-        {
-          "en": "name \"Qomolangma\", which means \"Goddess",
-          "zh": ""
-        },
-        {
-          "en": "Mother of the World\". This name shows their",
-          "zh": ""
-        },
-        {
-          "en": "love and respect for me.",
-          "zh": ""
-        },
-        {
-          "en": "But didn't appear on a map until about",
-          "zh": ""
-        },
-        {
-          "en": "years ago. Three brave Chinese explorers",
-          "zh": ""
-        },
-        {
-          "en": "went deep into Xizang and found me. They",
-          "zh": ""
-        },
-        {
-          "en": "clearly marked my name and location on the",
-          "zh": ""
-        },
-        {
-          "en": "map. They measured my height with many",
-          "zh": ""
-        },
-        {
-          "en": "tools.",
-          "zh": ""
+          "en": "But I didn't appear on a map until about 300 years ago. Three brave Chinese explorers went deep into Xizang and found me. They clearly marked my name and location on the map. They measured my height with many tools.",
+          "zh": "但直到大约300年前，我才出现在地图上。三位勇敢的中国探险者深入西藏并找到了我。他们在地图上清楚地标出了我的名字和位置，还用许多工具测量了我的高度。"
         }
       ]
     },
@@ -1381,32 +558,8 @@ window.generatedBook = {
       "image": "./images/page-041-958246d43bc268eef0ee41847fa19cf1.webp",
       "lines": [
         {
-          "en": "ie AY",
-          "zh": ""
-        },
-        {
-          "en": "id",
-          "zh": ""
-        },
-        {
-          "en": "ba ee SS a.",
-          "zh": ""
-        },
-        {
-          "en": "Some of the tools used by the",
-          "zh": ""
-        },
-        {
-          "en": "Chinese explorers to measure the",
-          "zh": ""
-        },
-        {
-          "en": "height of Mount Qomolangma",
-          "zh": ""
-        },
-        {
-          "en": "ae",
-          "zh": ""
+          "en": "Some of the tools used by the Chinese explorers to measure the height of Mount Qomolangma",
+          "zh": "中国探险者用来测量珠穆朗玛峰高度的一些工具"
         }
       ]
     },
@@ -1415,40 +568,12 @@ window.generatedBook = {
       "image": "./images/page-042-5019725ac35ab69a56e885554a434858.webp",
       "lines": [
         {
-          "en": "Fs",
-          "zh": ""
+          "en": "Measuring My Height!",
+          "zh": "测量我的高度！"
         },
         {
-          "en": "e e",
-          "zh": ""
-        },
-        {
-          "en": "Measuring My Height! F",
-          "zh": ""
-        },
-        {
-          "en": "More than years ago,",
-          "zh": ""
-        },
-        {
-          "en": "British explorers also tried to",
-          "zh": ""
-        },
-        {
-          "en": "measure my height. They didn't",
-          "zh": ""
-        },
-        {
-          "en": "come up to my peak, but they",
-          "zh": ""
-        },
-        {
-          "en": "calculated my height. They found",
-          "zh": ""
-        },
-        {
-          "en": "a Na at RG",
-          "zh": ""
+          "en": "More than 160 years ago, British explorers also tried to measure my height. They didn't come up to my peak, but they calculated my height. They found",
+          "zh": "160多年前，英国探险者也尝试测量我的高度。他们没有登上我的山顶，但计算出了我的高度。他们发现……"
         }
       ]
     },
@@ -1457,48 +582,12 @@ window.generatedBook = {
       "image": "./images/page-043-6ccb88935209b8edc7e19655743907e6.webp",
       "lines": [
         {
-          "en": "out it was around",
-          "zh": ""
+          "en": "out it was around 8840 metres. From then on, people knew that I was the highest mountain in the world! I am very proud of this.",
+          "zh": "……我的高度约为8840米。从那以后，人们知道我是世界上最高的山峰！我对此非常自豪。"
         },
         {
-          "en": "people knew that was the highest mountain in",
-          "zh": ""
-        },
-        {
-          "en": "the world! am very proud of this.",
-          "zh": ""
-        },
-        {
-          "en": "But measuring me is not an easy task. Over",
-          "zh": ""
-        },
-        {
-          "en": "the years, only a few countries have made it.",
-          "zh": ""
-        },
-        {
-          "en": "OR. Re.",
-          "zh": ""
-        },
-        {
-          "en": "REE.",
-          "zh": ""
-        },
-        {
-          "en": "aig ab oy on Ne",
-          "zh": ""
-        },
-        {
-          "en": "od Ww we a",
-          "zh": ""
-        },
-        {
-          "en": "Te",
-          "zh": ""
-        },
-        {
-          "en": "Pa",
-          "zh": ""
+          "en": "But measuring me is not an easy task. Over the years, only a few countries have made it.",
+          "zh": "但是测量我并不是一件容易的事。多年来，只有少数几个国家做到了。"
         }
       ]
     },
@@ -1508,51 +597,15 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Chinese Measurements",
-          "zh": ""
+          "zh": "中国的测量"
         },
         {
-          "en": "Since Chinese scientists",
-          "zh": ""
+          "en": "Since 1966, Chinese scientists have tried seven times to measure me. They succeeded three times in getting accurate data of my height.",
+          "zh": "自1966年以来，中国科学家曾七次尝试测量我。他们三次成功获得了我的精确高度数据。"
         },
         {
-          "en": "have tried seven times to measure",
-          "zh": ""
-        },
-        {
-          "en": "me. They succeeded three times in",
-          "zh": ""
-        },
-        {
-          "en": "getting accurate data of my height.",
-          "zh": ""
-        },
-        {
-          "en": "On each of the three times, a group",
-          "zh": ""
-        },
-        {
-          "en": "of brave scientists climbed to my",
-          "zh": ""
-        },
-        {
-          "en": "highest point. This is a dangerous",
-          "zh": ""
-        },
-        {
-          "en": "ad",
-          "zh": ""
-        },
-        {
-          "en": "pis, y ae gl",
-          "zh": ""
-        },
-        {
-          "en": "\"fi ieee es Sy eS",
-          "zh": ""
-        },
-        {
-          "en": "ei, eM Ree",
-          "zh": ""
+          "en": "On each of the three times, a group of brave scientists climbed to my highest point. This is a dangerous",
+          "zh": "在这三次测量中，每一次都有一群勇敢的科学家登上我的最高点。这是一项危险的……"
         }
       ]
     },
@@ -1561,28 +614,8 @@ window.generatedBook = {
       "image": "./images/page-045-2020a254645332712b96a1ef44eeaa43.webp",
       "lines": [
         {
-          "en": "a WG",
-          "zh": ""
-        },
-        {
-          "en": "task. The way to my top is long and difficult. It is",
-          "zh": ""
-        },
-        {
-          "en": "very cold high up, and the air is thin. Sometimes",
-          "zh": ""
-        },
-        {
-          "en": "the weather is very bad. But the scientists got",
-          "zh": ""
-        },
-        {
-          "en": "through these difficulties. ee",
-          "zh": ""
-        },
-        {
-          "en": "eo",
-          "zh": ""
+          "en": "task. The way to my top is long and difficult. It is very cold high up, and the air is thin. Sometimes the weather is very bad. But the scientists got through these difficulties.",
+          "zh": "……任务。通往我顶峰的路漫长而艰难。高处非常寒冷，空气稀薄。有时天气非常恶劣。但科学家们克服了这些困难。"
         }
       ]
     },
@@ -1591,56 +624,12 @@ window.generatedBook = {
       "image": "./images/page-046-9eced23bb97be817685844c394124c41.webp",
       "lines": [
         {
-          "en": "Wy",
-          "zh": ""
+          "en": "Am I Taller?",
+          "zh": "我变高了吗？"
         },
         {
-          "en": "fo Am I Taller?",
-          "zh": ""
-        },
-        {
-          "en": "In Chinese",
-          "zh": ""
-        },
-        {
-          "en": "scientists measured me",
-          "zh": ""
-        },
-        {
-          "en": "again. Everyone wanted to",
-          "zh": ""
-        },
-        {
-          "en": "know my new height. The",
-          "zh": ""
-        },
-        {
-          "en": "Wai li scientists spent over two",
-          "zh": ""
-        },
-        {
-          "en": "i) months with me. They used",
-          "zh": ""
-        },
-        {
-          "en": "f Chinese tools and",
-          "zh": ""
-        },
-        {
-          "en": "ae Bw",
-          "zh": ""
-        },
-        {
-          "en": "\"Ss aon:",
-          "zh": ""
-        },
-        {
-          "en": "ee ee",
-          "zh": ""
-        },
-        {
-          "en": "Se EP en ae",
-          "zh": ""
+          "en": "In 2020, Chinese scientists measured me again. Everyone wanted to know my new height. The scientists spent over two months with me. They used Chinese tools and",
+          "zh": "2020年，中国科学家再次测量了我。每个人都想知道我的新高度。科学家们和我相伴了两个多月。他们使用了中国工具和……"
         }
       ]
     },
@@ -1649,100 +638,8 @@ window.generatedBook = {
       "image": "./images/page-047-47d4254d20d3b9704bf71870b8d62e12.webp",
       "lines": [
         {
-          "en": "Sa",
-          "zh": ""
-        },
-        {
-          "en": "oD. rae",
-          "zh": ""
-        },
-        {
-          "en": "ts FA a ae",
-          "zh": ""
-        },
-        {
-          "en": "Mise",
-          "zh": ""
-        },
-        {
-          "en": "eee EEE",
-          "zh": ""
-        },
-        {
-          "en": "Age aa =i OS",
-          "zh": ""
-        },
-        {
-          "en": "USS ak ee eee",
-          "zh": ""
-        },
-        {
-          "en": "sex ee Si Fe fa",
-          "zh": ""
-        },
-        {
-          "en": "me a ee Be ee",
-          "zh": ""
-        },
-        {
-          "en": "on aces. Hq N Er aT",
-          "zh": ""
-        },
-        {
-          "en": "ee Bm 4k t= eS",
-          "zh": ""
-        },
-        {
-          "en": "ta Saray",
-          "zh": ""
-        },
-        {
-          "en": "See. See er ey SS re",
-          "zh": ""
-        },
-        {
-          "en": "Re og oe ee a Pee",
-          "zh": ""
-        },
-        {
-          "en": "en? Seger a ba, PE oe a ae",
-          "zh": ""
-        },
-        {
-          "en": "Ee ee A za! oe Page Se ms",
-          "zh": ""
-        },
-        {
-          "en": "en ae a Si ee a",
-          "zh": ""
-        },
-        {
-          "en": "re Sat a FS weft St",
-          "zh": ""
-        },
-        {
-          "en": "ie Fig oe een ee Le Se",
-          "zh": ""
-        },
-        {
-          "en": "y pa oe eae eos",
-          "zh": ""
-        },
-        {
-          "en": "ge hy iy a wy Gz of \"x",
-          "zh": ""
-        },
-        {
-          "en": "og ay! EE oe gh an A ae",
-          "zh": ""
-        },
-        {
-          "en": "a 3S ke a Cr Se eke y Neues",
-          "zh": ""
-        },
-        {
-          "en": "aa a ice",
-          "zh": ""
+          "en": "technology. On 27 May 2020, they climbed to the top of my tallest peak and finished the measuring task. My height this time was 8848.86 metres. I had grown again! Hooray!",
+          "zh": "……技术。2020年5月27日，他们登上我的最高峰，完成了测量任务。这一次，我的高度是8848.86米。我又长高了！太棒了！"
         }
       ]
     },
@@ -1752,15 +649,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Why Measure Me?",
-          "zh": ""
+          "zh": "为什么测量我？"
         },
         {
           "en": "Is my height so important?",
-          "zh": ""
-        },
-        {
-          "en": "he aS",
-          "zh": ""
+          "zh": "我的高度真的这么重要吗？"
         }
       ]
     },
@@ -1769,36 +662,12 @@ window.generatedBook = {
       "image": "./images/page-049-e7f88539dcdd831dd0676f183b190c95.webp",
       "lines": [
         {
-          "en": "Of course! Scientists need to know my",
-          "zh": ""
+          "en": "Of course! Scientists need to know my height for their research. For example, my height data is important for studies of climate changes. China plays a key role in this work.",
+          "zh": "当然！科学家需要知道我的高度来进行研究。例如，我的高度数据对气候变化研究很重要。中国在这项工作中发挥着关键作用。"
         },
         {
-          "en": "height for their research. For example, my",
-          "zh": ""
-        },
-        {
-          "en": "height data is important for studies of climate",
-          "zh": ""
-        },
-        {
-          "en": "changes. China plays a key role in this work. But",
-          "zh": ""
-        },
-        {
-          "en": "measuring me is not just a scientific task. am",
-          "zh": ""
-        },
-        {
-          "en": "rae to know all about me.",
-          "zh": ""
-        },
-        {
-          "en": "one of nature's wonders and people want",
-          "zh": ""
-        },
-        {
-          "en": "ar",
-          "zh": ""
+          "en": "But measuring me is not just a scientific task. I am one of nature's wonders and people want to know all about me.",
+          "zh": "但测量我并不只是一项科学任务。我是自然奇观之一，人们想了解关于我的一切。"
         }
       ]
     },
@@ -1812,76 +681,8 @@ window.generatedBook = {
       "image": "./images/page-051-1520517c5fb2b349a7cb5bccc2813af6.webp",
       "lines": [
         {
-          "en": "Se",
-          "zh": ""
-        },
-        {
-          "en": "Dp:",
-          "zh": ""
-        },
-        {
-          "en": "t+ ie",
-          "zh": ""
-        },
-        {
-          "en": "A Ze a!",
-          "zh": ""
-        },
-        {
-          "en": "a ae",
-          "zh": ""
-        },
-        {
-          "en": "fom, Cone",
-          "zh": ""
-        },
-        {
-          "en": "AX Se",
-          "zh": ""
-        },
-        {
-          "en": "os) a Rs Seo \"A",
-          "zh": ""
-        },
-        {
-          "en": "ras",
-          "zh": ""
-        },
-        {
-          "en": "ae as",
-          "zh": ""
-        },
-        {
-          "en": "ose hos",
-          "zh": ""
-        },
-        {
-          "en": "ues",
-          "zh": ""
-        },
-        {
-          "en": "at eat",
-          "zh": ""
-        },
-        {
-          "en": "ait i es",
-          "zh": ""
-        },
-        {
-          "en": "ree as",
-          "zh": ""
-        },
-        {
-          "en": "iow f haa a",
-          "zh": ""
-        },
-        {
-          "en": "<M Fe",
-          "zh": ""
-        },
-        {
-          "en": "he al j",
-          "zh": ""
+          "en": "The Modern Bi Sheng",
+          "zh": "当代毕昇"
         }
       ]
     },
@@ -1890,48 +691,16 @@ window.generatedBook = {
       "image": "./images/page-052-e3ac4207390de8cb44573092831df6a5.webp",
       "lines": [
         {
-          "en": "Long ago in China, books were",
-          "zh": ""
+          "en": "Bi Sheng's Great Invention",
+          "zh": "毕昇的伟大发明"
         },
         {
-          "en": "handwritten. This made them expensive. Not",
-          "zh": ""
+          "en": "Long ago in China, books were handwritten. This made them expensive. Not many people could have books.",
+          "zh": "很久以前，在中国，书都是手写的。这使得书很昂贵，没有多少人能拥有书。"
         },
         {
-          "en": "many people could have books.",
-          "zh": ""
-        },
-        {
-          "en": "Later, woodblock printing was invented. It",
-          "zh": ""
-        },
-        {
-          "en": "was like using a big stamp. People first carved",
-          "zh": ""
-        },
-        {
-          "en": "characters and pictures on wooden blocks.",
-          "zh": ""
-        },
-        {
-          "en": "Next, they put ink on the blocks. Finally, they",
-          "zh": ""
-        },
-        {
-          "en": "pressed paper on these blocks. In this way, the",
-          "zh": ""
-        },
-        {
-          "en": "Lal a4",
-          "zh": ""
-        },
-        {
-          "en": "aa",
-          "zh": ""
-        },
-        {
-          "en": "SS OF co ee A",
-          "zh": ""
+          "en": "Later, woodblock printing was invented. It was like using a big stamp. People first carved characters and pictures on wooden blocks. Next, they put ink on the blocks. Finally, they pressed paper on these blocks. In this way, the pages were printed.",
+          "zh": "后来，雕版印刷术被发明出来。它就像使用一枚大印章。人们先把文字和图画刻在木板上，再把墨涂在木板上，最后把纸压在这些木板上。这样，一页页书就被印出来了。"
         }
       ]
     },
@@ -1940,36 +709,12 @@ window.generatedBook = {
       "image": "./images/page-053-a1fd3b889e8360c888c3d1f2e4035656.webp",
       "lines": [
         {
-          "en": "tify Suh \"ae",
-          "zh": ""
+          "en": "People had to carve one block for each page. So this way of printing took a lot of time and effort.",
+          "zh": "人们必须为每一页刻一块木版。因此，这种印刷方式需要花费大量时间和精力。"
         },
         {
-          "en": "pages were printed. People had to carve one",
-          "zh": ""
-        },
-        {
-          "en": "block for each page. So this way of printing took",
-          "zh": ""
-        },
-        {
-          "en": "a lot of time and effort.",
-          "zh": ""
-        },
-        {
-          "en": "During the Northern Song Dynasty",
-          "zh": ""
-        },
-        {
-          "en": "a clever man named Bi Sheng invented",
-          "zh": ""
-        },
-        {
-          "en": "movable-type printing. This turned a new page",
-          "zh": ""
-        },
-        {
-          "en": "in printing history.",
-          "zh": ""
+          "en": "During the Northern Song Dynasty (960-1127), a clever man named Bi Sheng invented movable-type printing. This turned a new page in China's printing history.",
+          "zh": "北宋时期（960-1127年），一位名叫毕昇的聪明人发明了活字印刷术。这翻开了中国印刷史的新篇章。"
         }
       ]
     },
@@ -1978,192 +723,19 @@ window.generatedBook = {
       "image": "./images/page-054-59d7b529a2e8a32edc47d583a14a819f.webp",
       "lines": [
         {
-          "en": "Bi Sheng used small clay types for each",
-          "zh": ""
+          "en": "Bi Sheng used small clay types for each character. These types could be put together on a plate as a page. After printing, they could be used again to make new pages.",
+          "zh": "毕昇为每个字制作小小的泥活字。这些活字可以被排在一个版面上，组成一页。印完之后，它们还可以再次使用，排成新的页面。"
         },
         {
-          "en": "character. These types could be put together on",
-          "zh": ""
-        },
-        {
-          "en": "a plate as a page. After printing, they could be",
-          "zh": ""
-        },
-        {
-          "en": "used again to make new pages.",
-          "zh": ""
-        },
-        {
-          "en": "Bi Sheng's invention was a big turning point",
-          "zh": ""
-        },
-        {
-          "en": "in the history of printing. This made printing",
-          "zh": ""
-        },
-        {
-          "en": "much faster and easier! Later, people used",
-          "zh": ""
-        },
-        {
-          "en": "wood and metal to make the",
-          "zh": ""
-        },
-        {
-          "en": "types.",
-          "zh": ""
-        },
-        {
-          "en": "A A",
-          "zh": ""
-        },
-        {
-          "en": "(as",
-          "zh": ""
-        },
-        {
-          "en": "\"ol Heel",
-          "zh": ""
-        },
-        {
-          "en": "Sng NEY thee athe aS",
-          "zh": ""
-        },
-        {
-          "en": "Sas cence",
-          "zh": ""
-        },
-        {
-          "en": "ee se",
-          "zh": ""
-        },
-        {
-          "en": "ty he a",
-          "zh": ""
-        },
-        {
-          "en": "fe Sie Sy",
-          "zh": ""
+          "en": "Bi Sheng's invention was a big turning point in the history of printing. This made printing much faster and easier! Later, people used wood and metal to make the types.",
+          "zh": "毕昇的发明是印刷史上的一个重大转折点。它让印刷变得更快、更容易！后来，人们用木头和金属来制作活字。"
         }
       ]
     },
     {
       "page": 55,
       "image": "./images/page-055-e68e14a9c317dc260485fd494ad1372f.webp",
-      "lines": [
-        {
-          "en": "We,",
-          "zh": ""
-        },
-        {
-          "en": "J Pa",
-          "zh": ""
-        },
-        {
-          "en": "es",
-          "zh": ""
-        },
-        {
-          "en": "Se Se ee Sos Be",
-          "zh": ""
-        },
-        {
-          "en": "CSS 4a ena se Pe",
-          "zh": ""
-        },
-        {
-          "en": "Be es ge ae",
-          "zh": ""
-        },
-        {
-          "en": "an gph AA Fa",
-          "zh": ""
-        },
-        {
-          "en": "Re Sy at",
-          "zh": ""
-        },
-        {
-          "en": "ara abe a",
-          "zh": ""
-        },
-        {
-          "en": "Ri Bt",
-          "zh": ""
-        },
-        {
-          "en": "Fim ges",
-          "zh": ""
-        },
-        {
-          "en": "ype fm ae) IPS fey",
-          "zh": ""
-        },
-        {
-          "en": "ed",
-          "zh": ""
-        },
-        {
-          "en": "a SA S/S",
-          "zh": ""
-        },
-        {
-          "en": "SIS Sy ted) a",
-          "zh": ""
-        },
-        {
-          "en": "EIS ks",
-          "zh": ""
-        },
-        {
-          "en": "PS) BS] ee [re",
-          "zh": ""
-        },
-        {
-          "en": "Shs",
-          "zh": ""
-        },
-        {
-          "en": "BE",
-          "zh": ""
-        },
-        {
-          "en": "oe S bas» ee ty",
-          "zh": ""
-        },
-        {
-          "en": "Re Se",
-          "zh": ""
-        },
-        {
-          "en": "Naor CT is ES SET",
-          "zh": ""
-        },
-        {
-          "en": "me",
-          "zh": ""
-        },
-        {
-          "en": "ass \"See SOS",
-          "zh": ""
-        },
-        {
-          "en": "S\\N SOS OS",
-          "zh": ""
-        },
-        {
-          "en": "av LOVES (kes la\", cS ae",
-          "zh": ""
-        },
-        {
-          "en": "xy ew AM LESS Bs eS (a AS S Ne",
-          "zh": ""
-        },
-        {
-          "en": "te ~<A Ke Ly LS oo SS yy <a",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 56,
@@ -2171,35 +743,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "The Modern Bi Sheng",
-          "zh": ""
+          "zh": "当代毕昇"
         },
         {
-          "en": "Today, with modern",
-          "zh": ""
-        },
-        {
-          "en": "technology, we don't need blocks",
-          "zh": ""
-        },
-        {
-          "en": "or types to print. We can type A",
-          "zh": ""
-        },
-        {
-          "en": "Chinese characters into a computer",
-          "zh": ""
-        },
-        {
-          "en": "and then print them out.",
-          "zh": ""
-        },
-        {
-          "en": "C,",
-          "zh": ""
-        },
-        {
-          "en": "eee",
-          "zh": ""
+          "en": "Today, with modern technology, we don't need blocks or types to print. We can type Chinese characters into a computer and then print them out.",
+          "zh": "今天，有了现代技术，我们印刷时不再需要木版或活字。我们可以把汉字输入电脑，然后把它们打印出来。"
         }
       ]
     },
@@ -2208,44 +756,12 @@ window.generatedBook = {
       "image": "./images/page-057-0a3994bfb479c2187008b2fb6419b618.webp",
       "lines": [
         {
-          "en": "eS",
-          "zh": ""
+          "en": "From Bi Sheng's movable-type printing to today's printing, many great inventors played a part.",
+          "zh": "从毕昇的活字印刷术到今天的印刷技术，许多伟大的发明家都作出了贡献。"
         },
         {
-          "en": "Aa i",
-          "zh": ""
-        },
-        {
-          "en": "From Bi Sheng's movable-type printing to",
-          "zh": ""
-        },
-        {
-          "en": "today's printing, many great inventors played a",
-          "zh": ""
-        },
-        {
-          "en": "part.",
-          "zh": ""
-        },
-        {
-          "en": "For users of the Chinese language, one",
-          "zh": ""
-        },
-        {
-          "en": "important inventor is Wang Xuan. He was a",
-          "zh": ""
-        },
-        {
-          "en": "famous computer scientist and a pioneer of",
-          "zh": ""
-        },
-        {
-          "en": "modern Chinese-language printing. People call",
-          "zh": ""
-        },
-        {
-          "en": "him the \"Modern Bi Sheng\". ee.",
-          "zh": ""
+          "en": "For users of the Chinese language, one important inventor is Wang Xuan. He was a famous computer scientist and a pioneer of modern Chinese-language printing. People call him the \"Modern Bi Sheng\".",
+          "zh": "对于汉语使用者来说，一位重要的发明家是王选。他是著名的计算机科学家，也是现代中文印刷的先驱。人们称他为“当代毕昇”。"
         }
       ]
     },
@@ -2254,36 +770,12 @@ window.generatedBook = {
       "image": "./images/page-058-3ce9b443fac264b8e1a53c73552fc5b1.webp",
       "lines": [
         {
-          "en": "Es wy",
-          "zh": ""
+          "en": "From Movable Types to Computer Bytes",
+          "zh": "从活字到计算机字节"
         },
         {
-          "en": "a By ri",
-          "zh": ""
-        },
-        {
-          "en": "From Movable Types to",
-          "zh": ""
-        },
-        {
-          "en": "Computer Bytes",
-          "zh": ""
-        },
-        {
-          "en": "In the 1980s, Wang Xuan and his team",
-          "zh": ""
-        },
-        {
-          "en": "invented an amazing system. It made it possible",
-          "zh": ""
-        },
-        {
-          "en": "to use Chinese characters on computers and",
-          "zh": ""
-        },
-        {
-          "en": "print them with machines.",
-          "zh": ""
+          "en": "In the 1980s, Wang Xuan and his team invented an amazing system. It made it possible to use Chinese characters on computers and print them with machines.",
+          "zh": "20世纪80年代，王选和他的团队发明了一套令人惊叹的系统。它让人们能够在电脑上使用汉字，并用机器把汉字打印出来。"
         }
       ]
     },
@@ -2292,44 +784,12 @@ window.generatedBook = {
       "image": "./images/page-059-d4402822de5c4a463bdf678542e77a9a.webp",
       "lines": [
         {
-          "en": "This technology was called the \"second",
-          "zh": ""
+          "en": "This technology was called the \"second invention of the printing system for Chinese characters\". The first was, of course, Bi Sheng's movable-type printing.",
+          "zh": "这项技术被称为“汉字印刷系统的第二次发明”。第一次当然是毕昇的活字印刷术。"
         },
         {
-          "en": "invention of the printing system for Chinese",
-          "zh": ""
-        },
-        {
-          "en": "characters\". The first was, of course, Bi Sheng's",
-          "zh": ""
-        },
-        {
-          "en": "movable-type printing.",
-          "zh": ""
-        },
-        {
-          "en": "For Wang Xuan, the biggest challenge was",
-          "zh": ""
-        },
-        {
-          "en": "to put the large number of Chinese characters",
-          "zh": ""
-        },
-        {
-          "en": "correctly into the computer. This was a very",
-          "zh": ""
-        },
-        {
-          "en": "difficult problem for scientists all over the world.",
-          "zh": ""
-        },
-        {
-          "en": "line",
-          "zh": ""
-        },
-        {
-          "en": "hi di",
-          "zh": ""
+          "en": "For Wang Xuan, the biggest challenge was to put the large number of Chinese characters correctly into the computer. This was a very difficult problem for scientists all over the world.",
+          "zh": "对王选来说，最大的挑战是把数量庞大的汉字准确地输入电脑。对全世界的科学家来说，这都是一个非常困难的问题。"
         }
       ]
     },
@@ -2338,32 +798,12 @@ window.generatedBook = {
       "image": "./images/page-060-53d38e7a5bab7a00c5d5cce36e919500.webp",
       "lines": [
         {
-          "en": "Many languages in the world have an",
-          "zh": ""
+          "en": "Many languages in the world have an alphabet. They use a few dozen letters to make words.",
+          "zh": "世界上许多语言都有字母表。它们用几十个字母组成单词。"
         },
         {
-          "en": "alphabet. They use a few dozen letters to make",
-          "zh": ""
-        },
-        {
-          "en": "words.",
-          "zh": ""
-        },
-        {
-          "en": "But the Chinese language is different. It has",
-          "zh": ""
-        },
-        {
-          "en": "so many characters. And each character has",
-          "zh": ""
-        },
-        {
-          "en": "one or more strokes. Storing them in the",
-          "zh": ""
-        },
-        {
-          "en": "te",
-          "zh": ""
+          "en": "But the Chinese language is different. It has so many characters. And each character has one or more strokes.",
+          "zh": "但汉语不同。汉字数量很多，而且每个汉字都有一笔或多笔笔画。"
         }
       ]
     },
@@ -2372,36 +812,8 @@ window.generatedBook = {
       "image": "./images/page-061-f4e337e989f6605c3de2c7236654564a.webp",
       "lines": [
         {
-          "en": "computer seemed as difficult as reaching the",
-          "zh": ""
-        },
-        {
-          "en": "sky at that time. Some foreign computer",
-          "zh": ""
-        },
-        {
-          "en": "scientists even said that pees",
-          "zh": ""
-        },
-        {
-          "en": "Chinese characters could i",
-          "zh": ""
-        },
-        {
-          "en": "never step into the digital",
-          "zh": ""
-        },
-        {
-          "en": "age.",
-          "zh": ""
-        },
-        {
-          "en": "iN anand",
-          "zh": ""
-        },
-        {
-          "en": "Cy",
-          "zh": ""
+          "en": "Storing them in the computer seemed as difficult as reaching the sky at that time. Some foreign computer scientists even said that Chinese characters could never step into the digital age.",
+          "zh": "在当时，把汉字存入电脑似乎像登天一样困难。一些外国计算机科学家甚至说，汉字永远无法迈入数字时代。"
         }
       ]
     },
@@ -2410,44 +822,12 @@ window.generatedBook = {
       "image": "./images/page-062-f27fde8828e317313ef9f3b5bda0afd3.webp",
       "lines": [
         {
-          "en": "a =e i",
-          "zh": ""
+          "en": "Wang Xuan bravely took on this challenge. He was good at thinking in a creative way. He didn't always succeed, but he never gave up.",
+          "zh": "王选勇敢地接受了这个挑战。他善于创造性地思考。虽然他并不总是成功，但他从未放弃。"
         },
         {
-          "en": "ars",
-          "zh": ""
-        },
-        {
-          "en": "ine",
-          "zh": ""
-        },
-        {
-          "en": "Wang Xuan bravely took on this challenge.",
-          "zh": ""
-        },
-        {
-          "en": "He was good at thinking in a creative way. He",
-          "zh": ""
-        },
-        {
-          "en": "didn't always succeed, but he never gave up.",
-          "zh": ""
-        },
-        {
-          "en": "After lots of hard work, Wang Xuan came",
-          "zh": ""
-        },
-        {
-          "en": "up with a unique solution. His technology",
-          "zh": ""
-        },
-        {
-          "en": "worked! Thousands of Chinese characters could",
-          "zh": ""
-        },
-        {
-          "en": "be easily stored in computers. Then he went on",
-          "zh": ""
+          "en": "After lots of hard work, Wang Xuan came up with a unique solution. His technology worked! Thousands of Chinese characters could be easily stored in computers. Then he went on to design a world-leading printing system for Chinese characters.",
+          "zh": "经过大量艰苦努力，王选想出了一个独特的解决办法。他的技术成功了！成千上万个汉字可以轻松地存入电脑。随后，他继续设计出世界领先的汉字印刷系统。"
         }
       ]
     },
@@ -2456,52 +836,12 @@ window.generatedBook = {
       "image": "./images/page-063-4b170e25840b649417503a1e47dc3b63.webp",
       "lines": [
         {
-          "en": "to design a world-leading printing system",
-          "zh": ""
+          "en": "Finally, a 29-page sample book in Chinese was printed in 1980. It was the first book in China to be printed with Wang Xuan's system for Chinese characters.",
+          "zh": "终于，1980年，一本29页的中文样书被印了出来。这是中国第一本用王选的汉字系统印刷的书。"
         },
         {
-          "en": "for Chinese characters.",
-          "zh": ""
-        },
-        {
-          "en": "Finally, a 29-page sample book in",
-          "zh": ""
-        },
-        {
-          "en": "Chinese was printed in It was the first",
-          "zh": ""
-        },
-        {
-          "en": "book in China to be printed with Wang",
-          "zh": ""
-        },
-        {
-          "en": "system for Chinese characters.",
-          "zh": ""
-        },
-        {
-          "en": "Wang Xuan wrote the information used for storing the character and then",
-          "zh": ""
-        },
-        {
-          "en": "corrected in red the mistakes in the image of the character.",
-          "zh": ""
-        },
-        {
-          "en": "ee ite",
-          "zh": ""
-        },
-        {
-          "en": "vee a (an",
-          "zh": ""
-        },
-        {
-          "en": "aw or",
-          "zh": ""
-        },
-        {
-          "en": "i ee ae x oe, eifo",
-          "zh": ""
+          "en": "Wang Xuan wrote the information used for storing the character and then corrected in red the mistakes in the image of the character.",
+          "zh": "王选写下用于存储汉字的信息，然后用红笔修改字形图像中的错误。"
         }
       ]
     },
@@ -2510,220 +850,23 @@ window.generatedBook = {
       "image": "./images/page-064-2c08845893b3de9ce75278a65a685df4.webp",
       "lines": [
         {
-          "en": "ics",
-          "zh": ""
+          "en": "Great Inventors",
+          "zh": "伟大的发明家"
         },
         {
-          "en": "in BE aa i corte y To",
-          "zh": ""
+          "en": "Chinese characters are an important part of Chinese culture. Thanks to Bi Sheng, people could print Chinese characters in an easy way. In the modern information age, Wang Xuan greatly helped the spread of Chinese characters.",
+          "zh": "汉字是中华文化的重要组成部分。多亏了毕昇，人们能够用更简便的方式印刷汉字。在现代信息时代，王选极大地促进了汉字的传播。"
         },
         {
-          "en": "a aa",
-          "zh": ""
-        },
-        {
-          "en": "Chinese characters are an important part",
-          "zh": ""
-        },
-        {
-          "en": "of Chinese culture. Thanks to Bi Sheng, people",
-          "zh": ""
-        },
-        {
-          "en": "could print Chinese characters in an easy way.",
-          "zh": ""
-        },
-        {
-          "en": "In the modern information age, Wang Xuan",
-          "zh": ""
-        },
-        {
-          "en": "greatly helped the spread of Chinese",
-          "zh": ""
-        },
-        {
-          "en": "characters.",
-          "zh": ""
-        },
-        {
-          "en": "Wang Xuan was not only a great inventor",
-          "zh": ""
-        },
-        {
-          "en": "but also a great role model for people in China.",
-          "zh": ""
-        },
-        {
-          "en": "His story encourages young people to find their",
-          "zh": ""
-        },
-        {
-          "en": "@wn way to make creation.",
-          "zh": ""
+          "en": "Wang Xuan was not only a great inventor but also a great role model for people in China. His story encourages young people to find their own way to make creation.",
+          "zh": "王选不仅是一位伟大的发明家，也是中国人民的榜样。他的故事鼓励年轻人找到属于自己的创新之路。"
         }
       ]
     },
     {
       "page": 65,
       "image": "./images/page-065-7b66888bffdd32577e3e4e48771585a0.webp",
-      "lines": [
-        {
-          "en": "Sm as a",
-          "zh": ""
-        },
-        {
-          "en": "a i toa ve",
-          "zh": ""
-        },
-        {
-          "en": "sal ee a",
-          "zh": ""
-        },
-        {
-          "en": "FER",
-          "zh": ""
-        },
-        {
-          "en": "whe be",
-          "zh": ""
-        },
-        {
-          "en": "EA mee. ae ee",
-          "zh": ""
-        },
-        {
-          "en": "ig <a",
-          "zh": ""
-        },
-        {
-          "en": "po we",
-          "zh": ""
-        },
-        {
-          "en": "'d",
-          "zh": ""
-        },
-        {
-          "en": "a pore: bag aes",
-          "zh": ""
-        },
-        {
-          "en": "a aay.",
-          "zh": ""
-        },
-        {
-          "en": "he: th po Go dps,",
-          "zh": ""
-        },
-        {
-          "en": "ead nfo ee rat",
-          "zh": ""
-        },
-        {
-          "en": "iy ms",
-          "zh": ""
-        },
-        {
-          "en": "Alo, mnt jaar",
-          "zh": ""
-        },
-        {
-          "en": "sana og ad",
-          "zh": ""
-        },
-        {
-          "en": "+e ner",
-          "zh": ""
-        },
-        {
-          "en": "ee",
-          "zh": ""
-        },
-        {
-          "en": "on Bi",
-          "zh": ""
-        },
-        {
-          "en": "a eo renee",
-          "zh": ""
-        },
-        {
-          "en": "om on",
-          "zh": ""
-        },
-        {
-          "en": "verre A",
-          "zh": ""
-        },
-        {
-          "en": "\"i gate ee",
-          "zh": ""
-        },
-        {
-          "en": "enh",
-          "zh": ""
-        },
-        {
-          "en": "ae a)",
-          "zh": ""
-        },
-        {
-          "en": "aan ee x eS",
-          "zh": ""
-        },
-        {
-          "en": "a ae",
-          "zh": ""
-        },
-        {
-          "en": "sa. ee",
-          "zh": ""
-        },
-        {
-          "en": "Rs a",
-          "zh": ""
-        },
-        {
-          "en": "vs lt ne Soe",
-          "zh": ""
-        },
-        {
-          "en": "we ew a",
-          "zh": ""
-        },
-        {
-          "en": "ps he",
-          "zh": ""
-        },
-        {
-          "en": "Pv",
-          "zh": ""
-        },
-        {
-          "en": "on oe a",
-          "zh": ""
-        },
-        {
-          "en": "pon a cd!",
-          "zh": ""
-        },
-        {
-          "en": "ee ee",
-          "zh": ""
-        },
-        {
-          "en": "Sara ert ene",
-          "zh": ""
-        },
-        {
-          "en": "nev. nor OOS ph",
-          "zh": ""
-        },
-        {
-          "en": "ie",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 66,
@@ -2735,8 +878,8 @@ window.generatedBook = {
       "image": "./images/page-067-5bbc1714ee0b06f9e89caaa8cc584a26.webp",
       "lines": [
         {
-          "en": "Ss p",
-          "zh": ""
+          "en": "Magic Needles",
+          "zh": "神奇的针"
         }
       ]
     },
@@ -2745,24 +888,8 @@ window.generatedBook = {
       "image": "./images/page-068-bf59b6f3313fff4f13dd0cf500ac9281.webp",
       "lines": [
         {
-          "en": "One day, Ziyun came",
-          "zh": ""
-        },
-        {
-          "en": "home from school and found",
-          "zh": ""
-        },
-        {
-          "en": "yy his uncle on the sofa. There",
-          "zh": ""
-        },
-        {
-          "en": "were some needles in his leg!",
-          "zh": ""
-        },
-        {
-          "en": "as,",
-          "zh": ""
+          "en": "One day, Ziyun came home from school and found his uncle on the sofa. There were some needles in his leg!",
+          "zh": "一天，子云放学回家，发现叔叔躺在沙发上。他的腿上竟然扎着一些针！"
         }
       ]
     },
@@ -2771,40 +898,20 @@ window.generatedBook = {
       "image": "./images/page-069-6b6c7e6ffc0beecbff0142e26ab8e8d6.webp",
       "lines": [
         {
-          "en": "\"Uncle, you look like a hedgehog,\" Ziyun",
-          "zh": ""
+          "en": "\"Uncle, you look like a hedgehog,\" Ziyun said.",
+          "zh": "“叔叔，你看起来像一只刺猬。”子云说。"
         },
         {
-          "en": "said.",
-          "zh": ""
+          "en": "Uncle smiled, \"Your dad put these needles in my leg.\"",
+          "zh": "叔叔笑着说：“这些针是你爸爸扎在我腿上的。”"
         },
         {
-          "en": "Uncle smiled, \"Your dad put these needles",
-          "zh": ""
-        },
-        {
-          "en": "in my leg.\"",
-          "zh": ""
-        },
-        {
-          "en": "Ziyun was shocked. \"Why? Did you make",
-          "zh": ""
-        },
-        {
-          "en": "Dad angry?\" he asked.",
-          "zh": ""
+          "en": "Ziyun was shocked. \"Why? Did you make Dad angry?\" he asked.",
+          "zh": "子云很震惊。“为什么？你惹爸爸生气了吗？”他问。"
         },
         {
           "en": "Everyone laughed.",
-          "zh": ""
-        },
-        {
-          "en": "cS",
-          "zh": ""
-        },
-        {
-          "en": "NG",
-          "zh": ""
+          "zh": "大家都笑了。"
         }
       ]
     },
@@ -2813,36 +920,12 @@ window.generatedBook = {
       "image": "./images/page-070-c345247ab86fc542007f5c12324e8794.webp",
       "lines": [
         {
-          "en": "odin",
-          "zh": ""
+          "en": "\"This is acupuncture. It's a traditional Chinese treatment,\" Dad said. \"The doctor places special needles into some points on the body. This can help treat illnesses.\"",
+          "zh": "爸爸说：“这是针灸。它是一种传统的中国疗法。医生把特殊的针扎进身体上的一些穴位，这可以帮助治疗疾病。”"
         },
         {
-          "en": "\"This is acupuncture. It's a traditional",
-          "zh": ""
-        },
-        {
-          "en": "Chinese treatment,\" Dad said. \"The doctor",
-          "zh": ""
-        },
-        {
-          "en": "places special needles into some points on the",
-          "zh": ""
-        },
-        {
-          "en": "body. This can help treat illnesses.\"",
-          "zh": ""
-        },
-        {
-          "en": "Uncle said, \"The needles didn't hurt much.\"",
-          "zh": ""
-        },
-        {
-          "en": "But Ziyun didn't believe him. \"Those needles are",
-          "zh": ""
-        },
-        {
-          "en": "so long,\" he thought.",
-          "zh": ""
+          "en": "Uncle said, \"The needles didn't hurt much.\" But Ziyun didn't believe him. \"Those needles are so long,\" he thought.",
+          "zh": "叔叔说：“这些针不怎么疼。”但子云不相信他。“那些针那么长。”他想。"
         }
       ]
     },
@@ -2851,32 +934,8 @@ window.generatedBook = {
       "image": "./images/page-071-93059aa0bdc8ed2bf7f4fddd4b9f5654.webp",
       "lines": [
         {
-          "en": "Dad took out a",
-          "zh": ""
-        },
-        {
-          "en": "needle, \"Do you want to",
-          "zh": ""
-        },
-        {
-          "en": "have a try?\" Ziyun ran",
-          "zh": ""
-        },
-        {
-          "en": "away as fast as he could!",
-          "zh": ""
-        },
-        {
-          "en": "cr",
-          "zh": ""
-        },
-        {
-          "en": "CW",
-          "zh": ""
-        },
-        {
-          "en": "wit",
-          "zh": ""
+          "en": "Dad took out a needle, \"Do you want to have a try?\" Ziyun ran away as fast as he could!",
+          "zh": "爸爸拿出一根针说：“你想试一试吗？”子云飞快地跑开了！"
         }
       ]
     },
@@ -2885,24 +944,8 @@ window.generatedBook = {
       "image": "./images/page-072-4f4eb470b9cb1cc5f6ef5d6968536f2a.webp",
       "lines": [
         {
-          "en": "Since then, Ziyun often watched Dad treat",
-          "zh": ""
-        },
-        {
-          "en": "people. Dad's needles made them feel much",
-          "zh": ""
-        },
-        {
-          "en": "better. They were happy and thanked Dad a lot.",
-          "zh": ""
-        },
-        {
-          "en": "a YP",
-          "zh": ""
-        },
-        {
-          "en": "A Vo",
-          "zh": ""
+          "en": "Since then, Ziyun often watched Dad treat people. Dad's needles made them feel much better. They were happy and thanked Dad a lot.",
+          "zh": "从那以后，子云经常看爸爸给人治病。爸爸的针让他们感觉好多了。他们很高兴，并且非常感谢爸爸。"
         }
       ]
     },
@@ -2911,24 +954,8 @@ window.generatedBook = {
       "image": "./images/page-073-c14b2b4918b9713e486f5d643b3030eb.webp",
       "lines": [
         {
-          "en": "\"These needles have magic!\" Ziyun thought.",
-          "zh": ""
-        },
-        {
-          "en": "He became interested and started asking Dad a",
-          "zh": ""
-        },
-        {
-          "en": "lot of questions. So, Dad decided to teach him",
-          "zh": ""
-        },
-        {
-          "en": "about acupuncture.",
-          "zh": ""
-        },
-        {
-          "en": "\"A",
-          "zh": ""
+          "en": "\"These needles have magic!\" Ziyun thought. He became interested and started asking Dad a lot of questions. So, Dad decided to teach him about acupuncture.",
+          "zh": "“这些针有魔力！”子云想。他产生了兴趣，开始问爸爸许多问题。于是，爸爸决定教他有关针灸的知识。"
         }
       ]
     },
@@ -2937,32 +964,12 @@ window.generatedBook = {
       "image": "./images/page-074-528f7c2045b201baa863243a8daa1ca4.webp",
       "lines": [
         {
-          "en": "After high school, Ziyun went to university",
-          "zh": ""
+          "en": "After high school, Ziyun went to university to study traditional Chinese medicine (TCM). He wanted to be a TCM doctor like Dad.",
+          "zh": "高中毕业后，子云上大学学习中医。他想成为像爸爸一样的中医。"
         },
         {
-          "en": "to study traditional Chinese medicine (TCM). He",
-          "zh": ""
-        },
-        {
-          "en": "wanted to be a TCM doctor like Dad.",
-          "zh": ""
-        },
-        {
-          "en": "At the university there was a class of African",
-          "zh": ""
-        },
-        {
-          "en": "students. They also wanted to be TCM doctors.",
-          "zh": ""
-        },
-        {
-          "en": "ddis surprised Ziyun.",
-          "zh": ""
-        },
-        {
-          "en": "o'",
-          "zh": ""
+          "en": "At the university there was a class of African students. They also wanted to be TCM doctors. This surprised Ziyun.",
+          "zh": "大学里有一个非洲学生班。他们也想成为中医。这让子云很惊讶。"
         }
       ]
     },
@@ -2971,28 +978,12 @@ window.generatedBook = {
       "image": "./images/page-075-572e992c36ed91f0caa015b4850ef95b.webp",
       "lines": [
         {
-          "en": "One African student said, \"After graduation,",
-          "zh": ""
+          "en": "One African student said, \"After graduation, I'll go back to Africa and open a TCM clinic! I want to help people in my home town with TCM treatments!\"",
+          "zh": "一位非洲学生说：“毕业后，我要回到非洲开一家中医诊所！我想用中医疗法帮助家乡的人们！”"
         },
         {
-          "en": "I'll go back to Africa and open a TCM clinic!",
-          "zh": ""
-        },
-        {
-          "en": "want to help people in my home town with TCM",
-          "zh": ""
-        },
-        {
-          "en": "treatments!\"",
-          "zh": ""
-        },
-        {
-          "en": "\"That's great!\" Everyone clapped. ee",
-          "zh": ""
-        },
-        {
-          "en": "e@",
-          "zh": ""
+          "en": "\"That's great!\" Everyone clapped.",
+          "zh": "“太棒了！”大家都鼓起掌来。"
         }
       ]
     },
@@ -3001,28 +992,8 @@ window.generatedBook = {
       "image": "./images/page-076-c6c72bd7495c829981b81d5f60752867.webp",
       "lines": [
         {
-          "en": "Five years later, Ziyun graduated from",
-          "zh": ""
-        },
-        {
-          "en": "university. He became a doctor in a hospital.",
-          "zh": ""
-        },
-        {
-          "en": "N aot",
-          "zh": ""
-        },
-        {
-          "en": "TA",
-          "zh": ""
-        },
-        {
-          "en": "v)",
-          "zh": ""
-        },
-        {
-          "en": "n>)",
-          "zh": ""
+          "en": "Five years later, Ziyun graduated from university. He became a doctor in a hospital.",
+          "zh": "五年后，子云大学毕业了。他成了一家医院的医生。"
         }
       ]
     },
@@ -3031,64 +1002,8 @@ window.generatedBook = {
       "image": "./images/page-077-3b1313a42b464b54b62d66426f27253a.webp",
       "lines": [
         {
-          "en": "Every day, he met all kinds of patients",
-          "zh": ""
-        },
-        {
-          "en": "men and women, young and old. They had",
-          "zh": ""
-        },
-        {
-          "en": "different problems. Some people had",
-          "zh": ""
-        },
-        {
-          "en": "headaches, some had backaches, and some",
-          "zh": ""
-        },
-        {
-          "en": "had aching legs. Sometimes, people had",
-          "zh": ""
-        },
-        {
-          "en": "unusual problems, such as bee stings. Ziyun was",
-          "zh": ""
-        },
-        {
-          "en": "always able to help. He was busy but happy.",
-          "zh": ""
-        },
-        {
-          "en": "se",
-          "zh": ""
-        },
-        {
-          "en": "ag",
-          "zh": ""
-        },
-        {
-          "en": "Lar",
-          "zh": ""
-        },
-        {
-          "en": "iS",
-          "zh": ""
-        },
-        {
-          "en": "Pave aN",
-          "zh": ""
-        },
-        {
-          "en": "Nae",
-          "zh": ""
-        },
-        {
-          "en": "ea es",
-          "zh": ""
-        },
-        {
-          "en": "fn re)",
-          "zh": ""
+          "en": "Every day, he met all kinds of patients - men and women, young and old. They had different problems. Some people had headaches, some had backaches, and some had aching legs. Sometimes, people had unusual problems, such as bee stings. Ziyun was always able to help. He was busy but happy.",
+          "zh": "每天，他都会遇到各种各样的病人，有男有女，有老有少。他们有不同的问题。有些人头痛，有些人背痛，还有些人腿痛。有时候，人们还会遇到不寻常的问题，比如被蜜蜂蜇伤。子云总能帮上忙。他很忙，但很快乐。"
         }
       ]
     },
@@ -3097,134 +1012,40 @@ window.generatedBook = {
       "image": "./images/page-078-446c328b0074ba0fb5d9b591d9abb940.webp",
       "lines": [
         {
-          "en": "One day, Ziyun had a patient in an",
-          "zh": ""
+          "en": "One day, Ziyun had a patient in an unusual place. He went travelling on a plane. Suddenly, he heard an announcement: \"A passenger is ill. We need a doctor to help!\"",
+          "zh": "一天，子云在一个不寻常的地方遇到了一位病人。他乘飞机去旅行。突然，他听到一则广播：“有一位乘客生病了。我们需要医生帮忙！”"
         },
         {
-          "en": "unusual place. He went travelling on a",
-          "zh": ""
+          "en": "Ziyun stood up and took out his doctor's bag. \"I am a TCM doctor. I can help!\"",
+          "zh": "子云站起来，拿出他的医药包。“我是一名中医。我可以帮忙！”"
         },
         {
-          "en": "plane. Suddenly, he heard an",
-          "zh": ""
-        },
-        {
-          "en": "announcement: \"A passenger is ill. We",
-          "zh": ""
-        },
-        {
-          "en": "need a doctor to help!\"",
-          "zh": ""
-        },
-        {
-          "en": "Ziyun stood up and took out his",
-          "zh": ""
-        },
-        {
-          "en": "doctor's bag. am a TCM doctor. can",
-          "zh": ""
-        },
-        {
-          "en": "help!\"",
-          "zh": ""
-        },
-        {
-          "en": "He was led to the patient right",
-          "zh": ""
-        },
-        {
-          "en": "away. Ziyun carefully examined him.",
-          "zh": ""
-        },
-        {
-          "en": "His heartbeat was weak, his hands",
-          "zh": ""
-        },
-        {
-          "en": "were cold, and his face was as white as",
-          "zh": ""
-        },
-        {
-          "en": "paper. He was very sick and needed",
-          "zh": ""
-        },
-        {
-          "en": "help at once.",
-          "zh": ""
+          "en": "He was led to the patient right away. Ziyun carefully examined him. His heartbeat was weak, his hands were cold, and his face was as white as paper. He was very sick and needed help at once.",
+          "zh": "他立刻被带到那位病人身边。子云仔细检查了他。他的心跳很弱，双手冰冷，脸色苍白如纸。他病得很重，需要马上救治。"
         }
       ]
     },
     {
       "page": 79,
       "image": "./images/page-079-170db2c7c0959c432346c9c9ebd046fa.webp",
-      "lines": [
-        {
-          "en": "\"ey",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 80,
       "image": "./images/page-080-11ea93b0fbb5cc7e573de00fbbceaa88.webp",
-      "lines": [
-        {
-          "en": "MA bo",
-          "zh": ""
-        },
-        {
-          "en": "Fg",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 81,
       "image": "./images/page-081-a4bf134885a510e8f6c2ffe3fae1dcb4.webp",
       "lines": [
         {
-          "en": "Ziyun took out his needles and put them",
-          "zh": ""
+          "en": "Ziyun took out his needles and put them into the man's body. A minute passed, but nothing happened. Ziyun added some more needles. Two minutes later, the man opened his eyes a little, and his breathing also became better.",
+          "zh": "子云拿出针，扎进那名男子的身体。一分钟过去了，但什么也没有发生。子云又加了几根针。两分钟后，男子微微睁开了眼睛，呼吸也好转了。"
         },
         {
-          "en": "into the man's body. A minute passed, but",
-          "zh": ""
-        },
-        {
-          "en": "nothing happened. Ziyun added some more",
-          "zh": ""
-        },
-        {
-          "en": "needles. Two minutes later, the man opened his",
-          "zh": ""
-        },
-        {
-          "en": "eyes a little, and his breathing also became",
-          "zh": ""
-        },
-        {
-          "en": "better.",
-          "zh": ""
-        },
-        {
-          "en": "Everyone was relieved and clapped for",
-          "zh": ""
-        },
-        {
-          "en": "Ziyun. Ziyun was happy, too. His magic needles",
-          "zh": ""
-        },
-        {
-          "en": "helped once again! It was a special moment for",
-          "zh": ""
-        },
-        {
-          "en": "Ziyun. It showed the power of TCM!",
-          "zh": ""
-        },
-        {
-          "en": "a ne Se, f° a",
-          "zh": ""
+          "en": "Everyone was relieved and clapped for Ziyun. Ziyun was happy, too. His magic needles helped once again! It was a special moment for Ziyun. It showed the power of TCM!",
+          "zh": "大家都松了一口气，并为子云鼓掌。子云也很高兴。他神奇的针又一次帮上了忙！这对子云来说是一个特别的时刻。它展示了中医的力量！"
         }
       ]
     },
@@ -3238,104 +1059,8 @@ window.generatedBook = {
       "image": "./images/page-083-7d605f091f63c28dc96bb941c309159c.webp",
       "lines": [
         {
-          "en": "ae ed",
-          "zh": ""
-        },
-        {
-          "en": "AP Pa, i x, oa,",
-          "zh": ""
-        },
-        {
-          "en": "a hs A",
-          "zh": ""
-        },
-        {
-          "en": "SOT os cP",
-          "zh": ""
-        },
-        {
-          "en": "OSE Phy BY Os AS",
-          "zh": ""
-        },
-        {
-          "en": "a vy i mr wy",
-          "zh": ""
-        },
-        {
-          "en": "fT rN ae Gf oes",
-          "zh": ""
-        },
-        {
-          "en": "eS Bren. es Se",
-          "zh": ""
-        },
-        {
-          "en": "Tie Le ok)",
-          "zh": ""
-        },
-        {
-          "en": "aye J f",
-          "zh": ""
-        },
-        {
-          "en": "ae",
-          "zh": ""
-        },
-        {
-          "en": "twee M i g ea",
-          "zh": ""
-        },
-        {
-          "en": "\"ue y",
-          "zh": ""
-        },
-        {
-          "en": "A rm te",
-          "zh": ""
-        },
-        {
-          "en": "pe t a",
-          "zh": ""
-        },
-        {
-          "en": "a ae SN So ys ae.",
-          "zh": ""
-        },
-        {
-          "en": "ls 2a",
-          "zh": ""
-        },
-        {
-          "en": "ve =a i",
-          "zh": ""
-        },
-        {
-          "en": "x a",
-          "zh": ""
-        },
-        {
-          "en": "SS Le FF",
-          "zh": ""
-        },
-        {
-          "en": "SS Sie",
-          "zh": ""
-        },
-        {
-          "en": "SX C$; a Ss",
-          "zh": ""
-        },
-        {
-          "en": "a Re Oe fl",
-          "zh": ""
-        },
-        {
-          "en": "S SS",
-          "zh": ""
-        },
-        {
-          "en": "Ok",
-          "zh": ""
+          "en": "Along the Grand Canal",
+          "zh": "大运河边的小船手"
         }
       ]
     },
@@ -3345,59 +1070,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Our Wonderful Trip",
-          "zh": ""
+          "zh": "我们的精彩旅程"
         },
         {
-          "en": "Hi! I'm Shan Yuhan. had a special summer",
-          "zh": ""
-        },
-        {
-          "en": "holiday in Dad and paddled our kayak",
-          "zh": ""
-        },
-        {
-          "en": "along the Beijing-Hangzhou Grand Canal for",
-          "zh": ""
-        },
-        {
-          "en": "nearly days. On the morning of August,",
-          "zh": ""
-        },
-        {
-          "en": "a a",
-          "zh": ""
-        },
-        {
-          "en": "ae",
-          "zh": ""
-        },
-        {
-          "en": "ee FR a CEN",
-          "zh": ""
-        },
-        {
-          "en": "Ap ie) Se",
-          "zh": ""
-        },
-        {
-          "en": "NES Bee ans",
-          "zh": ""
-        },
-        {
-          "en": "ee Se ORS eon ee",
-          "zh": ""
-        },
-        {
-          "en": "ali ig oh Ss «a",
-          "zh": ""
-        },
-        {
-          "en": "OOP eee ge",
-          "zh": ""
-        },
-        {
-          "en": "ie cat, iy hk. es Be",
-          "zh": ""
+          "en": "Hi! I'm Shan Yuhan. I had a special summer holiday in 2020. Dad and I paddled our kayak along the Beijing-Hangzhou Grand Canal for nearly 30 days. On the morning of 16 August,",
+          "zh": "嗨！我是单雨涵。2020年，我度过了一个特别的暑假。爸爸和我划着皮划艇沿着京杭大运河前行了将近30天。8月16日上午，"
         }
       ]
     },
@@ -3406,68 +1083,8 @@ window.generatedBook = {
       "image": "./images/page-085-711562c1ae6305710f3daa8582654ff4.webp",
       "lines": [
         {
-          "en": "hus <j",
-          "zh": ""
-        },
-        {
-          "en": "we passed under the nt ee",
-          "zh": ""
-        },
-        {
-          "en": "Gongchen Bridge, the G",
-          "zh": ""
-        },
-        {
-          "en": "last bridge of the canal, +t ia Re",
-          "zh": ""
-        },
-        {
-          "en": "in Hangzhou. This",
-          "zh": ""
-        },
-        {
-          "en": "marked the end of our",
-          "zh": ""
-        },
-        {
-          "en": "days on the canal. Ht [FJ",
-          "zh": ""
-        },
-        {
-          "en": "What a wonderful trip!",
-          "zh": ""
-        },
-        {
-          "en": "i). ba Pre we",
-          "zh": ""
-        },
-        {
-          "en": "aa a ie Se",
-          "zh": ""
-        },
-        {
-          "en": "ey' aN",
-          "zh": ""
-        },
-        {
-          "en": "PR",
-          "zh": ""
-        },
-        {
-          "en": "TY atime A Oe",
-          "zh": ""
-        },
-        {
-          "en": "J ff Pt ah y TAL",
-          "zh": ""
-        },
-        {
-          "en": "Se",
-          "zh": ""
-        },
-        {
-          "en": "a ey",
-          "zh": ""
+          "en": "we passed under the Gongchen Bridge, the last bridge of the canal, in Hangzhou. This marked the end of our 27 days on the canal. What a wonderful trip!",
+          "zh": "我们从杭州的拱宸桥下经过。拱宸桥是这条运河的最后一座桥。这标志着我们在运河上27天旅程的结束。多么精彩的一次旅行啊！"
         }
       ]
     },
@@ -3476,36 +1093,12 @@ window.generatedBook = {
       "image": "./images/page-086-ae2ffd1274732ce27ec5f165025bca7e.webp",
       "lines": [
         {
-          "en": "Why did we choose to paddle along the",
-          "zh": ""
+          "en": "The Longest and Oldest Canal in the World",
+          "zh": "世界上最长、最古老的运河"
         },
         {
-          "en": "Beijing-Hangzhou Grand Canal? It is the longest",
-          "zh": ""
-        },
-        {
-          "en": "and oldest canal in the world. People began to",
-          "zh": ""
-        },
-        {
-          "en": "a le ae",
-          "zh": ""
-        },
-        {
-          "en": "on eee ia L",
-          "zh": ""
-        },
-        {
-          "en": "ak See SSS",
-          "zh": ""
-        },
-        {
-          "en": "a aS ee age ae ral",
-          "zh": ""
-        },
-        {
-          "en": "SSS",
-          "zh": ""
+          "en": "Why did we choose to paddle along the Beijing-Hangzhou Grand Canal? It is the longest and oldest canal in the world. People began to build it over 2500 years ago and it is still very important today. How amazing!",
+          "zh": "我们为什么选择沿着京杭大运河划行呢？它是世界上最长、最古老的运河。人们在2500多年前就开始修建它，今天它仍然非常重要。多么令人惊叹啊！"
         }
       ]
     },
@@ -3514,28 +1107,8 @@ window.generatedBook = {
       "image": "./images/page-087-92070df33e579601316a2e9497b16913.webp",
       "lines": [
         {
-          "en": "build it over years ago and it is still very",
-          "zh": ""
-        },
-        {
-          "en": "important today. How amazing!",
-          "zh": ""
-        },
-        {
-          "en": "was really interested in this great canal",
-          "zh": ""
-        },
-        {
-          "en": "and wanted to see it for myself. So, my dad",
-          "zh": ""
-        },
-        {
-          "en": "planned this trip.",
-          "zh": ""
-        },
-        {
-          "en": "O AK S S a",
-          "zh": ""
+          "en": "I was really interested in this great canal and wanted to see it for myself. So, my dad planned this trip.",
+          "zh": "我对这条伟大的运河非常感兴趣，想亲眼看看它。所以，爸爸计划了这次旅行。"
         }
       ]
     },
@@ -3544,52 +1117,12 @@ window.generatedBook = {
       "image": "./images/page-088-407e9f5c42234340b46e78bbf7e3e313.webp",
       "lines": [
         {
-          "en": "Re Sree et",
-          "zh": ""
+          "en": "Training for Our Trip",
+          "zh": "为旅行训练"
         },
         {
-          "en": "RRR ee I Pee",
-          "zh": ""
-        },
-        {
-          "en": "gS RN OR oe",
-          "zh": ""
-        },
-        {
-          "en": "eT",
-          "zh": ""
-        },
-        {
-          "en": "Before the trip, we trained for over",
-          "zh": ""
-        },
-        {
-          "en": "\"y= One month. At first, it was hard for me to",
-          "zh": ""
-        },
-        {
-          "en": "stay in the kayak on the water even fora",
-          "zh": ""
-        },
-        {
-          "en": "ee dl",
-          "zh": ""
-        },
-        {
-          "en": "short time. But after a few days, we could",
-          "zh": ""
-        },
-        {
-          "en": "at' on the water for over six hours.",
-          "zh": ""
-        },
-        {
-          "en": "i A",
-          "zh": ""
-        },
-        {
-          "en": "poh,",
-          "zh": ""
+          "en": "Before the trip, we trained for over one month. At first, it was hard for me to stay in the kayak on the water even for a short time. But after a few days, we could sit on the water for over six hours.",
+          "zh": "旅行前，我们训练了一个多月。起初，哪怕只是在水上的皮划艇里待一小会儿，对我来说都很难。但几天后，我们可以在水上坐六个多小时。"
         }
       ]
     },
@@ -3598,208 +1131,31 @@ window.generatedBook = {
       "image": "./images/page-089-05d44b28ff07c8afd3cb520183f8ef2d.webp",
       "lines": [
         {
-          "en": "he Dele a? SE Tee ale ng? AN LAS",
-          "zh": ""
-        },
-        {
-          "en": "ro Oe] eS eR eT",
-          "zh": ""
-        },
-        {
-          "en": "NG or eRe. SN",
-          "zh": ""
-        },
-        {
-          "en": "Set, hss A ap",
-          "zh": ""
-        },
-        {
-          "en": "i ee cae",
-          "zh": ""
-        },
-        {
-          "en": "ht aN",
-          "zh": ""
-        },
-        {
-          "en": "Poe a tid a sae Me a ve",
-          "zh": ""
-        },
-        {
-          "en": "here) wt.",
-          "zh": ""
-        },
-        {
-          "en": "ee, ty god ae ro a wee ga",
-          "zh": ""
-        },
-        {
-          "en": "i Oa ee TY ae x",
-          "zh": ""
-        },
-        {
-          "en": "Fa. f is ia a tay pe bs",
-          "zh": ""
-        },
-        {
-          "en": "SS AS ae",
-          "zh": ""
-        },
-        {
-          "en": "oe",
-          "zh": ""
-        },
-        {
-          "en": "It was very tiring and my. ae",
-          "zh": ""
-        },
-        {
-          "en": "ES BBE",
-          "zh": ""
-        },
-        {
-          "en": "skin got much darker. But",
-          "zh": ""
-        },
-        {
-          "en": "didn't care about that. only",
-          "zh": ""
-        },
-        {
-          "en": "wanted to explore the Grand Pres",
-          "zh": ""
-        },
-        {
-          "en": "Canal. Héw exciting! ple",
-          "zh": ""
-        },
-        {
-          "en": "ee ae a",
-          "zh": ""
-        },
-        {
-          "en": "a as",
-          "zh": ""
-        },
-        {
-          "en": "a aA",
-          "zh": ""
-        },
-        {
-          "en": "ae ie Tie",
-          "zh": ""
-        },
-        {
-          "en": "aie ees",
-          "zh": ""
+          "en": "It was very tiring and my skin got much darker. But I didn't care about that. I only wanted to explore the Grand Canal. How exciting!",
+          "zh": "这非常累，我的皮肤也晒黑了许多。但我并不在意。我只想探索大运河。多么令人兴奋啊！"
         }
       ]
     },
     {
       "page": 90,
       "image": "./images/page-090-9b07cfc9e71456c17e15736d7c41cb5d.webp",
-      "lines": [
-        {
-          "en": "in at ee ae Se ee",
-          "zh": ""
-        },
-        {
-          "en": "igre: aa <a a",
-          "zh": ""
-        },
-        {
-          "en": "A a",
-          "zh": ""
-        },
-        {
-          "en": "ae",
-          "zh": ""
-        },
-        {
-          "en": "a ee Boy WN",
-          "zh": ""
-        },
-        {
-          "en": "Ses 'ae TI",
-          "zh": ""
-        },
-        {
-          "en": "ar",
-          "zh": ""
-        },
-        {
-          "en": "ain",
-          "zh": ""
-        },
-        {
-          "en": "ee i",
-          "zh": ""
-        },
-        {
-          "en": "fa fr",
-          "zh": ""
-        },
-        {
-          "en": "il",
-          "zh": ""
-        }
-      ]
+      "lines": []
     },
     {
       "page": 91,
       "image": "./images/page-091-b277f0d31e92336e00976eeb96f28c5d.webp",
       "lines": [
         {
-          "en": "'Hye Grand Canal and",
-          "zh": ""
+          "en": "The Grand Canal and the Forbidden City",
+          "zh": "大运河与紫禁城"
         },
         {
-          "en": "the Forbidden City",
-          "zh": ""
+          "en": "On 20 July, we started our trip from the Tongzhou District in Beijing. During the Yuan, Ming and Qing dynasties (1271-1911), ships carried grain and building materials to Beijing on the canal.",
+          "zh": "7月20日，我们从北京通州区开始了旅程。元、明、清时期（1271-1911年），船只通过运河把粮食和建筑材料运往北京。"
         },
         {
-          "en": "a On July, we started our trip",
-          "zh": ""
-        },
-        {
-          "en": "from the Tongzhou District in Beijing.",
-          "zh": ""
-        },
-        {
-          "en": "During the Yuan, Ming and Qing",
-          "zh": ""
-        },
-        {
-          "en": "dynasties ships carried",
-          "zh": ""
-        },
-        {
-          "en": "grain and building materials to",
-          "zh": ""
-        },
-        {
-          "en": "Beijing on the canal.",
-          "zh": ""
-        },
-        {
-          "en": "We travelled south and passed",
-          "zh": ""
-        },
-        {
-          "en": "F through Linging City in Shandong",
-          "zh": ""
-        },
-        {
-          "en": "Province. Dad told me, \"Linging",
-          "zh": ""
-        },
-        {
-          "en": "gs. provided lots of bricks for the",
-          "zh": ""
-        },
-        {
-          "en": "Forbidden City.\" How amazing!",
-          "zh": ""
+          "en": "We travelled south and passed through Linqing City in Shandong Province. Dad told me, \"Linqing provided lots of bricks for the Forbidden City.\" How amazing!",
+          "zh": "我们向南行进，经过山东省临清市。爸爸告诉我：“临清为紫禁城提供了大量砖块。”多么神奇啊！"
         }
       ]
     },
@@ -3808,40 +1164,16 @@ window.generatedBook = {
       "image": "./images/page-092-74d9addabfa00bd320be910bd3022ddd.webp",
       "lines": [
         {
-          "en": "The most interesting part of the trip was",
-          "zh": ""
+          "en": "Amazing Locks",
+          "zh": "神奇的船闸"
         },
         {
-          "en": "going through the canal locks. Locks are gates",
-          "zh": ""
+          "en": "The most interesting part of the trip was going through the canal locks. Locks are gates on the water. They can change the water levels and allow ships to move up and down. China was the first country to build canal locks.",
+          "zh": "这次旅行中最有趣的部分是通过船闸。船闸是水上的闸门。它们可以改变水位，让船只上下通行。中国是最早建造船闸的国家。"
         },
         {
-          "en": "on the water. They can change the water levels",
-          "zh": ""
-        },
-        {
-          "en": "and allow ships to move up and down. China",
-          "zh": ""
-        },
-        {
-          "en": "was the first country to build canal locks.",
-          "zh": ""
-        },
-        {
-          "en": "During our trip, we always put our kayak on",
-          "zh": ""
-        },
-        {
-          "en": "a bigger ship to go through the locks. But one",
-          "zh": ""
-        },
-        {
-          "en": "phe ae te \"a a mn Se cue",
-          "zh": ""
-        },
-        {
-          "en": "ail Ny oe a",
-          "zh": ""
+          "en": "During our trip, we always put our kayak on a bigger ship to go through the locks. But one",
+          "zh": "在旅途中，我们通常把皮划艇放到一艘更大的船上通过船闸。但是有一次，"
         }
       ]
     },
@@ -3850,48 +1182,8 @@ window.generatedBook = {
       "image": "./images/page-093-218d75e58350ec83517e0f31d6325e57.webp",
       "lines": [
         {
-          "en": "time, we couldn't find a ship. Dad decided to",
-          "zh": ""
-        },
-        {
-          "en": "enter the lock and wait for a ship there. But the",
-          "zh": ""
-        },
-        {
-          "en": "lock closed as soon as we entered. Then the",
-          "zh": ""
-        },
-        {
-          "en": "water level inside the lock began to fall. Our",
-          "zh": ""
-        },
-        {
-          "en": "kayak dropped more than half a metre. What a",
-          "zh": ""
-        },
-        {
-          "en": "scary experience! But we were lucky and went",
-          "zh": ""
-        },
-        {
-          "en": "through the lock",
-          "zh": ""
-        },
-        {
-          "en": "safely. Ceo",
-          "zh": ""
-        },
-        {
-          "en": "=P) OT SS ra A",
-          "zh": ""
-        },
-        {
-          "en": "is uy ae j nae",
-          "zh": ""
-        },
-        {
-          "en": "ay RD k ys a ee \"Sa",
-          "zh": ""
+          "en": "time, we couldn't find a ship. Dad decided to enter the lock and wait for a ship there. But the lock closed as soon as we entered. Then the water level inside the lock began to fall. Our kayak dropped more than half a metre. What a scary experience! But we were lucky and went through the lock safely.",
+          "zh": "我们找不到船。爸爸决定进入船闸，在那里等船。可是我们一进去，船闸就关上了。随后，船闸里的水位开始下降。我们的皮划艇下降了半米多。多么吓人的经历啊！但我们很幸运，安全通过了船闸。"
         }
       ]
     },
@@ -3901,51 +1193,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "Life on the Grand Canal",
-          "zh": ""
+          "zh": "大运河上的生活"
         },
         {
-          "en": "On our trip, we saw many big ships. They",
-          "zh": ""
-        },
-        {
-          "en": "carried different goods. Some of them moved",
-          "zh": ""
-        },
-        {
-          "en": "very slowly.",
-          "zh": ""
-        },
-        {
-          "en": "ee wee ae omnes ue",
-          "zh": ""
-        },
-        {
-          "en": "TS Wee eek Cee",
-          "zh": ""
-        },
-        {
-          "en": "oe a eager ee OS thse",
-          "zh": ""
-        },
-        {
-          "en": "Se ee a.",
-          "zh": ""
-        },
-        {
-          "en": "Wat ed os tar a",
-          "zh": ""
-        },
-        {
-          "en": "\"Sey SRE qe",
-          "zh": ""
-        },
-        {
-          "en": "ae",
-          "zh": ""
-        },
-        {
-          "en": "Ay te a",
-          "zh": ""
+          "en": "On our trip, we saw many big ships. They carried different goods. Some of them moved very slowly.",
+          "zh": "旅途中，我们看到了许多大船。它们运载着不同的货物。有些船行驶得很慢。"
         }
       ]
     },
@@ -3954,48 +1206,8 @@ window.generatedBook = {
       "image": "./images/page-095-ca4aea80a950d4f2907c89d5d71a99cc.webp",
       "lines": [
         {
-          "en": "Many families live on their ships all year",
-          "zh": ""
-        },
-        {
-          "en": "round. \"We spend more than days a year",
-          "zh": ""
-        },
-        {
-          "en": "on our ship,\" one captain told us. They travel up",
-          "zh": ""
-        },
-        {
-          "en": "and down the Grand Canal and make the ships",
-          "zh": ""
-        },
-        {
-          "en": "their homes. What a fun life!",
-          "zh": ""
-        },
-        {
-          "en": "Pe rr sh",
-          "zh": ""
-        },
-        {
-          "en": "sage: ee",
-          "zh": ""
-        },
-        {
-          "en": "sr NO ee SSS ODS ee",
-          "zh": ""
-        },
-        {
-          "en": "es",
-          "zh": ""
-        },
-        {
-          "en": "ast og ee ae:",
-          "zh": ""
-        },
-        {
-          "en": "ME ge a oS Ee i, a",
-          "zh": ""
+          "en": "Many families live on their ships all year round. \"We spend more than 300 days a year on our ship,\" one captain told us. They travel up and down the Grand Canal and make the ships their homes. What a fun life!",
+          "zh": "许多家庭一年到头都住在船上。一位船长告诉我们：“我们一年有300多天都在船上度过。”他们沿着大运河南来北往，把船当作自己的家。多么有趣的生活啊！"
         }
       ]
     },
@@ -4005,51 +1217,11 @@ window.generatedBook = {
       "lines": [
         {
           "en": "A Meaningful Trip",
-          "zh": ""
+          "zh": "一次有意义的旅行"
         },
         {
-          "en": "Our kayak was different from the big ships.",
-          "zh": ""
-        },
-        {
-          "en": "It looked tiny. The passing big ships caused",
-          "zh": ""
-        },
-        {
-          "en": "large waves. Water came into our kayak. We",
-          "zh": ""
-        },
-        {
-          "en": "then had to get all the water out.",
-          "zh": ""
-        },
-        {
-          "en": "Be sy Ss ss SESW 8S",
-          "zh": ""
-        },
-        {
-          "en": "ane \"wane",
-          "zh": ""
-        },
-        {
-          "en": "SS SS io",
-          "zh": ""
-        },
-        {
-          "en": "eS ISL",
-          "zh": ""
-        },
-        {
-          "en": "aa a cS",
-          "zh": ""
-        },
-        {
-          "en": "St",
-          "zh": ""
-        },
-        {
-          "en": "oa il",
-          "zh": ""
+          "en": "Our kayak was different from the big ships. It looked tiny. The passing big ships caused large waves. Water came into our kayak. We then had to get all the water out.",
+          "zh": "我们的皮划艇和那些大船不同。它看起来很小。经过的大船会掀起大浪。水涌进我们的皮划艇，我们只好把水全都弄出去。"
         }
       ]
     },
@@ -4058,60 +1230,8 @@ window.generatedBook = {
       "image": "./images/page-097-662e1f6d606cba964d7b010c87f13c8e.webp",
       "lines": [
         {
-          "en": "During the trip, my arms and back hurt, and",
-          "zh": ""
-        },
-        {
-          "en": "my skin got darker. But saw beautiful",
-          "zh": ""
-        },
-        {
-          "en": "dragonflies, lotus flowers and many water birds.",
-          "zh": ""
-        },
-        {
-          "en": "also saw a big rainbow for the first time! And",
-          "zh": ""
-        },
-        {
-          "en": "learnt about the history of the Grand Canal and",
-          "zh": ""
-        },
-        {
-          "en": "felt its special charm. was very proud!",
-          "zh": ""
-        },
-        {
-          "en": "FF.",
-          "zh": ""
-        },
-        {
-          "en": "So, OOM may",
-          "zh": ""
-        },
-        {
-          "en": "SSS SSS",
-          "zh": ""
-        },
-        {
-          "en": "j= E Sa <a",
-          "zh": ""
-        },
-        {
-          "en": "SS.",
-          "zh": ""
-        },
-        {
-          "en": "ag",
-          "zh": ""
-        },
-        {
-          "en": "od",
-          "zh": ""
-        },
-        {
-          "en": "Ah:",
-          "zh": ""
+          "en": "During the trip, my arms and back hurt, and my skin got darker. But I saw beautiful dragonflies, lotus flowers and many water birds. I also saw a big rainbow for the first time! And I learnt about the history of the Grand Canal and felt its special charm. I was very proud!",
+          "zh": "旅行中，我的胳膊和背都很疼，皮肤也晒黑了。但我看到了美丽的蜻蜓、荷花和许多水鸟。我还第一次看到了大彩虹！我了解了大运河的历史，感受到了它独特的魅力。我非常自豪！"
         }
       ]
     }
