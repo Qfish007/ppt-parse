@@ -1,316 +1,83 @@
 <template>
   <div class="main-page">
-    <header v-if="!isToolbarHidden" class="top-toolbar">
-      <div class="top-toolbar-spacer"></div>
-      <el-button text size="large" :icon="Setting" @click="goSetting">设置</el-button>
-      <el-button size="small" @click="cycleColumnVisibility">{{ columnToggleLabel }}</el-button>
-      <el-button size="small" text @click="isToolbarHidden = true">折叠</el-button>
-    </header>
+    <TopBar
+      :hidden="isToolbarHidden"
+      :column-toggle-label="columnToggleLabel"
+      @go-setting="goSetting"
+      @cycle-column-visibility="cycleColumnVisibility"
+      @hide="isToolbarHidden = true"
+    />
 
     <div class="main-workspace">
-      <!-- 最左侧：项目列表 -->
-      <aside v-if="!isProjectColumnHidden" class="project-panel" :style="{ width: projectPanelWidth + 'px' }">
-        <ProjectSidebar />
-      </aside>
+      <Menu
+        :hidden="isProjectColumnHidden"
+        :width="projectPanelWidth"
+      />
 
-      <!-- 项目栏与页面列表分隔条 -->
       <div v-if="!isProjectColumnHidden && !isIndexColumnHidden" class="resize-handle-project" @mousedown="startResizeProject">
         <div class="resize-bar"></div>
       </div>
 
-      <!-- 第二列：根据项目类型显示不同内容 -->
-      <!-- 默认内置书籍 → 原有页面列表 -->
-      <aside v-if="!isIndexColumnHidden && projectsStore.activeProjectId === 'default-book'" class="sidebar" :style="{ width: sidebarWidth + 'px' }">
-        <div class="sidebar-header">
-          <h1 class="brand-title">{{ bookStore.book?.title || '双语逐页朗读器' }}</h1>
-        </div>
+      <MenuSub
+        v-model:page-input-val="pageInputVal"
+        :hidden="isIndexColumnHidden"
+        :width="sidebarWidth"
+        :is-default-book="projectsStore.activeProjectId === 'default-book'"
+        :book="bookStore.book"
+        :current-index="bookStore.currentIndex"
+        @go-to-page="goToPage"
+        @select-page="selectPage"
+      />
 
-        <label class="field">
-          <span>跳转到页码</span>
-          <el-input-number
-            v-model="pageInputVal"
-            :min="1"
-            :max="bookStore.book?.pages?.length || 1"
-            size="small"
-            @change="goToPage"
-            style="width: 100%"
-          />
-        </label>
-
-        <nav class="page-list" ref="pageListRef">
-          <button
-            v-for="(page, index) in bookStore.book?.pages"
-            :key="page.page"
-            type="button"
-            class="page-link"
-            :class="{ active: index === bookStore.currentIndex }"
-            @click="selectPage(index)"
-          >
-            第 {{ page.page }} 页
-          </button>
-        </nav>
-      </aside>
-
-      <!-- 用户项目 → ProjectDetail（文件上传/解析） -->
-      <aside v-else-if="!isIndexColumnHidden" class="detail-panel" :style="{ width: sidebarWidth + 'px' }">
-        <ProjectDetail />
-      </aside>
-
-      <!-- 左右拖拽分隔条 -->
       <div v-if="!isIndexColumnHidden && !isPreviewColumnHidden" class="resize-handle-left" @mousedown="startResizeLeft">
         <div class="resize-bar"></div>
       </div>
 
-      <!-- 中间：原始图片 -->
-      <section v-if="!isPreviewColumnHidden" class="panel-center" :style="{ flex: centerFlex }">
-        <div class="image-panel" v-if="currentPage?.image">
-          <img :src="currentPage.image" :alt="'第 ' + currentPage.page + ' 页'" />
-          <!-- 用户项目的图片页，显示OCR解析按钮 -->
-          <div
-            v-if="isUserProjectPage"
-            class="image-ocr-action"
-          >
-            <el-button
-              type="warning"
-              size="small"
-              :icon="Aim"
-              :loading="isOcrParsing"
-              @click="parseCurrentImageOcr"
-            >
-              {{ isOcrParsing ? ocrMessage : (currentPage?.lines?.length ? '重新 OCR 识别此页' : 'OCR 识别此页') }}
-            </el-button>
-          </div>
-        </div>
-        <div class="empty-state" v-else-if="!currentPage?.lines?.length">
-          <p>这一页还没有内容。</p>
-        </div>
-        <div class="page-text-center" v-else>
-          <div class="study-header-center">
-            <span>第 {{ currentPage.page }} 页</span>
-            <strong>原文</strong>
-          </div>
-          <div v-for="(group, gi) in displayGroups" :key="gi" class="text-block">
-            <template v-if="isTransProject">
-              <!-- 翻译类型：按 displayLineOrder 渲染两行 -->
-              <p :class="orderedLine(group)[1] === 'en' ? 'text-en' : 'text-zh'">{{ orderedLine(group)[0] }}</p>
-              <p :class="orderedLine(group)[3] === 'en' ? 'text-en' : 'text-zh'">{{ orderedLine(group)[2] }}</p>
-            </template>
-            <template v-else>
-              <p class="text-en">{{ group.en }}</p>
-              <p class="text-zh">{{ group.zh }}</p>
-            </template>
-          </div>
-        </div>
-      </section>
+      <Body
+        :hidden="isPreviewColumnHidden"
+        :flex="centerFlex"
+        :current-page="currentPage"
+        :display-groups="displayGroups"
+        :is-trans-project="isTransProject"
+        :is-user-project-page="isUserProjectPage"
+        :is-ocr-parsing="isOcrParsing"
+        :ocr-message="ocrMessage"
+        :ordered-line="orderedLine"
+        @parse-current-image-ocr="parseCurrentImageOcr"
+      />
 
-      <!-- 中间右分隔条 -->
       <div v-if="!isPreviewColumnHidden" class="resize-handle-right" @mousedown="startResizeRight">
         <div class="resize-bar"></div>
       </div>
 
-      <!-- 右侧：双语对照朗读区 -->
-      <section class="panel-right" :style="{ flex: rightFlex }">
-      <div class="reader-header">
-        <div class="reader-header-info">
-          <span>第 {{ currentPage?.page || 0 }} 页 / {{ bookStore.book?.pages?.length || 0 }} 页</span>
-        </div>
-        <div class="reader-actions">
-          <el-button v-if="isToolbarHidden" size="small" @click="isToolbarHidden = false">显示设置栏</el-button>
-          <el-button size="small" @click="prevPage" :disabled="bookStore.currentIndex <= 0">
-            <el-icon><ArrowLeft /></el-icon>
-          </el-button>
-          <el-button size="small" type="primary" @click="readCurrentPage" :disabled="!currentPage?.lines?.length">
-            <el-icon><VideoPlay /></el-icon> 朗读
-          </el-button>
-          <el-button size="small" @click="handleStop" type="danger" plain>
-            <el-icon><VideoPause /></el-icon> 停止
-          </el-button>
-          <el-button size="small" @click="nextPage" :disabled="bookStore.currentIndex >= (bookStore.book?.pages?.length || 1) - 1">
-            <el-icon><ArrowRight /></el-icon>
-          </el-button>
-        </div>
-      </div>
-
-      <div class="page-content" ref="contentRef">
-        <div v-if="!currentPage" class="empty-state">
-          <p>请选择一页开始学习。</p>
-        </div>
-        <div v-else-if="!currentPage.lines?.length" class="empty-state">
-          <p>这一页还没有逐行文本。</p>
-        </div>
-        <template v-else>
-          <section
-            v-for="(group, index) in displayGroups"
-            :key="index"
-            class="study-block"
-            :class="{ 'heading-block': index === 0 && isHeading(orderedLine(group)[0]) }"
-          >
-            <!-- 编号：absolute 固定在左上角 -->
-            <span class="study-number">{{ String(index + 1).padStart(2, '0') }}</span>
-
-            <!-- 翻译类型：按 orderedLine 顺序渲染两段 -->
-            <template v-if="isTransProject">
-              <!-- 第一段（原文） -->
-              <template v-if="orderedLine(group)[1] === 'en'">
-                <div class="study-lang-row">
-                  <button
-                    class="mini-play en"
-                    @click="speak(group.en, 'en-US')"
-                    :disabled="!String(group?.en || '').trim()"
-                    title="朗读英文这一段"
-                  >
-                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                  </button>
-                  <p
-                    class="english paragraph-text"
-                    :class="{ 'lesson-title': index === 0 && isHeading(orderedLine(group)[0]) }"
-                  >
-                    <template v-for="(part, ti) in tokenize(orderedLine(group)[0])" :key="'f-'+ti">
-                      <span v-if="shouldAddSpace(orderedLine(group)[0], ti)" class="space"> </span>
-                      <button
-                        type="button"
-                        class="word"
-                        :class="{ readable: isReadable(part) }"
-                        :disabled="!isReadable(part)"
-                        @click.stop="onWordClick($event, part)"
-                      >{{ part }}</button>
-                    </template>
-                  </p>
-                </div>
-              </template>
-              <template v-else>
-                <div class="study-lang-row">
-                  <button
-                    class="mini-play zh"
-                    @click="speakChinese(group.zh)"
-                    :disabled="!String(group?.zh || '').trim()"
-                    title="朗读中文这一段"
-                  >
-                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                  </button>
-                  <div
-                    class="chinese chinese-first"
-                    contenteditable="true"
-                    :data-placeholder="'在这里补中文对照'"
-                    :innerHTML="orderedLine(group)[0]"
-                    @input="onFirstLangEdit($event, group, 'zh')"
-                  ></div>
-                </div>
-              </template>
-
-              <!-- 第二段（译文） -->
-              <template v-if="orderedLine(group)[3] === 'en'">
-                <div class="study-lang-row">
-                  <button
-                    class="mini-play en"
-                    @click="speak(group.en, 'en-US')"
-                    :disabled="!String(group?.en || '').trim()"
-                    title="朗读英文这一段"
-                  >
-                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                  </button>
-                  <p
-                    class="english paragraph-text"
-                  >
-                    <template v-for="(part, ti) in tokenize(orderedLine(group)[2])" :key="'s-'+ti">
-                      <span v-if="shouldAddSpace(orderedLine(group)[2], ti)" class="space"> </span>
-                      <button
-                        type="button"
-                        class="word"
-                        :class="{ readable: isReadable(part) }"
-                        :disabled="!isReadable(part)"
-                        @click.stop="onWordClick($event, part)"
-                      >{{ part }}</button>
-                    </template>
-                  </p>
-                </div>
-              </template>
-              <template v-else>
-                <div class="study-lang-row">
-                  <button
-                    class="mini-play zh"
-                    @click="speakChinese(group.zh)"
-                    :disabled="!String(group?.zh || '').trim()"
-                    title="朗读中文这一段"
-                  >
-                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                  </button>
-                  <div
-                    class="chinese"
-                    contenteditable="true"
-                    :data-placeholder="'在这里补中文对照'"
-                    :innerHTML="orderedLine(group)[2]"
-                    @input="onFirstLangEdit($event, group, 'zh')"
-                  ></div>
-                </div>
-              </template>
-            </template>
-
-            <!-- 非翻译类型：原有顺序（英文在上，中文在下） -->
-            <template v-else>
-              <div class="study-lang-row">
-                <button
-                  class="mini-play en"
-                  @click="speak(group.en, 'en-US')"
-                  :disabled="!String(group?.en || '').trim()"
-                  title="朗读英文这一段"
-                >
-                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                </button>
-                <p class="english paragraph-text" :class="{ 'lesson-title': index === 0 && isHeading(group.en) }">
-                  <template v-for="(part, ti) in tokenize(group.en)" :key="ti">
-                    <span v-if="shouldAddSpace(group.en, ti)" class="space"> </span>
-                    <button
-                      type="button"
-                      class="word"
-                      :class="{ readable: isReadable(part) }"
-                      :disabled="!isReadable(part)"
-                      @click.stop="onWordClick($event, part)"
-                    >{{ part }}</button>
-                  </template>
-                </p>
-              </div>
-
-              <div class="study-lang-row">
-                <button
-                  class="mini-play zh"
-                  @click="speakChinese(group.zh)"
-                  :disabled="!String(group?.zh || '').trim()"
-                  title="朗读中文这一段"
-                >
-                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                </button>
-                <div
-                  class="chinese"
-                  contenteditable="true"
-                  :data-placeholder="'在这里补中文对照'"
-                  :innerHTML="group.zh"
-                  @input="onChineseEdit($event, group)"
-                ></div>
-              </div>
-            </template>
-          </section>
-        </template>
-      </div>
-
-      <!-- 单词弹窗 -->
-      <Teleport to="body">
-        <div v-if="wordPopup.visible" class="word-popup" :style="wordPopup.style">
-          <div class="word-popup-title">{{ wordPopup.word }}</div>
-          <div class="word-popup-meaning">{{ wordPopup.meaning }}</div>
-          <div class="word-popup-actions">
-            <button class="word-popup-sound" @click.stop="speak(wordPopup.word, 'en-US')">
-              <svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path></svg>
-              <span>发音</span>
-            </button>
-            <button class="word-popup-translate" :disabled="wordPopup.translating" @click.stop="translateWord">
-              {{ wordPopup.translating ? '翻译中' : '翻译' }}
-            </button>
-            <button class="word-popup-close" @click="closePopup">关闭</button>
-          </div>
-        </div>
-      </Teleport>
-      </section>
+      <BodyParse
+        ref="bodyParseRef"
+        :flex="rightFlex"
+        :is-toolbar-hidden="isToolbarHidden"
+        :current-page="currentPage"
+        :page-count="bookStore.book?.pages?.length || 0"
+        :current-index="bookStore.currentIndex"
+        :display-groups="displayGroups"
+        :is-trans-project="isTransProject"
+        :word-popup="wordPopup"
+        :ordered-line="orderedLine"
+        :tokenize="tokenize"
+        :is-readable="isReadable"
+        :should-add-space="shouldAddSpace"
+        :is-heading="isHeading"
+        @show-toolbar="isToolbarHidden = false"
+        @prev-page="prevPage"
+        @next-page="nextPage"
+        @read-current-page="readCurrentPage"
+        @stop="handleStop"
+        @speak-en="speak($event, 'en-US')"
+        @speak-zh="speakChinese($event)"
+        @word-click="onWordClick"
+        @first-lang-edit="onFirstLangEdit"
+        @chinese-edit="onChineseEdit"
+        @translate-word="translateWord"
+        @close-popup="closePopup"
+      />
     </div>
   </div>
 </template>
@@ -319,20 +86,21 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
-import { speak, stopSpeech, speakEnglishQueue, speakChineseQueue, speakChinese } from '../../api/voice/index.js'
+import { speak, stopSpeech, speakEnglishQueue, speakChinese } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
 import { md5 } from '../../api/voice/youdao.js'
 import { recognizeText } from '../../utils/ocr.js'
 import {
   isTranslationProject,
   displayLineOrder,
-  translationDirection
 } from '../../utils/translation.js'
-import ProjectSidebar from '../../components/ProjectSidebar.vue'
-import ProjectDetail from '../../components/ProjectDetail.vue'
+import TopBar from '../../views/topBar.vue'
+import Menu from '../../views/menu.vue'
+import MenuSub from '../../views/menuSub.vue'
+import Body from '../../views/body.vue'
+import BodyParse from '../../views/bodyParse.vue'
 
 const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
@@ -346,8 +114,7 @@ function goSetting() {
 // ============ 页面数据 ============
 
 const pageInputVal = ref(1)
-const pageListRef = ref(null)
-const contentRef = ref(null)
+const bodyParseRef = ref(null)
 const hiddenColumnStep = ref(0)
 const isToolbarHidden = ref(false)
 
@@ -689,7 +456,7 @@ function nextPage() {
 }
 
 function scrollContentToTop() {
-  if (contentRef.value) contentRef.value.scrollTop = 0
+  bodyParseRef.value?.scrollToTop()
 }
 
 // ============ 朗读 ============
@@ -941,7 +708,7 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style scoped>
+<style>
 .main-page {
   display: flex;
   flex-direction: column;
