@@ -77,7 +77,7 @@
               :loading="isOcrParsing"
               @click="parseCurrentImageOcr"
             >
-              {{ isOcrParsing ? ocrMessage : (currentPage.lines?.length ? '重新 OCR 识别此页' : 'OCR 识别此页') }}
+              {{ isOcrParsing ? ocrMessage : (currentPage?.lines?.length ? '重新 OCR 识别此页' : 'OCR 识别此页') }}
             </el-button>
           </div>
         </div>
@@ -90,8 +90,15 @@
             <strong>原文</strong>
           </div>
           <div v-for="(group, gi) in displayGroups" :key="gi" class="text-block">
-            <p class="text-en">{{ group.en }}</p>
-            <p class="text-zh">{{ group.zh }}</p>
+            <template v-if="isTransProject">
+              <!-- 翻译类型：按 displayLineOrder 渲染两行 -->
+              <p :class="orderedLine(group)[1] === 'en' ? 'text-en' : 'text-zh'">{{ orderedLine(group)[0] }}</p>
+              <p :class="orderedLine(group)[3] === 'en' ? 'text-en' : 'text-zh'">{{ orderedLine(group)[2] }}</p>
+            </template>
+            <template v-else>
+              <p class="text-en">{{ group.en }}</p>
+              <p class="text-zh">{{ group.zh }}</p>
+            </template>
           </div>
         </div>
       </section>
@@ -136,35 +143,109 @@
             v-for="(group, index) in displayGroups"
             :key="index"
             class="study-block"
-            :class="{ 'heading-block': index === 0 && isHeading(group.en) }"
+            :class="{ 'heading-block': index === 0 && isHeading(orderedLine(group)[0]) }"
           >
             <div class="study-actions">
               <span class="study-number">{{ String(index + 1).padStart(2, '0') }}</span>
-              <button class="mini-play" @click="speak(group.en, 'en-US')" title="朗读这一段">
+              <button
+                class="mini-play en"
+                @click="speak(group.en, 'en-US')"
+                :disabled="!String(group?.en || '').trim()"
+                title="朗读英文这一段"
+              >
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+              </button>
+              <button
+                class="mini-play zh"
+                @click="speak(group.zh, 'zh-CN')"
+                :disabled="!String(group?.zh || '').trim()"
+                title="朗读中文这一段"
+              >
                 <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
               </button>
             </div>
 
-            <p class="english paragraph-text" :class="{ 'lesson-title': index === 0 && isHeading(group.en) }">
-              <template v-for="(part, ti) in tokenize(group.en)" :key="ti">
-                <span v-if="shouldAddSpace(group.en, ti)" class="space"> </span>
-                <button
-                  type="button"
-                  class="word"
-                  :class="{ readable: isReadable(part) }"
-                  :disabled="!isReadable(part)"
-                  @click.stop="onWordClick($event, part)"
-                >{{ part }}</button>
+            <!-- 翻译类型：按 orderedLine 顺序渲染两段 -->
+            <template v-if="isTransProject">
+              <!-- 第一段（原文） -->
+              <template v-if="orderedLine(group)[1] === 'en'">
+                <p
+                  class="english paragraph-text"
+                  :class="{ 'lesson-title': index === 0 && isHeading(orderedLine(group)[0]) }"
+                >
+                  <template v-for="(part, ti) in tokenize(orderedLine(group)[0])" :key="'f-'+ti">
+                    <span v-if="shouldAddSpace(orderedLine(group)[0], ti)" class="space"> </span>
+                    <button
+                      type="button"
+                      class="word"
+                      :class="{ readable: isReadable(part) }"
+                      :disabled="!isReadable(part)"
+                      @click.stop="onWordClick($event, part)"
+                    >{{ part }}</button>
+                  </template>
+                </p>
               </template>
-            </p>
+              <template v-else>
+                <div
+                  class="chinese chinese-first"
+                  contenteditable="true"
+                  :data-placeholder="'在这里补中文对照'"
+                  :innerHTML="orderedLine(group)[0]"
+                  @input="onFirstLangEdit($event, group, 'zh')"
+                ></div>
+              </template>
 
-            <div
-              class="chinese"
-              contenteditable="true"
-              :data-placeholder="'在这里补中文对照'"
-              :innerHTML="group.zh"
-              @input="onChineseEdit($event, group)"
-            ></div>
+              <!-- 第二段（译文） -->
+              <template v-if="orderedLine(group)[3] === 'en'">
+                <p
+                  class="english paragraph-text"
+                >
+                  <template v-for="(part, ti) in tokenize(orderedLine(group)[2])" :key="'s-'+ti">
+                    <span v-if="shouldAddSpace(orderedLine(group)[2], ti)" class="space"> </span>
+                    <button
+                      type="button"
+                      class="word"
+                      :class="{ readable: isReadable(part) }"
+                      :disabled="!isReadable(part)"
+                      @click.stop="onWordClick($event, part)"
+                    >{{ part }}</button>
+                  </template>
+                </p>
+              </template>
+              <template v-else>
+                <div
+                  class="chinese"
+                  contenteditable="true"
+                  :data-placeholder="'在这里补中文对照'"
+                  :innerHTML="orderedLine(group)[2]"
+                  @input="onFirstLangEdit($event, group, 'zh')"
+                ></div>
+              </template>
+            </template>
+
+            <!-- 非翻译类型：原有顺序（英文在上，中文在下） -->
+            <template v-else>
+              <p class="english paragraph-text" :class="{ 'lesson-title': index === 0 && isHeading(group.en) }">
+                <template v-for="(part, ti) in tokenize(group.en)" :key="ti">
+                  <span v-if="shouldAddSpace(group.en, ti)" class="space"> </span>
+                  <button
+                    type="button"
+                    class="word"
+                    :class="{ readable: isReadable(part) }"
+                    :disabled="!isReadable(part)"
+                    @click.stop="onWordClick($event, part)"
+                  >{{ part }}</button>
+                </template>
+              </p>
+
+              <div
+                class="chinese"
+                contenteditable="true"
+                :data-placeholder="'在这里补中文对照'"
+                :innerHTML="group.zh"
+                @input="onChineseEdit($event, group)"
+              ></div>
+            </template>
           </section>
         </template>
       </div>
@@ -198,10 +279,15 @@ import { ElMessage } from 'element-plus'
 import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
-import { speak, stopSpeech, speakEnglishQueue } from '../../api/voice/index.js'
+import { speak, stopSpeech, speakEnglishQueue, speakChineseQueue } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
 import { md5 } from '../../api/voice/youdao.js'
 import { recognizeText } from '../../utils/ocr.js'
+import {
+  isTranslationProject,
+  displayLineOrder,
+  translationDirection
+} from '../../utils/translation.js'
 import ProjectSidebar from '../../components/ProjectSidebar.vue'
 import ProjectDetail from '../../components/ProjectDetail.vue'
 
@@ -243,6 +329,21 @@ const displayGroups = computed(() => {
   if (!page?.lines?.length) return []
   return bookStore.groupLines(page.lines)
 })
+
+// ============ 翻译类型：当前项目类型 & 辅助 ============
+const activeProjectType = computed(() => {
+  const project = projectsStore.getActiveProject()
+  return project?.type || 'default'
+})
+const isTransProject = computed(() => isTranslationProject(activeProjectType.value))
+
+/** 取一行的显示顺序 [第一文本, 第一语言, 第二文本, 第二语言] */
+function orderedLine(groupOrLine) {
+  const line = groupOrLine?.sourceLines?.length
+    ? { en: groupOrLine.en, zh: groupOrLine.zh }
+    : (groupOrLine || {})
+  return displayLineOrder(activeProjectType.value, line)
+}
 
 async function syncActiveProject(projectId = projectsStore.activeProjectId) {
   const project = projectsStore.projects.find(p => p.id === projectId) || projectsStore.getActiveProject()
@@ -553,12 +654,21 @@ function scrollContentToTop() {
 function readCurrentPage() {
   const page = currentPage.value
   if (!page) return
-  const items = displayGroups.value.map(g => g.en).filter(text => String(text || '').trim())
+  const type = activeProjectType.value
+  // 按显示顺序的「第一个」（原文）进行朗读
+  const items = displayGroups.value
+    .map(g => orderedLine(g)[0])
+    .filter(text => String(text || '').trim())
   if (!items.length) {
-    ElMessage.warning('当前页没有可朗读的英文内容')
+    ElMessage.warning('当前页没有可朗读的内容')
     return
   }
-  speakEnglishQueue(items)
+  if (type === 'translate-zh') {
+    // 中文翻译：原文是中文，走中文朗读队列
+    speakChineseQueue(items)
+  } else {
+    speakEnglishQueue(items)
+  }
 }
 
 function handleStop() {
@@ -589,7 +699,7 @@ function isHeading(text) {
   return value.length <= 34 && !/[.!?。！？]$/.test(value)
 }
 
-// ============ 中文编辑 ============
+// ============ 中文编辑 / 通用编辑 ============
 
 function onChineseEdit(event, group) {
   const text = event.target.innerText.trim()
@@ -598,6 +708,25 @@ function onChineseEdit(event, group) {
   } else {
     group.sourceLines.forEach((line, i) => {
       line.zh = i === 0 ? text : ''
+    })
+  }
+  bookStore.saveEdits()
+}
+
+/**
+ * 通用编辑回调：翻译类型项目中，用户可能编辑中文或英文的任意一边
+ * @param {Event} event
+ * @param {Object} group  displayGroup 对象（含 .sourceLines / .en / .zh）
+ * @param {'en'|'zh'} field  被编辑的字段
+ */
+function onFirstLangEdit(event, group, field) {
+  const text = event.target.innerText.trim()
+  if (!field) return
+  if (group.sourceLines.length === 1) {
+    group.sourceLines[0][field] = text
+  } else {
+    group.sourceLines.forEach((line, i) => {
+      line[field] = i === 0 ? text : ''
     })
   }
   bookStore.saveEdits()
@@ -857,7 +986,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  padding: 16px;
+  padding: 16px 16px 24px;
   border-right: 1px solid #d7dfdc;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(18px);
@@ -898,7 +1027,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding-right: 2px;
+  padding: 4px 2px 24px 0;
 }
 
 .page-list::-webkit-scrollbar {
@@ -1149,8 +1278,8 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: 26px;
+  gap: 5px;
+  width: 28px;
 }
 
 .study-number {
@@ -1166,20 +1295,34 @@ onBeforeUnmount(() => {
   height: 26px;
   border: 1px solid #c9d5d1;
   border-radius: 999px;
-  color: #0c514b;
-  background: #eef7f4;
   cursor: pointer;
   transition: all 0.15s;
+  flex-shrink: 0;
+  color: inherit;
 }
 
-.mini-play:hover {
+.mini-play.en {
+  color: #0c514b;
+  background: #eef7f4;
+  border-color: #b8d6cb;
+}
+.mini-play.en:hover {
   background: #d4ede5;
   border-color: #126b62;
 }
+.mini-play.zh {
+  color: #8a4b12;
+  background: #fff2e3;
+  border-color: #f1c99c;
+}
+.mini-play.zh:hover {
+  background: #ffd9ab;
+  border-color: #d8872f;
+}
 
 .mini-play svg {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   fill: currentColor;
 }
 
@@ -1263,6 +1406,16 @@ onBeforeUnmount(() => {
 .chinese:empty::before {
   color: #98a5a2;
   content: attr(data-placeholder);
+}
+
+/* ============ 翻译类型项目：中文原文样式 ============ */
+.chinese-first {
+  margin: 0 0 10px;
+  font-size: 19px;
+  font-weight: 700;
+  border-bottom: 1px dashed #e3e9e6;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 /* ============ 单词弹窗 ============ */

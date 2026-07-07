@@ -1,33 +1,13 @@
 {
-  "title": "测试图片",
+  "title": "Chinese Translate Demo",
   "pages": [
     {
       "page": 1,
-      "image": "/static/demo003/images/001.png",
+      "image": "",
       "lines": [
         {
-          "en": "The Road to E-CNY",
-          "zh": "通往电子人民币的道路",
-          "breakAfter": true
-        },
-        {
-          "en": "As China continued to develop and change, its money also changed.",
-          "zh": "随着中国的持续发展与变革，其货币体系也随之发生了变化。",
-          "breakAfter": true
-        },
-        {
-          "en": "In 1948, the People’s Bank of China (PBC) issued the first series of the renminbi (RMB), or the “people's currency”. The RMB then became the official currency of the People’s Republic of China.",
-          "zh": "1948年，中国人民银行（PBC）发行了第一套人民币（RMB），即“人民货币”。此后，人民币正式成为中华人民共和国的法定货币。",
-          "breakAfter": true
-        },
-        {
-          "en": "More recently, mobile payments have spread throughout the country. China has quickly become a world leader in this field.",
-          "zh": "近年来，移动支付已在全国范围内普及。中国已迅速成为该领域的全球领导者。",
-          "breakAfter": true
-        },
-        {
-          "en": "Nowadays, people all over China use their phones to pay for almost everything!",
-          "zh": "如今，中国各地的人们几乎都用手机支付各种费用！",
+          "en": "Globalization is profoundly transforming human lifestyles and business models, while presenting young people with unprecedented opportunities and challenges.",
+          "zh": "全球化正在深刻地改变人类的生活方式和商业模式，也给年轻人带来了前所未有的机遇与挑战。",
           "breakAfter": true
         }
       ]

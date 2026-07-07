@@ -12,14 +12,67 @@
         <el-icon :size="16" color="#126b62">
           <Document v-if="project.type === 'pdf'" />
           <Picture v-else-if="project.type === 'image'" />
-          <DocumentCopy v-else />
+          <DocumentCopy v-else-if="project.type === 'word'" />
+          <ChatDotRound v-else-if="project.type === 'translate-en'" />
+          <Edit v-else-if="project.type === 'translate-zh'" />
+          <Files v-else />
         </el-icon>
         <span class="detail-title">{{ project.name }}</span>
         <span class="detail-type-badge">{{ typeLabel(project.type) }}</span>
       </div>
 
+      <!-- ============ 翻译类型（英文/中文翻译）：录入区 + 页面列表 ============ -->
+      <div v-if="isTranslationProject(project.type)" class="upload-section translation-section">
+        <!-- 录入区 -->
+        <div class="translation-input-card">
+          <label class="field-label">{{ project.type === 'translate-en' ? '请输入英文（单词或段落）' : '请输入中文（单词或段落）' }}</label>
+          <el-input
+            v-model="translationInput"
+            type="textarea"
+            :autosize="{ minRows: 5, maxRows: 10 }"
+            :placeholder="project.type === 'translate-en'
+              ? '输入英文内容，点击录入后自动翻译为中文。每次录入相当于一页。'
+              : '输入中文内容，点击录入后自动翻译为英文。每次录入相当于一页。'"
+            @keyup.ctrl.enter="submitTranslationEntry"
+          />
+          <div class="translation-input-actions">
+            <el-button
+              type="primary"
+              size="large"
+              :icon="Upload"
+              :loading="isTranslating"
+              @click="submitTranslationEntry"
+            >
+              {{ isTranslating ? '翻译中...' : '录入（Ctrl+Enter）' }}
+            </el-button>
+            <span class="translation-hint">提示：每次录入相当于一页，自动写入本地缓存</span>
+          </div>
+        </div>
+
+        <!-- 页面列表 -->
+        <div class="index-header">
+          <span>已录入页面</span>
+          <strong>{{ pages.length }} 页</strong>
+        </div>
+        <div v-if="pages.length > 0" class="page-nav translation-page-nav">
+          <div
+            v-for="(page, idx) in pages"
+            :key="page.page || idx"
+            class="page-nav-item"
+            :class="{ active: bookStore.currentIndex === idx }"
+            @click="selectPage(idx)"
+          >
+            <span>第 {{ idx + 1 }} 页</span>
+            <span v-if="page.lines?.length" class="parsed-badge" title="已翻译">✓</span>
+          </div>
+        </div>
+        <div v-else class="empty-index">
+          还没有内容，请在上方录入
+        </div>
+      </div>
+
       <!-- 图片项目：上传卡片 + 本地图片索引目录常驻显示 -->
-      <div v-if="project.type === 'image'" class="upload-section image-project-section">
+      <div v-else-if="project.type === 'image'" class="upload-section image-project-section">
         <div class="upload-card compact">
           <div class="upload-icon">
             <el-icon :size="32" color="#126b62"><Picture /></el-icon>
@@ -143,12 +196,20 @@ import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Reading, Document, Picture, DocumentCopy,
-  Upload, CircleCheck, Aim, Loading
+  Upload, CircleCheck, Aim, Loading, ChatDotRound, Edit, Files
 } from '@element-plus/icons-vue'
 import { useProjectsStore } from '../stores/projects.js'
 import { useBookStore } from '../stores/book.js'
 import { parsePDF, pdfResultsToBook } from '../utils/pdfParser.js'
 import { parseWord, wordTextToBook } from '../utils/wordParser.js'
+import {
+  isTranslationProject,
+  translationDirection,
+  translationTypeLabel,
+  buildTranslationPage
+} from '../utils/translation.js'
+import { translateWithIciba } from '../api/voice/iciba.js'
+import { md5 } from '../api/voice/youdao.js'
 
 const projectsStore = useProjectsStore()
 const bookStore = useBookStore()
@@ -160,6 +221,10 @@ const parseCurrent = ref(0)
 const parseTotal = ref(0)
 const parseMessage = ref('')
 const uploadedFiles = ref([])
+
+// 翻译类型：录入文本
+const translationInput = ref('')
+const isTranslating = ref(false)
 
 const project = computed(() => projectsStore.getActiveProject())
 
@@ -189,10 +254,15 @@ watch(() => project.value?.id, async (newId, oldId) => {
     parseCurrent.value = 0
     parseTotal.value = 0
     parseMessage.value = ''
+    translationInput.value = ''
+    isTranslating.value = false
 
     if (project.value?.type === 'image') {
       await loadImageProjectFiles()
       buildImageBookData()
+    } else if (isTranslationProject(project.value?.type)) {
+      // 翻译类型：已有 pages 就立刻加载（让第三四栏显示）
+      syncTransBook(0)
     }
   }
 }, { immediate: true })
@@ -207,7 +277,9 @@ const acceptTypes = computed(() => {
 
 function typeLabel(type) {
   const map = { pdf: 'PDF', image: '图片', word: 'Word' }
-  return map[type] || type
+  if (map[type]) return map[type]
+  if (isTranslationProject(type)) return translationTypeLabel(type)
+  return type
 }
 
 function triggerUpload() {
@@ -430,6 +502,97 @@ async function saveParseResult(index, result) {
     console.warn('保存解析结果失败:', e)
   }
 }
+
+// ============ 翻译类型：录入、翻译、持久化 ============
+/**
+ * 把当前项目的 parsedData.pages 同步到 bookStore + projectsStore
+ * @param {number} jumpToIndex 同步完成后跳转的页码（-1 保持不变）
+ */
+function syncTransBook(jumpToIndex = -1) {
+  if (!project.value) return
+  const pages = Array.isArray(project.value.parsedData?.pages)
+    ? project.value.parsedData.pages
+    : []
+  const bookData = {
+    title: project.value.name,
+    pages
+  }
+  bookStore.book = bookStore.normalizeBook(bookData)
+  if (jumpToIndex >= 0) {
+    bookStore.currentIndex = jumpToIndex
+  }
+  projectsStore.updateProject(project.value.id, {
+    parsedData: bookData,
+    pageCount: pages.length,
+    status: pages.length ? 'ready' : 'empty'
+  })
+  saveParseResult(project.value.index, bookData)
+}
+
+/**
+ * 翻译录入：提交按钮
+ * - 校验非空
+ * - 新增一页（先立即显示，翻译字段空）
+ * - 异步调用翻译 API，翻译完成后再更新
+ */
+async function submitTranslationEntry() {
+  if (!project.value || !isTranslationProject(project.value.type)) return
+  const text = translationInput.value
+  if (!text || !String(text).trim()) {
+    ElMessage.warning('请输入要录入的内容')
+    return
+  }
+
+  const proj = project.value
+  const type = proj.type
+  const existingPages = Array.isArray(proj.parsedData?.pages) ? proj.parsedData.pages : []
+  const pageNo = existingPages.length + 1
+
+  // 第一步：先构建「未翻译」的一页，立即保存，让 UI 立刻显示
+  const newPage = buildTranslationPage(type, text, '', pageNo)
+  const mergedPages = [...existingPages, newPage]
+  projectsStore.updateProject(proj.id, {
+    parsedData: { title: proj.name, pages: mergedPages },
+    pageCount: mergedPages.length,
+    status: 'ready'
+  })
+  // 先同步到 bookStore，第三/四栏立刻显示录入内容
+  const tmpBook = { title: proj.name, pages: mergedPages }
+  bookStore.book = bookStore.normalizeBook(tmpBook)
+  bookStore.currentIndex = mergedPages.length - 1
+  translationInput.value = '' // 清空输入框
+
+  // 第二步：异步翻译（失败也不影响已经保存的原文）
+  isTranslating.value = true
+  try {
+    const { from, to } = translationDirection(type)
+    const source = type === 'translate-zh' ? newPage.lines[0].zh : newPage.lines[0].en
+    const [translated] = await translateWithIciba([source], from, to, md5)
+    const transValue = String(translated || '').trim()
+    if (transValue) {
+      // 用翻译结果重建这一页
+      const translatedPage = buildTranslationPage(type, text, transValue, pageNo)
+      mergedPages[mergedPages.length - 1] = translatedPage
+      projectsStore.updateProject(proj.id, {
+        parsedData: { title: proj.name, pages: mergedPages },
+        pageCount: mergedPages.length,
+        status: 'ready'
+      })
+      bookStore.book = bookStore.normalizeBook({ title: proj.name, pages: mergedPages })
+      saveParseResult(proj.index, { title: proj.name, pages: mergedPages })
+      ElMessage.success('录入并翻译完成')
+    } else {
+      ElMessage.warning('录入成功，但翻译结果为空')
+      saveParseResult(proj.index, { title: proj.name, pages: mergedPages })
+    }
+  } catch (err) {
+    ElMessage.warning(`录入成功，翻译失败：${err.message || '请稍后重试'}`)
+    // 即使翻译失败也要持久化原文
+    saveParseResult(proj.index, { title: proj.name, pages: mergedPages })
+  } finally {
+    isTranslating.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -437,9 +600,30 @@ async function saveParseResult(index, result) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(18px);
+  box-sizing: border-box;
+  min-width: 0;
+  /* 整栏滚动到底时的底部留白，避免最后一项贴边被裁 */
+  padding-bottom: 28px;
+}
+.project-detail > * {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+}
+/* 防止子组件（如 el-input / el-select）因内部宽度撑破容器 */
+.project-detail .el-input,
+.project-detail .el-textarea,
+.project-detail .el-select,
+.project-detail .upload-section,
+.project-detail .translation-input-card,
+.project-detail .index-header {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 .empty-state {
@@ -456,10 +640,12 @@ async function saveParseResult(index, result) {
 .detail-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 6px 8px;
   padding: 12px 16px;
   border-bottom: 1px solid #e3e9e6;
   flex-shrink: 0;
+  min-width: 0;
 }
 .detail-title {
   font-size: 14px;
@@ -486,7 +672,7 @@ async function saveParseResult(index, result) {
 .page-nav {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 8px 8px 20px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -518,7 +704,7 @@ async function saveParseResult(index, result) {
 .upload-section {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 12px 12px 24px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -625,4 +811,60 @@ async function saveParseResult(index, result) {
   margin-bottom: 8px;
 }
 .parse-progress-detail { font-size: 11px; color: #8c9996; text-align: right; margin-top: 4px; }
+
+/* ============ 翻译类型：录入区 & 页面列表 ============ */
+.translation-section {
+  overflow: hidden;
+}
+.translation-input-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d7dfdc;
+  border-radius: 10px;
+  background: #fbfcfb;
+  flex-shrink: 0;
+}
+.field-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #40504c;
+}
+.translation-input-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 6px;
+  margin-top: 4px;
+}
+.translation-input-actions .el-button {
+  width: 100%;
+  justify-content: center;
+}
+.translation-hint {
+  font-size: 11px;
+  color: #8c9996;
+  line-height: 1.5;
+  white-space: normal;
+  word-break: break-all;
+}
+.translation-page-nav {
+  flex: 1;
+  min-height: 0;
+}
+.translation-section .index-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 700;
+  color: #40504c;
+  padding: 10px 2px 4px;
+}
+.translation-section .index-header strong {
+  color: #126b62;
+  font-size: 11px;
+}
 </style>

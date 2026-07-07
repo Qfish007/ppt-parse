@@ -1,0 +1,16 @@
+{
+  "title": "English Translate Demo",
+  "pages": [
+    {
+      "page": 1,
+      "image": "",
+      "lines": [
+        {
+          "en": "Artificial intelligence is transforming education. It helps students learn more efficiently.",
+          "zh": "人工智能正在改变教育领域，帮助学生更高效地学习。",
+          "breakAfter": true
+        }
+      ]
+    }
+  ]
+}

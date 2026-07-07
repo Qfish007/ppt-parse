@@ -22,6 +22,8 @@
           <el-icon v-else-if="project.type === 'pdf'" :size="18"><Document /></el-icon>
           <el-icon v-else-if="project.type === 'image'" :size="18"><Picture /></el-icon>
           <el-icon v-else-if="project.type === 'word'" :size="18"><DocumentCopy /></el-icon>
+          <el-icon v-else-if="project.type === 'translate-en'" :size="18"><ChatDotRound /></el-icon>
+          <el-icon v-else-if="project.type === 'translate-zh'" :size="18"><Edit /></el-icon>
           <el-icon v-else :size="18"><Files /></el-icon>
         </div>
         <div class="project-info">
@@ -64,18 +66,27 @@
               ref="nameInputRef"
             />
             <label class="form-label" style="margin-top: 20px">项目类型</label>
-            <div class="type-options">
-              <div
+            <el-select
+              v-model="formData.type"
+              placeholder="请选择项目类型"
+              size="large"
+              style="width: 100%"
+              :teleported="false"
+              :popper-append-to-body="false"
+              popper-class="add-project-select-dropdown"
+            >
+              <el-option
                 v-for="opt in typeOptions"
                 :key="opt.value"
-                class="type-option"
-                :class="{ active: formData.type === opt.value }"
-                @click="formData.type = opt.value"
+                :value="opt.value"
+                :label="opt.label"
               >
-                <el-icon :size="24"><component :is="opt.icon" /></el-icon>
-                <span>{{ opt.label }}</span>
-              </div>
-            </div>
+                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                  <el-icon :size="16"><component :is="opt.icon" /></el-icon>
+                  <span>{{ opt.label }}</span>
+                </span>
+              </el-option>
+            </el-select>
           </div>
           <div class="dialog-footer">
             <el-button size="large" @click="dialogVisible = false">取消</el-button>
@@ -93,8 +104,9 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Delete, Document, Picture, DocumentCopy,
-  Reading, Files
+  Reading, Files, ChatDotRound, Edit
 } from '@element-plus/icons-vue'
+import { isTranslationProject, translationTypeLabel } from '../utils/translation.js'
 import { useProjectsStore } from '../stores/projects.js'
 
 const projectsStore = useProjectsStore()
@@ -111,12 +123,16 @@ const formData = reactive({
 const typeOptions = [
   { value: 'pdf', label: 'PDF', icon: Document },
   { value: 'image', label: '图片', icon: Picture },
-  { value: 'word', label: 'Word', icon: DocumentCopy }
+  { value: 'word', label: 'Word', icon: DocumentCopy },
+  { value: 'translate-en', label: '英文翻译', icon: ChatDotRound },
+  { value: 'translate-zh', label: '中文翻译', icon: Edit }
 ]
 
 function typeLabel(type) {
   const map = { pdf: 'PDF', image: '图片', word: 'Word' }
-  return map[type] || type
+  if (map[type]) return map[type]
+  if (isTranslationProject(type)) return translationTypeLabel(type)
+  return type
 }
 
 function openAddDialog() {
@@ -429,5 +445,24 @@ async function deleteProject(id) {
   justify-content: flex-end;
   gap: 10px;
   padding: 0 24px 20px;
+}
+
+/* ============ el-select 下拉不被 dialog 遮罩 ============ */
+/* 1) 防止 dialog 祖先裁剪（下拉不 teleport 时）*/
+.dialog-overlay,
+.dialog-card,
+.dialog-body {
+  overflow: visible !important;
+}
+/* 2) 非 teleported 下拉（在 dialog 内部）提高层级避免被内部裁剪 */
+.add-project-select-dropdown {
+  z-index: 3200 !important;
+}
+/* 3) 兜底：直接 teleport 到 body 的 Element Plus 下拉/popper，z-index 必须 > dialog-overlay 的 3000 */
+body > .el-select-dropdown,
+body > .el-popper.el-select-dropdown,
+body > .el-overlay-popper,
+body > .el-popper {
+  z-index: 3200 !important;
 }
 </style>

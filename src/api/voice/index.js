@@ -42,16 +42,28 @@ export function isSingleEnglishWord(text) {
 
 /**
  * 选择浏览器语音
- * 优先选择高质量的英语声音
+ * 优先选择高质量的英语/中文声音
  * @param {string} [lang='en-US']
  * @returns {SpeechSynthesisVoice|null}
  */
 function pickVoice(lang = 'en-US') {
   const voices = window.speechSynthesis?.getVoices?.() || [];
-  const englishVoices = voices.filter((voice) => /^en[-_]/i.test(voice.lang));
-  return englishVoices.find((voice) => /samantha|karen|moira|victoria|google us english|microsoft/i.test(voice.name))
-    || englishVoices.find((voice) => voice.lang.toLowerCase() === lang.toLowerCase())
-    || englishVoices[0]
+  const isChinese = /^zh/i.test(lang);
+  const matchedVoices = voices.filter((voice) => {
+    const vl = (voice.lang || '').toLowerCase();
+    if (isChinese) return vl.startsWith('zh') || vl.startsWith('cmn');
+    return vl.startsWith('en');
+  });
+  if (isChinese) {
+    return matchedVoices.find((voice) => /tingting|mei-jia|yunxi|yaoyao|google.*chinese|microsoft.*(simplified|chinese|hanhan|huihui|yaoyao|xiaoxiao|kangkang)/i.test(voice.name))
+      || matchedVoices.find((voice) => voice.lang.toLowerCase().includes('cn') || voice.lang.toLowerCase() === 'zh-cn')
+      || matchedVoices.find((voice) => voice.lang.toLowerCase().startsWith('zh'))
+      || matchedVoices[0]
+      || null;
+  }
+  return matchedVoices.find((voice) => /samantha|karen|moira|victoria|google us english|microsoft/i.test(voice.name))
+    || matchedVoices.find((voice) => voice.lang.toLowerCase() === lang.toLowerCase())
+    || matchedVoices[0]
     || null;
 }
 
@@ -361,5 +373,24 @@ export async function speakEnglishQueue(items) {
   for (const item of chunks) {
     if (runId !== speechRunId.value) break;
     await playWithProvider(item, runId, getVoiceProvider(), 'browser');
+  }
+}
+
+/**
+ * 中文句子队列播放
+ * 将文本分割为片段后用浏览器中文语音播放，支持中断
+ * @param {string[]} items - 中文文本列表
+ */
+export async function speakChineseQueue(items) {
+  const runId = speechRunId.value + 1;
+  stopSpeech();
+  speechRunId.value = runId;
+
+  const chunks = items.flatMap((item) => splitSpeechText(item)).filter(Boolean);
+  if (!chunks.length) return;
+
+  for (const item of chunks) {
+    if (runId !== speechRunId.value) break;
+    await speakWithBrowserOnce(item, runId, 'zh-CN');
   }
 }

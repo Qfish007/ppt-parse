@@ -1,0 +1,16 @@
+{
+  "title": "测试中文",
+  "pages": [
+    {
+      "page": 1,
+      "image": "",
+      "lines": [
+        {
+          "en": "On the afternoon of June 24, the Fujian Provincial Higher Education Admissions Committee held a plenary meeting to deliberate and finalize the admission cutoff criteria for the 2026 National College Entrance Examination (Gaokao) in the province, and to deploy the college admissions process. Following deliberation at the meeting, the specific admission control scores for various categories of the 2026 Gaokao in Fujian Province are as follows:",
+          "zh": "6月24日下午，福建省高等学校招生委员会召开全体会议，研究确定我省2026年普通高考切线方案，部署高招录取工作。经会议研究决定，福建省2026年普通高考各类录取控制分数线具体如下",
+          "breakAfter": true
+        }
+      ]
+    }
+  ]
+}
