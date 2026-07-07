@@ -87,7 +87,8 @@ function signedIcibaUrl(pathname) {
   return url;
 }
 
-function signedYoudaoPronounceUrl(text) {
+function signedYoudaoPronounceUrl(text, lang = 'en') {
+  const lan = /^zh/i.test(String(lang || '')) ? 'zh' : 'en';
   const params = {
     product: YOUDAO_VOICE_PRODUCT,
     appVersion: 1,
@@ -102,7 +103,7 @@ function signedYoudaoPronounceUrl(text) {
     keyid: YOUDAO_VOICE_KEY_ID,
     mysticTime: Date.now(),
     yduuid: 'abcdefg',
-    le: 'en',
+    le: lan,
     rate: 4,
     word: text,
     type: 2
@@ -122,6 +123,14 @@ function signedYoudaoPronounceUrl(text) {
   return url;
 }
 
+function youdaoDictVoiceUrl(text, lang = 'en') {
+  const lan = /^zh/i.test(String(lang || '')) ? 'zh' : 'en';
+  const url = new URL('https://dict.youdao.com/dictvoice');
+  url.searchParams.set('audio', text);
+  url.searchParams.set('le', lan);
+  return url;
+}
+
 async function pipeAudio(res, upstream) {
   const contentType = upstream.headers.get('content-type') || '';
   if (!upstream.ok || !contentType.includes('audio')) {
@@ -130,10 +139,30 @@ async function pipeAudio(res, upstream) {
       error: `TTS failed: ${upstream.status}`,
       detail: errorText.slice(0, 200)
     }, 502);
-    return;
+    return false;
   }
 
   sendAudio(res, Buffer.from(await upstream.arrayBuffer()), contentType);
+  return true;
+}
+
+async function pipeFirstAudio(res, upstreamRequests) {
+  const details = [];
+  for (const request of upstreamRequests) {
+    const upstream = await fetch(request.url, request.options);
+    const contentType = upstream.headers.get('content-type') || '';
+    if (upstream.ok && contentType.includes('audio')) {
+      sendAudio(res, Buffer.from(await upstream.arrayBuffer()), contentType);
+      return;
+    }
+    details.push(`${upstream.status} ${contentType}`.trim());
+    await upstream.arrayBuffer().catch(() => null);
+  }
+
+  sendJSON(res, {
+    error: 'TTS failed',
+    detail: details.join('; ').slice(0, 200)
+  }, 502);
 }
 
 async function handleTts(req, res, provider, url) {
@@ -144,6 +173,7 @@ async function handleTts(req, res, provider, url) {
 
   const text = String(url.searchParams.get('text') || '').trim();
   const spd = String(url.searchParams.get('spd') || '3');
+  const lan = /^zh/i.test(String(url.searchParams.get('lan') || 'en')) ? 'zh' : 'en';
   if (!text) {
     sendJSON(res, { error: 'text is required' }, 400);
     return;
@@ -151,19 +181,26 @@ async function handleTts(req, res, provider, url) {
 
   try {
     if (provider === 'youdao') {
-      const upstreamUrl = signedYoudaoPronounceUrl(text);
-      await pipeAudio(res, await fetch(upstreamUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-          Referer: 'https://dict.youdao.com/'
-        }
-      }));
+      const commonHeaders = {
+        'User-Agent': 'Mozilla/5.0',
+        Referer: lan === 'zh' ? 'https://fanyi.youdao.com/' : 'https://dict.youdao.com/'
+      };
+      const primaryUrl = lan === 'zh'
+        ? youdaoDictVoiceUrl(text, lan)
+        : signedYoudaoPronounceUrl(text, lan);
+      const fallbackUrl = lan === 'zh'
+        ? signedYoudaoPronounceUrl(text, lan)
+        : youdaoDictVoiceUrl(text, lan);
+      await pipeFirstAudio(res, [
+        { url: primaryUrl, options: { headers: commonHeaders } },
+        { url: fallbackUrl, options: { headers: commonHeaders } }
+      ]);
       return;
     }
 
     if (provider === 'baidu') {
       const upstreamUrl = new URL('https://fanyi.baidu.com/gettts');
-      upstreamUrl.searchParams.set('lan', 'en');
+      upstreamUrl.searchParams.set('lan', lan);
       upstreamUrl.searchParams.set('text', text);
       upstreamUrl.searchParams.set('spd', spd);
       upstreamUrl.searchParams.set('source', 'web');

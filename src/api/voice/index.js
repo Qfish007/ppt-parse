@@ -3,8 +3,8 @@
  * 整合有道、百度、iciba 等语音/翻译提供商，提供统一接口
  */
 import { ref } from 'vue';
-import { md5, signedYoudaoPronounceUrl, youdaoVoiceUrl, playYoudaoText } from './youdao.js';
-import { baiduVoiceUrl, baiduSpeed, playBaiduText } from './baidu.js';
+import { md5, playYoudaoText } from './youdao.js';
+import { playBaiduText } from './baidu.js';
 import { translateWithIciba, getIcibaTtsUrl } from './iciba.js';
 
 // ============ 状态管理 ============
@@ -107,18 +107,6 @@ function getVoiceProvider() {
   }
 }
 
-/**
- * 本地 TTS 代理 URL 生成
- * @param {string} provider - 提供商名称
- * @param {string} text - 文本
- * @param {number} [rate] - 播放速率
- * @returns {string}
- */
-function localTtsUrl(provider, text, rate) {
-  if (typeof window === 'undefined' || !window.location.protocol.startsWith('http')) return '';
-  return `/tts/${provider}?text=${encodeURIComponent(text)}&spd=${baiduSpeed(rate || getSpeechRate())}&rate=${rate || getSpeechRate()}`;
-}
-
 // ============ 长句分割 ============
 
 /**
@@ -131,7 +119,7 @@ export function splitSpeechText(text, maxLength = 120) {
   const value = normalizeSpeechText(text);
   if (!value) return [];
 
-  const sentences = value.match(/[^.!?;:]+[.!?;:]?|.+$/g) || [value];
+  const sentences = value.match(/[^.!?;:。！？；：]+[.!?;:。！？；：]?|.+$/g) || [value];
   const chunks = [];
 
   sentences.forEach((sentence) => {
@@ -142,10 +130,10 @@ export function splitSpeechText(text, maxLength = 120) {
       return;
     }
 
-    const parts = trimmed.split(/,\s+/);
+    const parts = trimmed.match(/[^,，、]+[,，、]?|.+$/g) || [trimmed];
     let current = '';
     parts.forEach((part, index) => {
-      const piece = index < parts.length - 1 ? `${part},` : part;
+      const piece = part.trim();
       if (`${current} ${piece}`.trim().length > maxLength && current) {
         chunks.push(current.trim());
         current = piece;
@@ -308,7 +296,7 @@ export async function playWithProvider(text, runId, provider, fallbackProvider =
   const rate = getSpeechRate();
 
   if (prov === 'browser') return speakWithBrowserOnce(value, runId, fallbackLang);
-  if (prov === 'youdao') return playYoudaoText(value, runId, playAudioUrl, normalizeSpeechText, fallbackProvider, fallbackLang);
+  if (prov === 'youdao') return playYoudaoText(value, runId, playAudioUrl, normalizeSpeechText, preferLang, fallbackProvider, fallbackLang);
   if (prov === 'baidu') return playBaiduText(value, runId, playAudioUrl, normalizeSpeechText, rate, preferLang, fallbackProvider, fallbackLang);
   if (prov === 'iciba') return playIcibaText(value, runId, fallbackProvider, fallbackLang);
   return speakWithBrowserOnce(value, runId, fallbackLang);
