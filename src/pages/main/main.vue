@@ -145,106 +145,149 @@
             class="study-block"
             :class="{ 'heading-block': index === 0 && isHeading(orderedLine(group)[0]) }"
           >
-            <div class="study-actions">
-              <span class="study-number">{{ String(index + 1).padStart(2, '0') }}</span>
-              <button
-                class="mini-play en"
-                @click="speak(group.en, 'en-US')"
-                :disabled="!String(group?.en || '').trim()"
-                title="朗读英文这一段"
-              >
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-              </button>
-              <button
-                class="mini-play zh"
-                @click="speak(group.zh, 'zh-CN')"
-                :disabled="!String(group?.zh || '').trim()"
-                title="朗读中文这一段"
-              >
-                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-              </button>
-            </div>
+            <!-- 编号：absolute 固定在左上角 -->
+            <span class="study-number">{{ String(index + 1).padStart(2, '0') }}</span>
 
             <!-- 翻译类型：按 orderedLine 顺序渲染两段 -->
             <template v-if="isTransProject">
               <!-- 第一段（原文） -->
               <template v-if="orderedLine(group)[1] === 'en'">
-                <p
-                  class="english paragraph-text"
-                  :class="{ 'lesson-title': index === 0 && isHeading(orderedLine(group)[0]) }"
-                >
-                  <template v-for="(part, ti) in tokenize(orderedLine(group)[0])" :key="'f-'+ti">
-                    <span v-if="shouldAddSpace(orderedLine(group)[0], ti)" class="space"> </span>
-                    <button
-                      type="button"
-                      class="word"
-                      :class="{ readable: isReadable(part) }"
-                      :disabled="!isReadable(part)"
-                      @click.stop="onWordClick($event, part)"
-                    >{{ part }}</button>
-                  </template>
-                </p>
+                <div class="study-lang-row">
+                  <button
+                    class="mini-play en"
+                    @click="speak(group.en, 'en-US')"
+                    :disabled="!String(group?.en || '').trim()"
+                    title="朗读英文这一段"
+                  >
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                  </button>
+                  <p
+                    class="english paragraph-text"
+                    :class="{ 'lesson-title': index === 0 && isHeading(orderedLine(group)[0]) }"
+                  >
+                    <template v-for="(part, ti) in tokenize(orderedLine(group)[0])" :key="'f-'+ti">
+                      <span v-if="shouldAddSpace(orderedLine(group)[0], ti)" class="space"> </span>
+                      <button
+                        type="button"
+                        class="word"
+                        :class="{ readable: isReadable(part) }"
+                        :disabled="!isReadable(part)"
+                        @click.stop="onWordClick($event, part)"
+                      >{{ part }}</button>
+                    </template>
+                  </p>
+                </div>
               </template>
               <template v-else>
-                <div
-                  class="chinese chinese-first"
-                  contenteditable="true"
-                  :data-placeholder="'在这里补中文对照'"
-                  :innerHTML="orderedLine(group)[0]"
-                  @input="onFirstLangEdit($event, group, 'zh')"
-                ></div>
+                <div class="study-lang-row">
+                  <button
+                    class="mini-play zh"
+                    @click="speakChinese(group.zh)"
+                    :disabled="!String(group?.zh || '').trim()"
+                    title="朗读中文这一段"
+                  >
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                  </button>
+                  <div
+                    class="chinese chinese-first"
+                    contenteditable="true"
+                    :data-placeholder="'在这里补中文对照'"
+                    :innerHTML="orderedLine(group)[0]"
+                    @input="onFirstLangEdit($event, group, 'zh')"
+                  ></div>
+                </div>
               </template>
 
               <!-- 第二段（译文） -->
               <template v-if="orderedLine(group)[3] === 'en'">
-                <p
-                  class="english paragraph-text"
-                >
-                  <template v-for="(part, ti) in tokenize(orderedLine(group)[2])" :key="'s-'+ti">
-                    <span v-if="shouldAddSpace(orderedLine(group)[2], ti)" class="space"> </span>
-                    <button
-                      type="button"
-                      class="word"
-                      :class="{ readable: isReadable(part) }"
-                      :disabled="!isReadable(part)"
-                      @click.stop="onWordClick($event, part)"
-                    >{{ part }}</button>
-                  </template>
-                </p>
+                <div class="study-lang-row">
+                  <button
+                    class="mini-play en"
+                    @click="speak(group.en, 'en-US')"
+                    :disabled="!String(group?.en || '').trim()"
+                    title="朗读英文这一段"
+                  >
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                  </button>
+                  <p
+                    class="english paragraph-text"
+                  >
+                    <template v-for="(part, ti) in tokenize(orderedLine(group)[2])" :key="'s-'+ti">
+                      <span v-if="shouldAddSpace(orderedLine(group)[2], ti)" class="space"> </span>
+                      <button
+                        type="button"
+                        class="word"
+                        :class="{ readable: isReadable(part) }"
+                        :disabled="!isReadable(part)"
+                        @click.stop="onWordClick($event, part)"
+                      >{{ part }}</button>
+                    </template>
+                  </p>
+                </div>
               </template>
               <template v-else>
-                <div
-                  class="chinese"
-                  contenteditable="true"
-                  :data-placeholder="'在这里补中文对照'"
-                  :innerHTML="orderedLine(group)[2]"
-                  @input="onFirstLangEdit($event, group, 'zh')"
-                ></div>
+                <div class="study-lang-row">
+                  <button
+                    class="mini-play zh"
+                    @click="speakChinese(group.zh)"
+                    :disabled="!String(group?.zh || '').trim()"
+                    title="朗读中文这一段"
+                  >
+                    <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                  </button>
+                  <div
+                    class="chinese"
+                    contenteditable="true"
+                    :data-placeholder="'在这里补中文对照'"
+                    :innerHTML="orderedLine(group)[2]"
+                    @input="onFirstLangEdit($event, group, 'zh')"
+                  ></div>
+                </div>
               </template>
             </template>
 
             <!-- 非翻译类型：原有顺序（英文在上，中文在下） -->
             <template v-else>
-              <p class="english paragraph-text" :class="{ 'lesson-title': index === 0 && isHeading(group.en) }">
-                <template v-for="(part, ti) in tokenize(group.en)" :key="ti">
-                  <span v-if="shouldAddSpace(group.en, ti)" class="space"> </span>
-                  <button
-                    type="button"
-                    class="word"
-                    :class="{ readable: isReadable(part) }"
-                    :disabled="!isReadable(part)"
-                    @click.stop="onWordClick($event, part)"
-                  >{{ part }}</button>
-                </template>
-              </p>
+              <div class="study-lang-row">
+                <button
+                  class="mini-play en"
+                  @click="speak(group.en, 'en-US')"
+                  :disabled="!String(group?.en || '').trim()"
+                  title="朗读英文这一段"
+                >
+                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                </button>
+                <p class="english paragraph-text" :class="{ 'lesson-title': index === 0 && isHeading(group.en) }">
+                  <template v-for="(part, ti) in tokenize(group.en)" :key="ti">
+                    <span v-if="shouldAddSpace(group.en, ti)" class="space"> </span>
+                    <button
+                      type="button"
+                      class="word"
+                      :class="{ readable: isReadable(part) }"
+                      :disabled="!isReadable(part)"
+                      @click.stop="onWordClick($event, part)"
+                    >{{ part }}</button>
+                  </template>
+                </p>
+              </div>
 
-              <div
-                class="chinese"
-                contenteditable="true"
-                :data-placeholder="'在这里补中文对照'"
-                :innerHTML="group.zh"
-                @input="onChineseEdit($event, group)"
-              ></div>
+              <div class="study-lang-row">
+                <button
+                  class="mini-play zh"
+                  @click="speakChinese(group.zh)"
+                  :disabled="!String(group?.zh || '').trim()"
+                  title="朗读中文这一段"
+                >
+                  <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                </button>
+                <div
+                  class="chinese"
+                  contenteditable="true"
+                  :data-placeholder="'在这里补中文对照'"
+                  :innerHTML="group.zh"
+                  @input="onChineseEdit($event, group)"
+                ></div>
+              </div>
             </template>
           </section>
         </template>
@@ -279,7 +322,7 @@ import { ElMessage } from 'element-plus'
 import { Setting, ArrowLeft, ArrowRight, VideoPlay, VideoPause, Aim } from '@element-plus/icons-vue'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
-import { speak, stopSpeech, speakEnglishQueue, speakChineseQueue } from '../../api/voice/index.js'
+import { speak, stopSpeech, speakEnglishQueue, speakChineseQueue, speakChinese } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
 import { md5 } from '../../api/voice/youdao.js'
 import { recognizeText } from '../../utils/ocr.js'
@@ -654,21 +697,15 @@ function scrollContentToTop() {
 function readCurrentPage() {
   const page = currentPage.value
   if (!page) return
-  const type = activeProjectType.value
-  // 按显示顺序的「第一个」（原文）进行朗读
+  // 需求 #3：顶部「朗读」按钮只播放英文，不播放中文
   const items = displayGroups.value
-    .map(g => orderedLine(g)[0])
-    .filter(text => String(text || '').trim())
+    .map(g => String(g?.en || '').trim())
+    .filter(Boolean)
   if (!items.length) {
-    ElMessage.warning('当前页没有可朗读的内容')
+    ElMessage.warning('当前页没有可朗读的英文内容')
     return
   }
-  if (type === 'translate-zh') {
-    // 中文翻译：原文是中文，走中文朗读队列
-    speakChineseQueue(items)
-  } else {
-    speakEnglishQueue(items)
-  }
+  speakEnglishQueue(items)
 }
 
 function handleStop() {
@@ -1260,7 +1297,7 @@ onBeforeUnmount(() => {
 /* ============ 学习块 ============ */
 .study-block {
   position: relative;
-  padding: 0 0 22px 32px;
+  padding: 0 0 22px 0;
 }
 
 .heading-block {
@@ -1271,21 +1308,49 @@ onBeforeUnmount(() => {
   padding-top: 2px;
 }
 
+/* 旧 study-actions 列布局已废弃（按钮已嵌入对应语言的行内） */
 .study-actions {
+  display: none;
+}
+
+/* 编号：absolute 固定在左上角 */
+.study-number {
   position: absolute;
   top: 3px;
   left: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 5px;
   width: 28px;
-}
-
-.study-number {
+  text-align: center;
   color: #8c9996;
   font-size: 11px;
   font-variant-numeric: tabular-nums;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 每种语言自成一行：左侧播放按钮 + 右侧文本，首行自然对齐 */
+.study-lang-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  padding-left: 32px;
+  margin-bottom: 8px;
+  box-sizing: border-box;
+  width: 100%;
+}
+.study-lang-row:last-child {
+  margin-bottom: 0;
+}
+.study-lang-row > .mini-play {
+  flex-shrink: 0;
+  /* 按钮与文本首行基线微调：英文 line-height 1.78、中文 1.72，略下移按钮更贴齐 */
+  margin-top: 4px;
+}
+.study-lang-row > .english,
+.study-lang-row > .chinese {
+  flex: 1;
+  min-width: 0;
+  margin: 0 !important;   /* 覆盖 .english/.chinese 自带的 margin-bottom:6px / 10px */
 }
 
 .mini-play {

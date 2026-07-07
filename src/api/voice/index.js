@@ -168,9 +168,10 @@ export function splitSpeechText(text, maxLength = 120) {
  * @param {number} runId - 当前运行 ID
  * @param {string} url - 音频 URL
  * @param {string} [fallbackProvider='browser'] - 失败时的回退提供商
+ * @param {string} [fallbackLang='en-US'] - 回退到 browser TTS 时使用的语言
  * @returns {Promise}
  */
-export function playAudioUrl(text, runId, url, fallbackProvider = 'browser') {
+export function playAudioUrl(text, runId, url, fallbackProvider = 'browser', fallbackLang = 'en-US') {
   const value = normalizeSpeechText(text);
   if (!value) return Promise.resolve();
   const audio = new Audio(url);
@@ -183,9 +184,9 @@ export function playAudioUrl(text, runId, url, fallbackProvider = 'browser') {
       if (runId !== speechRunId.value) return resolve();
       activeAudio.value = null;
       if (fallbackProvider === 'browser') {
-        speakWithBrowserOnce(value, runId, 'en-US').then(resolve);
+        speakWithBrowserOnce(value, runId, fallbackLang).then(resolve);
       } else {
-        playWithProvider(value, runId, fallbackProvider, 'browser').then(resolve);
+        playWithProvider(value, runId, fallbackProvider, 'browser', fallbackLang).then(resolve);
       }
     };
 
@@ -258,9 +259,10 @@ export function speakWithBrowserOnce(text, runId, lang = 'en-US') {
  * @param {string} text
  * @param {number} runId
  * @param {string} [fallbackProvider='baidu']
+ * @param {string} [fallbackLang='en-US']
  * @returns {Promise}
  */
-async function playIcibaText(text, runId, fallbackProvider = 'baidu') {
+async function playIcibaText(text, runId, fallbackProvider = 'baidu', fallbackLang = 'en-US') {
   const value = normalizeSpeechText(text);
   if (!value) return Promise.resolve();
 
@@ -276,7 +278,7 @@ async function playIcibaText(text, runId, fallbackProvider = 'baidu') {
       const fallback = () => {
         if (runId !== speechRunId.value) return resolve();
         activeAudio.value = null;
-        speakWithBrowserOnce(value, runId, 'en-US').then(resolve);
+        playWithProvider(value, runId, fallbackProvider, 'browser', fallbackLang).then(resolve);
       };
 
       audio.addEventListener('ended', () => resolve(), { once: true });
@@ -284,7 +286,7 @@ async function playIcibaText(text, runId, fallbackProvider = 'baidu') {
       audio.play().catch(fallback);
     });
   } catch {
-    return playWithProvider(value, runId, fallbackProvider, 'browser');
+    return playWithProvider(value, runId, fallbackProvider, 'browser', fallbackLang);
   }
 }
 
@@ -294,20 +296,22 @@ async function playIcibaText(text, runId, fallbackProvider = 'baidu') {
  * @param {number} runId
  * @param {string} [provider] - 提供商名称：youdao, baidu, iciba, sogou, mac, browser
  * @param {string} [fallbackProvider='browser'] - 失败回退提供商
+ * @param {string} [fallbackLang='en-US'] - 回退到 browser 时用的语言
+ * @param {string} [preferLang='en'] - 优先选真人 TTS 时的语言（影响 baidu URL 中的 lan=zh/en）
  * @returns {Promise}
  */
-export async function playWithProvider(text, runId, provider, fallbackProvider = 'browser') {
+export async function playWithProvider(text, runId, provider, fallbackProvider = 'browser', fallbackLang = 'en-US', preferLang = 'en') {
   const value = normalizeSpeechText(text);
   if (!value || runId !== speechRunId.value) return Promise.resolve();
 
   const prov = provider || getVoiceProvider();
   const rate = getSpeechRate();
 
-  if (prov === 'browser') return speakWithBrowserOnce(value, runId, 'en-US');
-  if (prov === 'youdao') return playYoudaoText(value, runId, playAudioUrl, normalizeSpeechText, fallbackProvider);
-  if (prov === 'baidu') return playBaiduText(value, runId, playAudioUrl, normalizeSpeechText, rate, fallbackProvider);
-  if (prov === 'iciba') return playIcibaText(value, runId, fallbackProvider);
-  return speakWithBrowserOnce(value, runId, 'en-US');
+  if (prov === 'browser') return speakWithBrowserOnce(value, runId, fallbackLang);
+  if (prov === 'youdao') return playYoudaoText(value, runId, playAudioUrl, normalizeSpeechText, fallbackProvider, fallbackLang);
+  if (prov === 'baidu') return playBaiduText(value, runId, playAudioUrl, normalizeSpeechText, rate, preferLang, fallbackProvider, fallbackLang);
+  if (prov === 'iciba') return playIcibaText(value, runId, fallbackProvider, fallbackLang);
+  return speakWithBrowserOnce(value, runId, fallbackLang);
 }
 
 // ============ 对外统一接口 ============
@@ -328,6 +332,7 @@ export function stopSpeech() {
 /**
  * 主发音入口
  * 单词用有道真人发音，句子用选定平台
+ * 中文句子走 speakChineseQueue（含百度真人中文 TTS + waitForVoices 的 browser 兜底）
  * @param {string} text - 要朗读的文本
  * @param {string} [lang='en-US'] - 语言代码
  */
@@ -339,9 +344,23 @@ export function speak(text, lang = 'en-US') {
   } else if (lang.startsWith('en')) {
     speakEnglishQueue([value]);
   } else {
-    stopSpeech();
-    speakWithBrowser(value, lang);
+    // 中文（含 zh-CN/zh-TW 等）统一走中文队列
+    speakChineseQueue([value]);
   }
+}
+
+/**
+ * ===== 独立封装：中文朗读 API（需求 #2）=====
+ * 点击中文播放按钮时推荐直接调用此函数
+ * - 支持中断：会停止当前正在播放的任何声音
+ * - 先尝试百度真人中文发音，失败时自动回退到浏览器内置中文语音（含 waitForVoices 等待音色加载）
+ * - 长句会自动分段
+ * @param {string} text - 中文文本
+ */
+export function speakChinese(text) {
+  const value = normalizeSpeechText(text);
+  if (!value) return;
+  speakChineseQueue([value]);
 }
 
 /**
@@ -354,7 +373,7 @@ function playSingleEnglishText(text) {
   if (!value) return Promise.resolve();
   stopSpeech();
   const runId = speechRunId.value;
-  return playWithProvider(value, runId, getVoiceProvider(), 'browser');
+  return playWithProvider(value, runId, getVoiceProvider(), 'browser', 'en-US', 'en');
 }
 
 /**
@@ -372,13 +391,14 @@ export async function speakEnglishQueue(items) {
 
   for (const item of chunks) {
     if (runId !== speechRunId.value) break;
-    await playWithProvider(item, runId, getVoiceProvider(), 'browser');
+    await playWithProvider(item, runId, getVoiceProvider(), 'browser', 'en-US', 'en');
   }
 }
 
 /**
  * 中文句子队列播放
- * 将文本分割为片段后用浏览器中文语音播放，支持中断
+ * 先尝试百度真人中文 TTS（lan=zh），失败自动回退浏览器中文语音
+ * 使用 speakWithBrowserOnce 的 Promise 版本：带 waitForVoices 等待中文音色加载，避免因 voice=null 导致的无声
  * @param {string[]} items - 中文文本列表
  */
 export async function speakChineseQueue(items) {
@@ -391,6 +411,7 @@ export async function speakChineseQueue(items) {
 
   for (const item of chunks) {
     if (runId !== speechRunId.value) break;
-    await speakWithBrowserOnce(item, runId, 'zh-CN');
+    // 先尝试百度真人中文发音（lan=zh），失败回退浏览器中文音色（zh-CN）
+    await playWithProvider(item, runId, getVoiceProvider(), 'browser', 'zh-CN', 'zh');
   }
 }

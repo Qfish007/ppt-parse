@@ -218,12 +218,13 @@ export function youdaoVoiceUrl(text) {
  * @param {Function} playAudioUrl - 播放音频 URL 的辅助函数（来自 index.js）
  * @param {Function} normalizeSpeechText - 标准化语音文本函数（来自 index.js）
  * @param {string} [fallbackProvider='browser'] - 失败时的回退提供商
+ * @param {string} [fallbackLang='en-US'] - 回退到 browser TTS 时使用的 lang
  * @returns {Promise}
  */
-export function playYoudaoText(text, runId, playAudioUrl, normalizeSpeechText, fallbackProvider = 'browser') {
+export function playYoudaoText(text, runId, playAudioUrl, normalizeSpeechText, fallbackProvider = 'browser', fallbackLang = 'en-US') {
   const value = normalizeSpeechText(text);
   if (!value) return Promise.resolve();
-  return playAudioUrl(value, runId, youdaoVoiceUrl(value), fallbackProvider);
+  return playAudioUrl(value, runId, youdaoVoiceUrl(value), fallbackProvider, fallbackLang);
 }
 
 // 导出 md5 供其他模块使用
