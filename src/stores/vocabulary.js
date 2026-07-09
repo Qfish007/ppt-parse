@@ -47,6 +47,16 @@ function normalizeTagIds(tagIds) {
     : []
 }
 
+function normalizeMemoryParts(parts) {
+  if (Array.isArray(parts)) {
+    return parts.map(part => String(part || '').trim()).filter(Boolean)
+  }
+  return String(parts || '')
+    .split(/[.\s/|,，、;；]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+}
+
 function normalizeEntry(entry) {
   const word = normalizeWord(entry?.word)
   if (!word) return null
@@ -59,6 +69,7 @@ function normalizeEntry(entry) {
     phonetic: normalizePhonetic(entry?.phonetic),
     meaning: String(entry?.meaning || '').trim(),
     tagIds: normalizeTagIds(entry?.tagIds),
+    memoryParts: normalizeMemoryParts(entry?.memoryParts),
     level,
     createdAt: Number(entry?.createdAt) || now,
     updatedAt: Number(entry?.updatedAt) || now
@@ -113,6 +124,7 @@ export function useVocabularyStore() {
           phonetic: normalized.phonetic || this.words[index].phonetic,
           meaning: normalized.meaning || this.words[index].meaning,
           tagIds: normalized.tagIds.length ? normalized.tagIds : (this.words[index].tagIds || []),
+          memoryParts: normalized.memoryParts.length ? normalized.memoryParts : (this.words[index].memoryParts || []),
           updatedAt: Date.now()
         }
       } else {
@@ -148,6 +160,9 @@ export function useVocabularyStore() {
       if (Array.isArray(updates.tagIds)) {
         const allowed = new Set(this.tags.map(tag => tag.id))
         entry.tagIds = normalizeTagIds(updates.tagIds).filter(id => allowed.has(id))
+      }
+      if (Array.isArray(updates.memoryParts) || typeof updates.memoryParts === 'string') {
+        entry.memoryParts = normalizeMemoryParts(updates.memoryParts)
       }
       entry.updatedAt = Date.now()
       this.save()

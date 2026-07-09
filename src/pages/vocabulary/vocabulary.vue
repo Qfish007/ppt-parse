@@ -58,6 +58,7 @@
       <div class="vocab-list-head">
         <span>单词</span>
         <span>发音</span>
+        <span class="vocab-memory-head">辅助记忆</span>
         <span>中文意思</span>
         <span class="vocab-tags-head">标签</span>
         <span class="vocab-level-head">掌握水平</span>
@@ -79,6 +80,12 @@
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
           </button>
           <span>{{ entry.phonetic || '-' }}</span>
+        </div>
+        <div class="vocab-memory">
+          <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
+            <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+            <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
+          </template>
         </div>
         <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
         <div class="vocab-tags">
@@ -143,6 +150,15 @@
                   :value="level.value"
                 />
               </el-select>
+            </div>
+            <div class="tag-dialog-field">
+              <div class="tag-dialog-label">辅助记忆</div>
+              <el-input
+                v-model="tagDialog.memoryText"
+                class="tag-dialog-control"
+                placeholder="例如：fa.mous"
+                clearable
+              />
             </div>
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">单词标签</div>
@@ -212,6 +228,7 @@ const tagDialog = ref({
   visible: false,
   word: '',
   level: 'unknown',
+  memoryText: '',
   tagIds: []
 })
 
@@ -262,11 +279,34 @@ function tagsForEntry(entry) {
   return vocabularyStore.tags.filter(tag => tagIds.has(tag.id))
 }
 
+function splitMemoryText(text) {
+  return String(text || '')
+    .split(/[.\s/|,，、;；]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+}
+
+function autoMemoryParts(word) {
+  const value = String(word || '').trim()
+  if (value.length <= 4) return value ? [value] : []
+  if (value.length <= 6) return [value.slice(0, 2), value.slice(2)]
+  if (value.endsWith('ing') && value.length > 5) return [value.slice(0, -3), 'ing']
+  if (value.endsWith('ed') && value.length > 5) return [value.slice(0, -2), 'ed']
+  return [value.slice(0, 3), value.slice(3)]
+}
+
+function memoryPartsForEntry(entry) {
+  return Array.isArray(entry.memoryParts) && entry.memoryParts.length
+    ? entry.memoryParts
+    : autoMemoryParts(entry.word)
+}
+
 function openTagDialog(entry) {
   tagDialog.value = {
     visible: true,
     word: entry.word,
     level: entry.level || 'unknown',
+    memoryText: (entry.memoryParts?.length ? entry.memoryParts : autoMemoryParts(entry.word)).join('.'),
     tagIds: [...(entry.tagIds || [])]
   }
 }
@@ -274,6 +314,7 @@ function openTagDialog(entry) {
 function saveWordTags() {
   vocabularyStore.updateWord(tagDialog.value.word, {
     level: tagDialog.value.level,
+    memoryParts: splitMemoryText(tagDialog.value.memoryText),
     tagIds: tagDialog.value.tagIds
   })
   tagDialog.value.visible = false
@@ -453,7 +494,7 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: minmax(130px, 0.9fr) minmax(140px, 0.9fr) minmax(240px, 1.8fr) minmax(150px, 1fr) 140px 150px;
+  grid-template-columns: minmax(120px, 0.8fr) minmax(130px, 0.85fr) minmax(150px, 1fr) minmax(220px, 1.6fr) minmax(140px, 0.9fr) 130px 120px;
   align-items: center;
   gap: 12px;
 }
@@ -514,6 +555,49 @@ async function handleImport(event) {
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
+}
+
+.vocab-memory-head,
+.vocab-memory {
+  text-align: center;
+}
+
+.vocab-memory {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.memory-part {
+  line-height: 1.2;
+}
+
+.memory-part-0 {
+  color: #1d68b3;
+}
+
+.memory-part-1 {
+  color: #ff7a00;
+}
+
+.memory-part-2 {
+  color: #19a974;
+}
+
+.memory-part-3 {
+  color: #8f4fd8;
+}
+
+.memory-dot {
+  color: #b8c2bf;
+  font-weight: 700;
+  padding: 0 2px;
 }
 
 .vocab-tags {
@@ -718,7 +802,7 @@ async function handleImport(event) {
 
   .vocab-list-head,
   .vocab-row {
-    min-width: 980px;
+    min-width: 1120px;
   }
 }
 </style>
