@@ -253,6 +253,7 @@ async function startTest() {
   correctResults.value = []
   wrongResults.value = []
   isFinished.value = false
+  saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
 }
@@ -267,6 +268,7 @@ async function restartSameTest() {
   correctResults.value = []
   wrongResults.value = []
   isFinished.value = false
+  saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
 }
@@ -284,8 +286,10 @@ async function goNextQuestion() {
   currentIndex.value += 1
   if (currentIndex.value >= testQueue.value.length) {
     isFinished.value = true
+    saveTestSession()
     return
   }
+  saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
 }

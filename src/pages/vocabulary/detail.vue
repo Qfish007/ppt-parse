@@ -3,7 +3,7 @@
     <header class="word-detail-header">
       <el-button type="primary" @click="goBack">
         <el-icon><ArrowLeft /></el-icon>
-        返回生词本
+        {{ backLabel }}
       </el-button>
       <h2 class="word-detail-title">单词详情</h2>
     </header>
@@ -60,6 +60,7 @@ const vocabularyStore = useVocabularyStore()
 const bookStore = useBookStore()
 
 const word = computed(() => String(route.params.word || '').toLowerCase())
+const backLabel = computed(() => route.query.from === 'test' ? '返回单词测试' : '返回生词本')
 const entry = computed(() => vocabularyStore.words.find(item => item.word === word.value) || null)
 const memoryParts = computed(() => {
   if (entry.value?.memoryParts?.length) return entry.value.memoryParts
