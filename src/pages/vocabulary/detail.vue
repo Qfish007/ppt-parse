@@ -67,6 +67,10 @@ const memoryParts = computed(() => {
 })
 
 function goBack() {
+  if (route.query.from === 'test') {
+    router.push('/vocabulary/test')
+    return
+  }
   router.push('/vocabulary')
 }
 

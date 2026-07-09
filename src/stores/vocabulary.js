@@ -83,6 +83,8 @@ function normalizeEntry(entry) {
     tagIds: normalizeTagIds(entry?.tagIds),
     memoryParts: normalizeMemoryParts(entry?.memoryParts),
     level,
+    testTotalCount: Math.max(0, Number(entry?.testTotalCount) || 0),
+    testCorrectCount: Math.max(0, Number(entry?.testCorrectCount) || 0),
     createdAt: Number(entry?.createdAt) || now,
     updatedAt: Number(entry?.updatedAt) || now
   }
@@ -285,8 +287,8 @@ export function useVocabularyStore() {
       this.save()
     },
 
-    updateLevel(word, level) {
-      const book = this.getActiveBook()
+    updateLevel(word, level, target = 'active') {
+      const book = this.getTargetBook(target)
       if (!book) return
       const key = normalizeWord(word)
       const entry = book.words.find(item => item.word === key)
@@ -296,6 +298,22 @@ export function useVocabularyStore() {
       book.updatedAt = Date.now()
       this.syncActiveBook()
       this.save()
+    },
+
+    recordTestResult(word, isCorrect, target = 'default') {
+      const book = this.getTargetBook(target)
+      if (!book) return null
+      const key = normalizeWord(word)
+      const entry = book.words.find(item => item.word === key)
+      if (!entry) return null
+      entry.testTotalCount = Math.max(0, Number(entry.testTotalCount) || 0) + 1
+      entry.testCorrectCount = Math.max(0, Number(entry.testCorrectCount) || 0) + (isCorrect ? 1 : 0)
+      entry.level = isCorrect ? 'mastered' : 'unknown'
+      entry.updatedAt = Date.now()
+      book.updatedAt = Date.now()
+      this.syncActiveBook()
+      this.save()
+      return entry
     },
 
     updateWord(word, updates = {}) {

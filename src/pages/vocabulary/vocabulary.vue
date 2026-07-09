@@ -13,6 +13,7 @@
           <el-icon><Plus /></el-icon>
           手动录入
         </el-button>
+        <el-button @click="goTest">测试</el-button>
         <el-button @click="triggerImport">导入</el-button>
         <el-button type="primary" @click="exportWords">导出</el-button>
         <el-button @click="goSettings">设置</el-button>
@@ -26,8 +27,16 @@
         placeholder="搜索单词或中文意思"
         class="vocab-search"
       />
-      <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper">
-        <el-option label="全部" value="all" />
+      <el-select
+        v-model="levelFilter"
+        class="vocab-filter"
+        popper-class="vocab-level-popper"
+        multiple
+        collapse-tags
+        collapse-tags-tooltip
+        clearable
+        placeholder="按水平筛选"
+      >
         <el-option
           v-for="level in VOCABULARY_LEVELS"
           :key="level.value"
@@ -288,7 +297,7 @@ const vocabularyStore = useVocabularyStore()
 const bookStore = useBookStore()
 
 const searchText = ref('')
-const levelFilter = ref('all')
+const levelFilter = ref([])
 const tagFilter = ref([])
 const sortMode = ref('alphabet')
 const importInputRef = ref(null)
@@ -338,7 +347,8 @@ const filteredWords = computed(() => {
     const matchKeyword = !keyword
       || entry.word.includes(keyword)
       || String(entry.meaning || '').toLowerCase().includes(keyword)
-    const matchLevel = levelFilter.value === 'all' || entry.level === levelFilter.value
+    const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
+    const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
     const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
     return matchKeyword && matchLevel && matchTags
@@ -377,6 +387,10 @@ function goBack() {
 
 function goSettings() {
   router.push('/vocabulary/settings')
+}
+
+function goTest() {
+  router.push('/vocabulary/test')
 }
 
 function clampStatsPosition(left, top) {

@@ -5,6 +5,7 @@ const SettingView = () => import('../pages/setting/setting.vue')
 const VocabularyView = () => import('../pages/vocabulary/vocabulary.vue')
 const VocabularySettingsView = () => import('../pages/vocabulary/settings.vue')
 const VocabularyDetailView = () => import('../pages/vocabulary/detail.vue')
+const VocabularyTestView = () => import('../pages/vocabulary/test.vue')
 
 const routes = [
   {
@@ -34,6 +35,11 @@ const routes = [
     path: '/vocabulary/settings',
     name: 'VocabularySettings',
     component: VocabularySettingsView
+  },
+  {
+    path: '/vocabulary/test',
+    name: 'VocabularyTest',
+    component: VocabularyTestView
   },
   {
     path: '/vocabulary/:word',
