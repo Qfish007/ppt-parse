@@ -108,7 +108,12 @@ const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
 const route = useRoute()
 const router = useRouter()
-const bodyFontSize = ref(Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18)
+
+function normalizeBodyFontSize(size) {
+  return Math.min(Math.max(Number(size) || 18, 14), 60)
+}
+
+const bodyFontSize = ref(normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize)))
 
 function goSetting() {
   router.push('/setting')
@@ -627,7 +632,7 @@ function handleClickOutside(e) {
 }
 
 function refreshBodyFontSize() {
-  bodyFontSize.value = Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18
+  bodyFontSize.value = normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize))
 }
 
 // ============ 拖拽调整宽度 ============
@@ -1110,13 +1115,14 @@ onBeforeUnmount(() => {
 /* 编号：absolute 固定在左上角 */
 .study-number {
   position: absolute;
-  top: 3px;
+  top: calc(var(--reader-body-font-size, 18px) * 0.28);
   left: 0;
-  width: 28px;
+  width: calc(var(--reader-body-font-size, 18px) * 1.55);
   text-align: center;
   color: #8c9996;
-  font-size: 11px;
+  font-size: clamp(11px, calc(var(--reader-body-font-size, 18px) * 0.62), 24px);
   font-variant-numeric: tabular-nums;
+  line-height: 1;
   z-index: 1;
   pointer-events: none;
 }
@@ -1126,9 +1132,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 8px;
-  padding-left: 32px;
-  margin-bottom: 8px;
+  gap: calc(var(--reader-body-font-size, 18px) * 0.46);
+  padding-left: calc(var(--reader-body-font-size, 18px) * 1.78);
+  margin-bottom: calc(var(--reader-body-font-size, 18px) * 0.44);
   box-sizing: border-box;
   width: 100%;
 }
@@ -1137,8 +1143,7 @@ onBeforeUnmount(() => {
 }
 .study-lang-row > .mini-play {
   flex-shrink: 0;
-  /* 按钮与文本首行基线微调：英文 line-height 1.78、中文 1.72，略下移按钮更贴齐 */
-  margin-top: 4px;
+  margin-top: calc(var(--reader-body-font-size, 18px) * 0.28);
 }
 .study-lang-row > .english,
 .study-lang-row > .chinese {
@@ -1150,8 +1155,8 @@ onBeforeUnmount(() => {
 .mini-play {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: clamp(26px, calc(var(--reader-body-font-size, 18px) * 1.45), 54px);
+  height: clamp(26px, calc(var(--reader-body-font-size, 18px) * 1.45), 54px);
   border: 1px solid #c9d5d1;
   border-radius: 999px;
   cursor: pointer;
@@ -1180,8 +1185,8 @@ onBeforeUnmount(() => {
 }
 
 .mini-play svg {
-  width: 12px;
-  height: 12px;
+  width: clamp(12px, calc(var(--reader-body-font-size, 18px) * 0.68), 26px);
+  height: clamp(12px, calc(var(--reader-body-font-size, 18px) * 0.68), 26px);
   fill: currentColor;
 }
 

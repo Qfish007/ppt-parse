@@ -44,7 +44,7 @@
               <el-slider
                 v-model="bodyFontSize"
                 :min="14"
-                :max="30"
+                :max="60"
                 :step="1"
                 :show-tooltip="true"
                 :format-tooltip="formatFontTooltip"
@@ -78,7 +78,7 @@ const voiceProvider = ref(
   localStorage.getItem(STORAGE_KEYS.provider) || 'youdao'
 )
 const bodyFontSize = ref(
-  Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18
+  normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize))
 )
 
 // 格式化滑块提示
@@ -88,6 +88,10 @@ const formatTooltip = (val) => {
 
 const formatFontTooltip = (val) => {
   return `${val}px`
+}
+
+function normalizeBodyFontSize(size) {
+  return Math.min(Math.max(Number(size) || 18, 14), 60)
 }
 
 // 返回主页面
@@ -108,7 +112,12 @@ watch(voiceProvider, (newVal) => {
 
 // 监听第四栏正文字号变化，实时保存到 localStorage
 watch(bodyFontSize, (newVal) => {
-  localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(newVal))
+  const normalized = normalizeBodyFontSize(newVal)
+  if (normalized !== newVal) {
+    bodyFontSize.value = normalized
+    return
+  }
+  localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(normalized))
 })
 </script>
 

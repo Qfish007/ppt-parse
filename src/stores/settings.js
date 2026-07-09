@@ -11,6 +11,10 @@ export const STORAGE_KEYS = {
   bodyFontSize: 'bilingual-reader-body-font-size'
 };
 
+function normalizeBodyFontSize(size) {
+  return Math.min(Math.max(Number(size) || 18, 14), 60);
+}
+
 /**
  * 设置 store
  * 使用 reactive 创建，用法类似 Pinia 的 useStore
@@ -23,7 +27,7 @@ export function useSettingsStore() {
     /** 发音平台，默认 'youdao' */
     voiceProvider: localStorage.getItem(STORAGE_KEYS.provider) || 'youdao',
     /** 第四栏正文字号，默认 18px */
-    bodyFontSize: Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18,
+    bodyFontSize: normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize)),
 
     /**
      * 保存语速到 localStorage
@@ -49,7 +53,7 @@ export function useSettingsStore() {
      * @param {number} size
      */
     saveBodyFontSize(size) {
-      const value = Math.min(Math.max(Number(size) || 18, 14), 30);
+      const value = normalizeBodyFontSize(size);
       this.bodyFontSize = value;
       localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(value));
     },
@@ -60,7 +64,7 @@ export function useSettingsStore() {
     load() {
       this.speechRate = Number(localStorage.getItem(STORAGE_KEYS.rate)) || 0.9;
       this.voiceProvider = localStorage.getItem(STORAGE_KEYS.provider) || 'youdao';
-      this.bodyFontSize = Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18;
+      this.bodyFontSize = normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize));
     }
   });
 
