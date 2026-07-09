@@ -5,6 +5,7 @@ const VOCABULARY_TAGS_STORAGE_KEY = 'bilingual-reader-vocabulary-tags'
 const VOCABULARY_BOOKS_STORAGE_KEY = 'bilingual-reader-vocabulary-books'
 const VOCABULARY_ACTIVE_BOOK_KEY = 'bilingual-reader-active-vocabulary-book'
 const VOCABULARY_DEFAULT_BOOK_KEY = 'bilingual-reader-default-vocabulary-book'
+const VOCABULARY_STATS_VISIBLE_KEY = 'bilingual-reader-vocabulary-stats-visible'
 
 export const VOCABULARY_LEVELS = [
   { value: 'unknown', label: '不认识' },
@@ -115,6 +116,7 @@ export function useVocabularyStore() {
     books: [],
     activeBookId: '',
     defaultBookId: '',
+    statsVisible: true,
     words: [],
     tags: [],
 
@@ -165,6 +167,7 @@ export function useVocabularyStore() {
       this.activeBookId = this.books.some(book => book.id === savedActiveBookId)
         ? savedActiveBookId
         : this.defaultBookId
+      this.statsVisible = localStorage.getItem(VOCABULARY_STATS_VISIBLE_KEY) !== 'false'
       this.syncActiveBook()
       this.save()
     },
@@ -173,6 +176,7 @@ export function useVocabularyStore() {
       localStorage.setItem(VOCABULARY_BOOKS_STORAGE_KEY, JSON.stringify(this.books))
       localStorage.setItem(VOCABULARY_ACTIVE_BOOK_KEY, this.activeBookId)
       localStorage.setItem(VOCABULARY_DEFAULT_BOOK_KEY, this.defaultBookId)
+      localStorage.setItem(VOCABULARY_STATS_VISIBLE_KEY, String(this.statsVisible))
     },
 
     syncActiveBook() {
@@ -238,6 +242,11 @@ export function useVocabularyStore() {
       this.defaultBookId = bookId
       this.save()
       return true
+    },
+
+    setStatsVisible(visible) {
+      this.statsVisible = Boolean(visible)
+      this.save()
     },
 
     addWord(entry, target = 'active') {

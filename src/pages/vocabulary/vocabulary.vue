@@ -8,28 +8,6 @@
         </el-button>
         <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
       </div>
-      <div class="vocab-stats" aria-label="生词统计">
-        <span class="vocab-stat vocab-stat-total">
-          <span class="vocab-stat-label">总词汇</span>
-          <span class="vocab-stat-value">{{ levelStats.total }}</span>
-        </span>
-        <span class="vocab-stat level-unknown">
-          <span class="vocab-stat-label">不认识</span>
-          <span class="vocab-stat-value">{{ levelStats.unknown }}</span>
-        </span>
-        <span class="vocab-stat level-learning">
-          <span class="vocab-stat-label">已了解</span>
-          <span class="vocab-stat-value">{{ levelStats.learning }}</span>
-        </span>
-        <span class="vocab-stat level-mastered">
-          <span class="vocab-stat-label">已掌握</span>
-          <span class="vocab-stat-value">{{ levelStats.mastered }}</span>
-        </span>
-        <span class="vocab-stat level-familiar">
-          <span class="vocab-stat-label">已熟记</span>
-          <span class="vocab-stat-value">{{ levelStats.familiar }}</span>
-        </span>
-      </div>
       <div class="vocab-actions">
         <el-button type="primary" plain @click="openManualDialog">
           <el-icon><Plus /></el-icon>
@@ -260,11 +238,42 @@
       class="hidden-input"
       @change="handleImport"
     />
+
+    <div
+      v-if="vocabularyStore.statsVisible"
+      ref="statsBarRef"
+      class="vocab-stats-bar"
+      :class="{ 'is-dragging': statsDrag.dragging }"
+      :style="statsBarStyle"
+      aria-label="生词统计"
+      @pointerdown="startStatsDrag"
+    >
+      <span class="vocab-stat vocab-stat-total">
+        <span class="vocab-stat-label">总词汇</span>
+        <span class="vocab-stat-value">{{ levelStats.total }}</span>
+      </span>
+      <span class="vocab-stat level-unknown">
+        <span class="vocab-stat-label">不认识</span>
+        <span class="vocab-stat-value">{{ levelStats.unknown }}</span>
+      </span>
+      <span class="vocab-stat level-learning">
+        <span class="vocab-stat-label">已了解</span>
+        <span class="vocab-stat-value">{{ levelStats.learning }}</span>
+      </span>
+      <span class="vocab-stat level-mastered">
+        <span class="vocab-stat-label">已掌握</span>
+        <span class="vocab-stat-value">{{ levelStats.mastered }}</span>
+      </span>
+      <span class="vocab-stat level-familiar">
+        <span class="vocab-stat-label">已熟记</span>
+        <span class="vocab-stat-value">{{ levelStats.familiar }}</span>
+      </span>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
@@ -284,6 +293,14 @@ const tagFilter = ref([])
 const sortMode = ref('alphabet')
 const importInputRef = ref(null)
 const manualInputRef = ref(null)
+const statsBarRef = ref(null)
+const statsPosition = ref(null)
+const statsDrag = ref({
+  dragging: false,
+  pointerId: null,
+  offsetX: 0,
+  offsetY: 0
+})
 const manualDialog = ref({
   visible: false,
   word: '',
@@ -301,6 +318,17 @@ const sortOptions = [
   { label: '字母排序', value: 'alphabet' },
   { label: '添加时间', value: 'createdAt' }
 ]
+
+const statsBarStyle = computed(() => {
+  if (!statsPosition.value) return {}
+  return {
+    left: `${statsPosition.value.left}px`,
+    top: `${statsPosition.value.top}px`,
+    right: 'auto',
+    bottom: 'auto',
+    transform: 'none'
+  }
+})
 
 const activeBookName = computed(() => vocabularyStore.getActiveBook()?.name || '默认生词本')
 
@@ -350,6 +378,68 @@ function goBack() {
 function goSettings() {
   router.push('/vocabulary/settings')
 }
+
+function clampStatsPosition(left, top) {
+  const bar = statsBarRef.value
+  const width = bar?.offsetWidth || 0
+  const height = bar?.offsetHeight || 0
+  const padding = 12
+  const maxLeft = Math.max(padding, window.innerWidth - width - padding)
+  const maxTop = Math.max(padding, window.innerHeight - height - padding)
+  return {
+    left: Math.min(Math.max(left, padding), maxLeft),
+    top: Math.min(Math.max(top, padding), maxTop)
+  }
+}
+
+function startStatsDrag(event) {
+  if (event.button !== undefined && event.button !== 0) return
+  const bar = statsBarRef.value
+  if (!bar) return
+  const rect = bar.getBoundingClientRect()
+  statsDrag.value = {
+    dragging: true,
+    pointerId: event.pointerId,
+    offsetX: event.clientX - rect.left,
+    offsetY: event.clientY - rect.top
+  }
+  statsPosition.value = {
+    left: rect.left,
+    top: rect.top
+  }
+  bar.setPointerCapture?.(event.pointerId)
+  window.addEventListener('pointermove', moveStatsBar)
+  window.addEventListener('pointerup', stopStatsDrag)
+  window.addEventListener('pointercancel', stopStatsDrag)
+}
+
+function moveStatsBar(event) {
+  if (!statsDrag.value.dragging) return
+  statsPosition.value = clampStatsPosition(
+    event.clientX - statsDrag.value.offsetX,
+    event.clientY - statsDrag.value.offsetY
+  )
+}
+
+function stopStatsDrag(event) {
+  if (!statsDrag.value.dragging) return
+  statsBarRef.value?.releasePointerCapture?.(event.pointerId)
+  statsDrag.value = {
+    dragging: false,
+    pointerId: null,
+    offsetX: 0,
+    offsetY: 0
+  }
+  window.removeEventListener('pointermove', moveStatsBar)
+  window.removeEventListener('pointerup', stopStatsDrag)
+  window.removeEventListener('pointercancel', stopStatsDrag)
+}
+
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', moveStatsBar)
+  window.removeEventListener('pointerup', stopStatsDrag)
+  window.removeEventListener('pointercancel', stopStatsDrag)
+})
 
 function normalizeManualWord(value) {
   return String(value || '').trim().toLowerCase()
@@ -591,7 +681,7 @@ async function handleImport(event) {
 
 .vocab-header {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto minmax(240px, 1fr);
+  grid-template-columns: minmax(240px, 1fr) auto;
   align-items: center;
   gap: 16px;
   max-width: 1180px;
@@ -613,22 +703,51 @@ async function handleImport(event) {
   font-weight: 700;
 }
 
-.vocab-stats {
-  justify-self: center;
+.vocab-stats-bar {
+  position: fixed;
+  top: 50%;
+  right: 18px;
+  z-index: 1200;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 8px 18px;
-  min-width: 0;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 10px;
+  border: 1px solid rgba(207, 217, 214, 0.85);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 48px rgba(22, 32, 31, 0.18);
+  backdrop-filter: blur(16px);
   color: #40504c;
+  cursor: grab;
   text-align: center;
+  transform: translateY(-50%);
+  user-select: none;
+  touch-action: none;
+}
+
+.vocab-stats-bar.is-dragging {
+  cursor: grabbing;
+  box-shadow: 0 22px 60px rgba(22, 32, 31, 0.26);
 }
 
 .vocab-stat {
+  --stat-color: #40504c;
+  --stat-bg: #f4f7f6;
+  --stat-border: #d7dfdc;
   display: grid;
-  gap: 4px;
-  min-width: 54px;
+  grid-template-rows: auto auto;
+  gap: 7px;
+  min-width: 72px;
+  padding: 10px 10px 9px;
+  border: 1px solid var(--stat-border);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--stat-bg) 100%);
+  box-shadow: 0 8px 20px rgba(22, 32, 31, 0.08);
+  color: var(--stat-color) !important;
   line-height: 1.1;
   white-space: nowrap;
 }
@@ -639,11 +758,23 @@ async function handleImport(event) {
 }
 
 .vocab-stat-value {
-  font-size: 28px;
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--stat-color);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  color: #fff;
+  font-size: 24px;
   font-weight: 900;
 }
 
 .vocab-stat-total {
+  --stat-color: #16201f;
+  --stat-bg: #eef2f1;
+  --stat-border: #cfd9d6;
   color: #16201f;
 }
 
@@ -878,18 +1009,30 @@ async function handleImport(event) {
 }
 
 .level-unknown {
+  --stat-color: #e5484d;
+  --stat-bg: #fff1f1;
+  --stat-border: #ffd1d1;
   color: #e5484d !important;
 }
 
 .level-learning {
+  --stat-color: #1d68d8;
+  --stat-bg: #eef5ff;
+  --stat-border: #cfe1ff;
   color: #1d68d8 !important;
 }
 
 .level-mastered {
+  --stat-color: #f08a24;
+  --stat-bg: #fff6ea;
+  --stat-border: #ffdfb8;
   color: #f08a24 !important;
 }
 
 .level-familiar {
+  --stat-color: #19a974;
+  --stat-bg: #effaf5;
+  --stat-border: #c8efd9;
   color: #19a974 !important;
 }
 
@@ -1064,13 +1207,26 @@ async function handleImport(event) {
     align-items: stretch;
   }
 
-  .vocab-stats {
-    justify-self: stretch;
-    white-space: normal;
-  }
-
   .vocab-actions {
     justify-self: start;
+  }
+
+  .vocab-stats-bar {
+    right: 12px;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 18px;
+  }
+
+  .vocab-stat {
+    min-width: 60px;
+    padding: 8px;
+  }
+
+  .vocab-stat-value {
+    min-width: 40px;
+    min-height: 28px;
+    font-size: 20px;
   }
 
   .vocab-list {

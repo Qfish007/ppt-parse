@@ -11,6 +11,21 @@
     </header>
 
     <section class="settings-card">
+      <div class="display-setting-row">
+        <div>
+          <label class="field-label">统计显示</label>
+          <div class="setting-desc">控制生词本页面右侧悬浮统计是否显示。</div>
+        </div>
+        <el-switch
+          :model-value="vocabularyStore.statsVisible"
+          active-text="显示"
+          inactive-text="隐藏"
+          @change="toggleStatsVisible"
+        />
+      </div>
+    </section>
+
+    <section class="settings-card">
       <div class="book-editor">
         <label class="field-label">生词本管理</label>
         <div class="tag-input-row">
@@ -31,9 +46,6 @@
             <el-tag v-if="book.id === vocabularyStore.activeBookId" size="small" type="success" effect="plain">
               当前
             </el-tag>
-            <el-tag v-if="book.id === vocabularyStore.defaultBookId" size="small" type="warning" effect="plain">
-              默认
-            </el-tag>
             <span class="book-count">{{ book.words.length }} 个单词</span>
           </div>
           <div class="book-actions">
@@ -44,14 +56,6 @@
               @click="setActiveBook(book)"
             >
               切换
-            </el-button>
-            <el-button
-              size="small"
-              plain
-              :disabled="book.id === vocabularyStore.defaultBookId"
-              @click="setDefaultBook(book)"
-            >
-              设为默认
             </el-button>
             <el-button size="small" plain @click="renameBook(book)">重命名</el-button>
           </div>
@@ -100,6 +104,11 @@ function goBack() {
   router.push('/vocabulary')
 }
 
+function toggleStatsVisible(visible) {
+  vocabularyStore.setStatsVisible(visible)
+  ElMessage.success(visible ? '已显示统计' : '已隐藏统计')
+}
+
 function addBook() {
   const name = bookName.value.trim()
   if (!name) {
@@ -113,14 +122,10 @@ function addBook() {
 }
 
 function setActiveBook(book) {
-  if (vocabularyStore.setActiveBook(book.id)) {
-    ElMessage.success(`当前生词本已切换为「${book.name}」`)
-  }
-}
-
-function setDefaultBook(book) {
-  if (vocabularyStore.setDefaultBook(book.id)) {
-    ElMessage.success(`默认生词本已设置为「${book.name}」`)
+  const switched = vocabularyStore.setActiveBook(book.id)
+  const defaulted = vocabularyStore.setDefaultBook(book.id)
+  if (switched || defaulted) {
+    ElMessage.success(`默认生词本已切换为「${book.name}」`)
   }
 }
 
@@ -224,6 +229,22 @@ async function removeTag(tag) {
 
 .tag-input-row .el-input {
   flex: 1;
+}
+
+.display-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.display-setting-row .field-label {
+  margin-bottom: 4px;
+}
+
+.setting-desc {
+  color: #8c9996;
+  font-size: 13px;
 }
 
 .book-list {
@@ -339,6 +360,7 @@ async function removeTag(tag) {
 
 @media (max-width: 720px) {
   .book-row,
+  .display-setting-row,
   .tag-input-row {
     align-items: stretch;
     flex-direction: column;
