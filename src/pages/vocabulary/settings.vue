@@ -11,8 +11,57 @@
     </header>
 
     <section class="settings-card">
+      <div class="book-editor">
+        <label class="field-label">生词本管理</label>
+        <div class="tag-input-row">
+          <el-input
+            v-model="bookName"
+            clearable
+            placeholder="例如：土豆学习、CET4、托福"
+            @keyup.enter="addBook"
+          />
+          <el-button type="primary" @click="addBook">添加词本</el-button>
+        </div>
+      </div>
+
+      <div class="book-list">
+        <div v-for="book in vocabularyStore.books" :key="book.id" class="book-row">
+          <div class="book-info">
+            <span class="book-name">{{ book.name }}</span>
+            <el-tag v-if="book.id === vocabularyStore.activeBookId" size="small" type="success" effect="plain">
+              当前
+            </el-tag>
+            <el-tag v-if="book.id === vocabularyStore.defaultBookId" size="small" type="warning" effect="plain">
+              默认
+            </el-tag>
+            <span class="book-count">{{ book.words.length }} 个单词</span>
+          </div>
+          <div class="book-actions">
+            <el-button
+              size="small"
+              plain
+              :disabled="book.id === vocabularyStore.activeBookId"
+              @click="setActiveBook(book)"
+            >
+              切换
+            </el-button>
+            <el-button
+              size="small"
+              plain
+              :disabled="book.id === vocabularyStore.defaultBookId"
+              @click="setDefaultBook(book)"
+            >
+              设为默认
+            </el-button>
+            <el-button size="small" plain @click="renameBook(book)">重命名</el-button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-card">
       <div class="tag-editor">
-        <label class="field-label">自定义标签</label>
+        <label class="field-label">当前生词本标签：{{ vocabularyStore.getActiveBook()?.name || '默认生词本' }}</label>
         <div class="tag-input-row">
           <el-input
             v-model="tagName"
@@ -44,10 +93,57 @@ import { useVocabularyStore } from '../../stores/vocabulary.js'
 
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
+const bookName = ref('')
 const tagName = ref('')
 
 function goBack() {
   router.push('/vocabulary')
+}
+
+function addBook() {
+  const name = bookName.value.trim()
+  if (!name) {
+    ElMessage.warning('请输入生词本名称')
+    return
+  }
+  const existing = vocabularyStore.books.find(book => book.name === name)
+  const book = vocabularyStore.addBook(name)
+  bookName.value = ''
+  ElMessage.success(existing ? `生词本「${book.name}」已存在` : `已添加生词本「${book.name}」`)
+}
+
+function setActiveBook(book) {
+  if (vocabularyStore.setActiveBook(book.id)) {
+    ElMessage.success(`当前生词本已切换为「${book.name}」`)
+  }
+}
+
+function setDefaultBook(book) {
+  if (vocabularyStore.setDefaultBook(book.id)) {
+    ElMessage.success(`默认生词本已设置为「${book.name}」`)
+  }
+}
+
+async function renameBook(book) {
+  try {
+    const { value } = await ElMessageBox.prompt('请输入新的生词本名称', `重命名「${book.name}」`, {
+      confirmButtonText: '保存',
+      cancelButtonText: '取消',
+      inputValue: book.name,
+      inputPattern: /\S+/,
+      inputErrorMessage: '名称不能为空'
+    })
+    const name = String(value || '').trim()
+    if (!name) return
+    const updated = vocabularyStore.renameBook(book.id, name)
+    if (!updated) {
+      ElMessage.warning('生词本名称已存在')
+      return
+    }
+    ElMessage.success(`已重命名为「${updated.name}」`)
+  } catch {
+    // 用户取消
+  }
 }
 
 function addTag() {
@@ -110,6 +206,7 @@ async function removeTag(tag) {
 }
 
 .settings-card {
+  margin-bottom: 16px;
   padding: 22px;
   border: 1px solid #d7dfdc;
   border-radius: 8px;
@@ -127,6 +224,57 @@ async function removeTag(tag) {
 
 .tag-input-row .el-input {
   flex: 1;
+}
+
+.book-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #edf1ef;
+}
+
+.book-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.book-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.book-name {
+  color: #16201f;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.book-count {
+  color: #8c9996;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.book-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.book-actions :deep(.el-button) {
+  margin-left: 0;
 }
 
 .tag-list {
@@ -187,5 +335,17 @@ async function removeTag(tag) {
   padding: 10px 0 0;
   color: #8c9996;
   text-align: center;
+}
+
+@media (max-width: 720px) {
+  .book-row,
+  .tag-input-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .book-actions {
+    justify-content: flex-start;
+  }
 }
 </style>

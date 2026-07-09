@@ -652,7 +652,7 @@ async function addWordToVocabulary() {
     word,
     phonetic: wordPopup.phonetic,
     meaning: isUsableMeaning(wordPopup.meaning) ? wordPopup.meaning : ''
-  })
+  }, 'default')
   ElMessage.success(`已加入生词本：${word}`)
 }
 

@@ -6,14 +6,29 @@
           <el-icon><ArrowLeft /></el-icon>
           返回主页面
         </el-button>
-        <h2 class="vocab-title">生词本</h2>
+        <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
       </div>
       <div class="vocab-stats" aria-label="生词统计">
-        <span class="vocab-stat-total">总词汇：{{ levelStats.total }}</span>
-        <span class="level-unknown">不认识：{{ levelStats.unknown }}</span>
-        <span class="level-learning">已了解：{{ levelStats.learning }}</span>
-        <span class="level-mastered">已掌握：{{ levelStats.mastered }}</span>
-        <span class="level-familiar">已熟记：{{ levelStats.familiar }}</span>
+        <span class="vocab-stat vocab-stat-total">
+          <span class="vocab-stat-label">总词汇</span>
+          <span class="vocab-stat-value">{{ levelStats.total }}</span>
+        </span>
+        <span class="vocab-stat level-unknown">
+          <span class="vocab-stat-label">不认识</span>
+          <span class="vocab-stat-value">{{ levelStats.unknown }}</span>
+        </span>
+        <span class="vocab-stat level-learning">
+          <span class="vocab-stat-label">已了解</span>
+          <span class="vocab-stat-value">{{ levelStats.learning }}</span>
+        </span>
+        <span class="vocab-stat level-mastered">
+          <span class="vocab-stat-label">已掌握</span>
+          <span class="vocab-stat-value">{{ levelStats.mastered }}</span>
+        </span>
+        <span class="vocab-stat level-familiar">
+          <span class="vocab-stat-label">已熟记</span>
+          <span class="vocab-stat-value">{{ levelStats.familiar }}</span>
+        </span>
       </div>
       <div class="vocab-actions">
         <el-button type="primary" plain @click="openManualDialog">
@@ -287,6 +302,8 @@ const sortOptions = [
   { label: '添加时间', value: 'createdAt' }
 ]
 
+const activeBookName = computed(() => vocabularyStore.getActiveBook()?.name || '默认生词本')
+
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
   let words = vocabularyStore.words.filter(entry => {
@@ -502,10 +519,12 @@ async function removeWordFromDialog() {
 }
 
 function exportWords() {
+  const safeBookName = activeBookName.value.replace(/[\\/:*?"<>|]+/g, '_') || '生词本'
   const payload = {
     schema: 'bilingual-reader-vocabulary',
     version: 1,
     exportedAt: new Date().toISOString(),
+    bookName: activeBookName.value,
     tags: vocabularyStore.tags,
     words: vocabularyStore.words
   }
@@ -513,7 +532,7 @@ function exportWords() {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = '生词本.json'
+  link.download = `${safeBookName}.json`
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
@@ -555,7 +574,7 @@ async function handleImport(event) {
       vocabularyStore.importTags(payload.tags)
     }
     const count = vocabularyStore.importWords(words)
-    ElMessage.success(`已导入 ${count} 个单词`)
+    ElMessage.success(`已导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
     ElMessage.error(`导入失败：${error.message || '请检查文件后重试'}`)
   }
@@ -600,14 +619,28 @@ async function handleImport(event) {
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  gap: 8px 14px;
+  gap: 8px 18px;
   min-width: 0;
   color: #40504c;
-  font-size: 14px;
-  font-weight: 800;
-  line-height: 1.4;
   text-align: center;
+}
+
+.vocab-stat {
+  display: grid;
+  gap: 4px;
+  min-width: 54px;
+  line-height: 1.1;
   white-space: nowrap;
+}
+
+.vocab-stat-label {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.vocab-stat-value {
+  font-size: 28px;
+  font-weight: 900;
 }
 
 .vocab-stat-total {
