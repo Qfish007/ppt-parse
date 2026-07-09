@@ -3,69 +3,39 @@
     <header class="vocab-header">
       <div class="vocab-title-wrap">
         <el-button type="primary" @click="goBack">
-          <el-icon><ArrowLeft /></el-icon>
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
           返回主页面
         </el-button>
         <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
       </div>
       <div class="vocab-actions">
         <el-button type="primary" plain @click="openManualDialog">
-          <el-icon><Plus /></el-icon>
+          <el-icon>
+            <Plus />
+          </el-icon>
           手动录入
         </el-button>
         <el-button @click="goTest">测试</el-button>
-        <el-button @click="triggerImport">导入</el-button>
-        <el-button type="primary" @click="exportWords">导出</el-button>
+        <el-button @click="openFormatDialog('import')">导入</el-button>
+        <el-button type="primary" @click="openFormatDialog('export')">导出</el-button>
         <el-button @click="goSettings">设置</el-button>
       </div>
     </header>
 
     <section class="vocab-toolbar">
-      <el-input
-        v-model="searchText"
-        clearable
-        placeholder="搜索单词或中文意思"
-        class="vocab-search"
-      />
-      <el-select
-        v-model="levelFilter"
-        class="vocab-filter"
-        popper-class="vocab-level-popper"
-        multiple
-        collapse-tags
-        collapse-tags-tooltip
-        clearable
-        placeholder="按水平筛选"
-      >
-        <el-option
-          v-for="level in VOCABULARY_LEVELS"
-          :key="level.value"
-          :class="levelClass(level.value)"
-          :label="level.label"
-          :value="level.value"
-        />
+      <el-input v-model="searchText" clearable placeholder="搜索单词或中文意思" class="vocab-search" />
+      <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper" multiple collapse-tags
+        collapse-tags-tooltip clearable placeholder="按水平筛选">
+        <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
+          :label="level.label" :value="level.value" />
       </el-select>
-      <el-select
-        v-model="tagFilter"
-        class="vocab-tag-filter"
-        multiple
-        collapse-tags
-        collapse-tags-tooltip
-        clearable
-        placeholder="按标签筛选"
-      >
-        <el-option
-          v-for="tag in vocabularyStore.tags"
-          :key="tag.id"
-          :label="tag.name"
-          :value="tag.id"
-        />
+      <el-select v-model="tagFilter" class="vocab-tag-filter" multiple collapse-tags collapse-tags-tooltip clearable
+        placeholder="按标签筛选">
+        <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
       </el-select>
-      <el-segmented
-        v-model="sortMode"
-        :options="sortOptions"
-        class="vocab-sort"
-      />
+      <el-segmented v-model="sortMode" :options="sortOptions" class="vocab-sort" />
     </section>
 
     <section class="vocab-list">
@@ -83,15 +53,13 @@
         暂无生词。
       </div>
 
-      <div
-        v-for="entry in filteredWords"
-        :key="entry.word"
-        class="vocab-row"
-      >
+      <div v-for="entry in filteredWords" :key="entry.word" class="vocab-row">
         <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
         <div class="vocab-pronunciation">
           <button class="vocab-sound" @click="playWord(entry)">
-            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
           </button>
           <span>{{ entry.phonetic || '-' }}</span>
         </div>
@@ -103,32 +71,17 @@
         </div>
         <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
         <div class="vocab-tags">
-          <el-tag
-            v-for="tag in tagsForEntry(entry)"
-            :key="tag.id"
-            size="small"
-            effect="plain"
-          >
+          <el-tag v-for="tag in tagsForEntry(entry)" :key="tag.id" size="small" effect="plain">
             {{ tag.name }}
           </el-tag>
           <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
         </div>
         <div class="vocab-level">
           <span class="vocab-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
-          <el-select
-            :class="['vocab-level-select', levelClass(entry.level)]"
-            :model-value="entry.level"
-            size="small"
-            popper-class="vocab-level-popper"
-            @change="value => updateLevel(entry.word, value)"
-          >
-            <el-option
-              v-for="level in VOCABULARY_LEVELS"
-              :key="level.value"
-              :class="levelClass(level.value)"
-              :label="level.label"
-              :value="level.value"
-            />
+          <el-select :class="['vocab-level-select', levelClass(entry.level)]" :model-value="entry.level" size="small"
+            popper-class="vocab-level-popper" @change="value => updateLevel(entry.word, value)">
+            <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
+              :label="level.label" :value="level.value" />
           </el-select>
         </div>
         <div class="vocab-action">
@@ -154,47 +107,22 @@
             </div>
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">掌握水平</div>
-              <el-select
-                v-model="tagDialog.level"
-                :class="['tag-dialog-control', levelClass(tagDialog.level)]"
-                popper-class="vocab-level-popper"
-                :teleported="false"
-              >
-                <el-option
-                  v-for="level in VOCABULARY_LEVELS"
-                  :key="level.value"
-                  :class="levelClass(level.value)"
-                  :label="level.label"
-                  :value="level.value"
-                />
+              <el-select v-model="tagDialog.level" :class="['tag-dialog-control', levelClass(tagDialog.level)]"
+                popper-class="vocab-level-popper" :teleported="false">
+                <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
+                  :label="level.label" :value="level.value" />
               </el-select>
             </div>
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">辅助记忆</div>
-              <el-input
-                v-model="tagDialog.memoryText"
-                class="tag-dialog-control"
-                placeholder="例如：fa.mous"
-                clearable
-              />
+              <el-input v-model="tagDialog.memoryText" class="tag-dialog-control" placeholder="例如：fa.mous" clearable />
             </div>
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">单词标签</div>
               <div class="tag-dialog-control-wrap">
-                <el-select
-                  v-model="tagDialog.tagIds"
-                  multiple
-                  clearable
-                  placeholder="选择标签"
-                  class="tag-dialog-control"
-                  :teleported="false"
-                >
-                  <el-option
-                    v-for="tag in vocabularyStore.tags"
-                    :key="tag.id"
-                    :label="tag.name"
-                    :value="tag.id"
-                  />
+                <el-select v-model="tagDialog.tagIds" multiple clearable placeholder="选择标签" class="tag-dialog-control"
+                  :teleported="false">
+                  <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
                 </el-select>
                 <div v-if="!vocabularyStore.tags.length" class="tag-dialog-empty">
                   还没有标签，请先到设置里添加。
@@ -212,24 +140,12 @@
       </div>
     </Teleport>
 
-    <el-dialog
-      v-model="manualDialog.visible"
-      title="手动录入"
-      width="420px"
-      class="manual-word-dialog"
-      :close-on-click-modal="!manualDialog.loading"
-      :close-on-press-escape="!manualDialog.loading"
-    >
+    <el-dialog v-model="manualDialog.visible" title="手动录入" width="420px" class="manual-word-dialog"
+      :close-on-click-modal="!manualDialog.loading" :close-on-press-escape="!manualDialog.loading">
       <el-form @submit.prevent="submitManualWord">
         <el-form-item label="单词">
-          <el-input
-            ref="manualInputRef"
-            v-model="manualDialog.word"
-            placeholder="输入一个英文单词"
-            clearable
-            :disabled="manualDialog.loading"
-            @keyup.enter="submitManualWord"
-          />
+          <el-input ref="manualInputRef" v-model="manualDialog.word" placeholder="输入一个英文单词" clearable
+            :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -240,23 +156,33 @@
       </template>
     </el-dialog>
 
-    <input
-      ref="importInputRef"
-      type="file"
-      accept="application/json,.json"
-      class="hidden-input"
-      @change="handleImport"
-    />
+    <input ref="importInputRef" type="file" accept=".json,.txt,.csv,application/json,text/plain" class="hidden-input"
+      @change="handleImport" />
 
-    <div
-      v-if="vocabularyStore.statsVisible"
-      ref="statsBarRef"
-      class="vocab-stats-bar"
-      :class="{ 'is-dragging': statsDrag.dragging }"
-      :style="statsBarStyle"
-      aria-label="生词统计"
-      @pointerdown="startStatsDrag"
-    >
+    <el-dialog v-model="formatDialog.visible" :title="formatDialog.mode === 'export' ? '选择导出格式' : '选择导入格式'"
+      width="460px" class="vocab-format-dialog" :close-on-click-modal="true">
+      <div class="format-dialog-body">
+        <el-radio-group v-model="formatDialog.selectedId">
+          <div v-for="fmt in vocabFormatList" :key="fmt.id" class="format-option"
+            :class="{ 'is-selected': formatDialog.selectedId === fmt.id }" @click="formatDialog.selectedId = fmt.id">
+            <el-radio :label="fmt.id" :value="fmt.id" class="format-option-radio">
+              <span class="format-option-name">{{ fmt.name }}</span>
+            </el-radio>
+            <p v-if="fmt.desc" class="format-option-desc">{{ fmt.desc }}</p>
+          </div>
+        </el-radio-group>
+      </div>
+      <template #footer>
+        <el-button @click="formatDialog.visible = false">取消</el-button>
+        <el-button type="primary" @click="confirmFormatDialog">
+          {{ formatDialog.mode === 'export' ? '开始导出' : '选择文件' }}
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <div v-if="vocabularyStore.statsVisible" ref="statsBarRef" class="vocab-stats-bar"
+      :class="{ 'is-dragging': statsDrag.dragging }" :style="statsBarStyle" aria-label="生词统计"
+      @pointerdown="startStatsDrag">
       <span class="vocab-stat vocab-stat-total">
         <span class="vocab-stat-label">总词汇</span>
         <span class="vocab-stat-value">{{ levelStats.total }}</span>
@@ -290,6 +216,7 @@ import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { useVocabularyStore, VOCABULARY_LEVELS } from '../../stores/vocabulary.js'
+import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
@@ -322,6 +249,13 @@ const tagDialog = ref({
   memoryText: '',
   tagIds: []
 })
+const formatDialog = ref({
+  visible: false,
+  mode: 'import', // 'import' | 'export'
+  selectedId: 'default'
+})
+const lastImportFormatId = ref('default')
+const vocabFormatList = getVocabFormatList()
 
 const sortOptions = [
   { label: '字母排序', value: 'alphabet' },
@@ -622,42 +556,75 @@ async function removeWordFromDialog() {
   const removed = await removeWord(word)
 }
 
-function exportWords() {
-  const safeBookName = activeBookName.value.replace(/[\\/:*?"<>|]+/g, '_') || '生词本'
-  const payload = {
-    schema: 'bilingual-reader-vocabulary',
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    bookName: activeBookName.value,
-    tags: vocabularyStore.tags,
-    words: vocabularyStore.words
+function openFormatDialog(mode) {
+  const defaultId = mode === 'import' ? lastImportFormatId.value : 'default'
+  const exists = vocabFormatList.some(f => f.id === defaultId)
+  formatDialog.value = {
+    visible: true,
+    mode,
+    selectedId: exists ? defaultId : 'default'
   }
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
+}
+
+function downloadBlob(content, mime, filename) {
+  const blob = new Blob([content], { type: mime })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  link.download = `${safeBookName}.json`
+  link.download = filename
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
   URL.revokeObjectURL(url)
-  ElMessage.success('已导出生词本')
 }
 
-function triggerImport() {
-  importInputRef.value?.click()
+function exportWordsWithFormat(formatId) {
+  const fmt = getVocabFormat(formatId)
+  if (!fmt) {
+    ElMessage.error('未知的导出格式')
+    return
+  }
+  const safeBookName = activeBookName.value.replace(/[\\/:*?"<>|]+/g, '_') || '生词本'
+  const result = fmt.serialize(vocabularyStore.words, vocabularyStore.tags, {
+    bookName: activeBookName.value,
+    exportedAt: new Date().toISOString()
+  })
+  downloadBlob(result.content, result.mime, `${safeBookName}.${result.ext}`)
+  ElMessage.success(`已以「${fmt.name}」导出生词本`)
 }
 
-function readJsonFile(file) {
+function confirmFormatDialog() {
+  const fmtId = formatDialog.value.selectedId
+  const fmt = getVocabFormat(fmtId)
+  if (!fmt) {
+    ElMessage.error('请选择一个格式')
+    return
+  }
+  const mode = formatDialog.value.mode
+  formatDialog.value.visible = false
+
+  if (mode === 'export') {
+    nextTick(() => exportWordsWithFormat(fmtId))
+    return
+  }
+
+  // 导入：根据所选格式设置 accept 后触发文件选择
+  lastImportFormatId.value = fmtId
+  nextTick(() => {
+    const input = importInputRef.value
+    if (input) {
+      input.accept = fmt.importAccept || ''
+      input.dataset.formatId = fmtId
+      input.value = ''
+      input.click()
+    }
+  })
+}
+
+function readTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = () => {
-      try {
-        resolve(JSON.parse(String(reader.result || '{}')))
-      } catch {
-        reject(new Error('导入文件不是有效的 JSON'))
-      }
-    }
+    reader.onload = () => resolve(String(reader.result || ''))
     reader.onerror = reject
     reader.readAsText(file)
   })
@@ -668,19 +635,24 @@ async function handleImport(event) {
   event.target.value = ''
   if (!file) return
 
+  const fmtId = event.target.dataset?.formatId || lastImportFormatId.value || 'default'
+  const fmt = getVocabFormat(fmtId)
+  if (!fmt) {
+    ElMessage.error('未知的导入格式')
+    return
+  }
+
   try {
-    const payload = await readJsonFile(file)
-    const words = Array.isArray(payload)
-      ? payload
-      : (payload.schema === 'bilingual-reader-vocabulary' ? payload.words : null)
-    if (!Array.isArray(words)) throw new Error('不支持的生词本文件')
-    if (payload?.schema === 'bilingual-reader-vocabulary') {
-      vocabularyStore.importTags(payload.tags)
+    const rawText = await readTextFile(file)
+    const { words, tags } = fmt.deserialize(rawText)
+    if (!Array.isArray(words) || !words.length) throw new Error('未解析到任何单词')
+    if (fmtId === 'default' && Array.isArray(tags) && tags.length) {
+      vocabularyStore.importTags(tags)
     }
     const count = vocabularyStore.importWords(words)
-    ElMessage.success(`已导入 ${count} 个单词到「${activeBookName.value}」`)
+    ElMessage.success(`已通过「${fmt.name}」导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
-    ElMessage.error(`导入失败：${error.message || '请检查文件后重试'}`)
+    ElMessage.error(`「${fmt.name}」导入失败：${error.message || '请检查文件后重试'}`)
   }
 }
 </script>
@@ -689,7 +661,7 @@ async function handleImport(event) {
 .vocab-page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28px;
+  padding: 28px 0;
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
 }
 
@@ -1251,5 +1223,93 @@ async function handleImport(event) {
   .vocab-row {
     min-width: 1120px;
   }
+}
+
+:global(.vocab-format-dialog) {
+  --fmt-border: #e1ebe7;
+  --fmt-bg: #f7faf9;
+  --fmt-active-border: #5ec4a9;
+  --fmt-active-bg: #ecfbf6;
+}
+
+:global(.vocab-format-dialog .el-dialog__body) {
+  padding-top: 8px;
+}
+
+.format-dialog-body {
+  width: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.format-dialog-body :deep(.el-radio-group) {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  row-gap: 0;
+}
+
+.format-option {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid var(--fmt-border, #e1ebe7);
+  border-radius: 8px;
+  background: var(--fmt-bg, #f7faf9);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.format-option:last-child {
+  margin-bottom: 0;
+}
+
+.format-option:hover {
+  border-color: #b7e0d3;
+  background: #f3fbf8;
+}
+
+.format-option.is-selected {
+  border-color: var(--fmt-active-border, #5ec4a9);
+  background: var(--fmt-active-bg, #ecfbf6);
+  box-shadow: 0 4px 14px rgba(94, 196, 169, 0.15);
+}
+
+.format-option :deep(.el-radio) {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 0;
+  width: 100%;
+}
+
+.format-option :deep(.el-radio__input) {
+  align-self: center;
+  margin-top: 0;
+}
+
+.format-option :deep(.el-radio__label) {
+  display: inline-flex;
+  align-items: center;
+  padding-left: 8px;
+  flex: 1;
+  min-height: 20px;
+}
+
+.format-option-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #16201f;
+  line-height: 1.2;
+}
+
+.format-option-desc {
+  margin: 8px 0 0 28px;
+  padding: 0;
+  color: #63706d;
+  font-size: 13px;
+  line-height: 1.5;
 }
 </style>

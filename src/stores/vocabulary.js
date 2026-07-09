@@ -231,6 +231,30 @@ export function useVocabularyStore() {
       return book
     },
 
+    removeBook(bookId) {
+      const id = String(bookId || '')
+      if (!id) return false
+      const idx = this.books.findIndex(b => b.id === id)
+      if (idx < 0) return false
+      // 兜底：至少保留 1 个生词本，避免空状态
+      if (this.books.length <= 1) return false
+
+      this.books.splice(idx, 1)
+
+      // 回退：active / default 被删时落到第一本
+      const firstId = this.books[0].id
+      if (!this.books.some(b => b.id === this.activeBookId)) {
+        this.activeBookId = firstId
+      }
+      if (!this.books.some(b => b.id === this.defaultBookId)) {
+        this.defaultBookId = firstId
+      }
+
+      this.syncActiveBook()
+      this.save()
+      return true
+    },
+
     setActiveBook(bookId) {
       if (!this.getBook(bookId)) return false
       this.activeBookId = bookId

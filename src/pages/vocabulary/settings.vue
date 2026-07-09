@@ -3,7 +3,9 @@
     <header class="settings-header">
       <div class="settings-title-wrap">
         <el-button type="primary" @click="goBack">
-          <el-icon><ArrowLeft /></el-icon>
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
           返回生词本
         </el-button>
         <h2 class="settings-title">生词本设置</h2>
@@ -16,12 +18,8 @@
           <label class="field-label">统计显示</label>
           <div class="setting-desc">控制生词本页面右侧悬浮统计是否显示。</div>
         </div>
-        <el-switch
-          :model-value="vocabularyStore.statsVisible"
-          active-text="显示"
-          inactive-text="隐藏"
-          @change="toggleStatsVisible"
-        />
+        <el-switch :model-value="vocabularyStore.statsVisible" active-text="显示" inactive-text="隐藏"
+          @change="toggleStatsVisible" />
       </div>
     </section>
 
@@ -29,12 +27,7 @@
       <div class="book-editor">
         <label class="field-label">生词本管理</label>
         <div class="tag-input-row">
-          <el-input
-            v-model="bookName"
-            clearable
-            placeholder="例如：土豆学习、CET4、托福"
-            @keyup.enter="addBook"
-          />
+          <el-input v-model="bookName" clearable placeholder="例如：土豆学习、CET4、托福" @keyup.enter="addBook" />
           <el-button type="primary" @click="addBook">添加词本</el-button>
         </div>
       </div>
@@ -49,15 +42,15 @@
             <span class="book-count">{{ book.words.length }} 个单词</span>
           </div>
           <div class="book-actions">
-            <el-button
-              size="small"
-              plain
-              :disabled="book.id === vocabularyStore.activeBookId"
-              @click="setActiveBook(book)"
-            >
+            <el-button size="small" plain :disabled="book.id === vocabularyStore.activeBookId"
+              @click="setActiveBook(book)">
               切换
             </el-button>
             <el-button size="small" plain @click="renameBook(book)">重命名</el-button>
+            <el-button size="small" type="danger" plain :disabled="vocabularyStore.books.length <= 1"
+              :title="vocabularyStore.books.length <= 1 ? '至少保留一个生词本' : '删除此生词本及其中全部单词'" @click="removeBook(book)">
+              删除
+            </el-button>
           </div>
         </div>
       </div>
@@ -67,12 +60,7 @@
       <div class="tag-editor">
         <label class="field-label">当前生词本标签：{{ vocabularyStore.getActiveBook()?.name || '默认生词本' }}</label>
         <div class="tag-input-row">
-          <el-input
-            v-model="tagName"
-            clearable
-            placeholder="例如：第一学期、本周、爸妈要求的"
-            @keyup.enter="addTag"
-          />
+          <el-input v-model="tagName" clearable placeholder="例如：第一学期、本周、爸妈要求的" @keyup.enter="addTag" />
           <el-button type="primary" @click="addTag">添加</el-button>
         </div>
       </div>
@@ -148,6 +136,37 @@ async function renameBook(book) {
     ElMessage.success(`已重命名为「${updated.name}」`)
   } catch {
     // 用户取消
+  }
+}
+
+async function removeBook(book) {
+  if (vocabularyStore.books.length <= 1) {
+    ElMessage.warning('至少需要保留一个生词本')
+    return
+  }
+  const count = Array.isArray(book.words) ? book.words.length : 0
+  const isActive = book.id === vocabularyStore.activeBookId
+  const warnActive = isActive ? '当前正在使用的生词本，删除后将自动切换到第一本。\n' : ''
+  const warnWords = count > 0 ? `将永久删除其中的 ${count} 个单词。\n` : ''
+  try {
+    await ElMessageBox.confirm(
+      `确定删除生词本「${book.name}」吗？\n${warnActive}${warnWords}此操作不可撤销。`,
+      '删除生词本',
+      {
+        confirmButtonText: '删除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        dangerouslyUseHTMLString: false
+      }
+    )
+    const ok = vocabularyStore.removeBook(book.id)
+    if (!ok) {
+      ElMessage.error('删除失败，请稍后重试')
+      return
+    }
+    ElMessage.success(`已删除生词本「${book.name}」`)
+  } catch (_err) {
+    // 用户取消或 removeBook 拒绝，静默
   }
 }
 
@@ -359,6 +378,7 @@ async function removeTag(tag) {
 }
 
 @media (max-width: 720px) {
+
   .book-row,
   .display-setting-row,
   .tag-input-row {
