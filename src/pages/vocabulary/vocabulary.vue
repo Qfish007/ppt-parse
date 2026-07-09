@@ -74,7 +74,7 @@
         :key="entry.word"
         class="vocab-row"
       >
-        <strong class="vocab-word">{{ entry.word }}</strong>
+        <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
         <div class="vocab-pronunciation">
           <button class="vocab-sound" @click="playWord(entry)">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
@@ -266,6 +266,10 @@ function goSettings() {
   router.push('/vocabulary/settings')
 }
 
+function openWordDetail(word) {
+  router.push(`/vocabulary/${encodeURIComponent(word)}`)
+}
+
 function levelLabel(level) {
   return VOCABULARY_LEVELS.find(item => item.value === level)?.label || '不认识'
 }
@@ -288,6 +292,13 @@ function splitMemoryText(text) {
 
 function autoMemoryParts(word) {
   const value = String(word || '').trim()
+  const compoundMap = {
+    everywhere: ['every', 'where'],
+    somewhere: ['some', 'where'],
+    anywhere: ['any', 'where'],
+    nowhere: ['no', 'where']
+  }
+  if (compoundMap[value.toLowerCase()]) return compoundMap[value.toLowerCase()]
   if (value.length <= 4) return value ? [value] : []
   if (value.length <= 6) return [value.slice(0, 2), value.slice(2)]
   if (value.endsWith('ing') && value.length > 5) return [value.slice(0, -3), 'ing']
@@ -518,9 +529,22 @@ async function handleImport(event) {
 }
 
 .vocab-word {
+  display: inline-flex;
+  width: fit-content;
+  border: 0;
+  padding: 0;
+  background: transparent;
   color: #101919;
+  cursor: pointer;
   font-size: 18px;
   font-weight: 800;
+  text-align: left;
+}
+
+.vocab-word:hover {
+  color: #126b62;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .vocab-pronunciation {
