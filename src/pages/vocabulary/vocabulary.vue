@@ -11,6 +11,7 @@
       <div class="vocab-actions">
         <el-button @click="triggerImport">导入</el-button>
         <el-button type="primary" @click="exportWords">导出</el-button>
+        <el-button @click="goSettings">设置</el-button>
       </div>
     </header>
 
@@ -22,12 +23,28 @@
         class="vocab-search"
       />
       <el-select v-model="levelFilter" class="vocab-filter">
-        <el-option label="全部掌握水平" value="all" />
+        <el-option label="全部" value="all" />
         <el-option
           v-for="level in VOCABULARY_LEVELS"
           :key="level.value"
           :label="level.label"
           :value="level.value"
+        />
+      </el-select>
+      <el-select
+        v-model="tagFilter"
+        class="vocab-tag-filter"
+        multiple
+        collapse-tags
+        collapse-tags-tooltip
+        clearable
+        placeholder="按标签筛选"
+      >
+        <el-option
+          v-for="tag in vocabularyStore.tags"
+          :key="tag.id"
+          :label="tag.name"
+          :value="tag.id"
         />
       </el-select>
       <el-segmented
@@ -42,6 +59,7 @@
         <span>单词</span>
         <span>发音</span>
         <span>中文意思</span>
+        <span class="vocab-tags-head">标签</span>
         <span class="vocab-level-head">掌握水平</span>
         <span class="vocab-action-head">操作</span>
       </div>
@@ -57,12 +75,23 @@
       >
         <strong class="vocab-word">{{ entry.word }}</strong>
         <div class="vocab-pronunciation">
-          <button class="vocab-sound" @click="speak(entry.word, 'en-US')">
+          <button class="vocab-sound" @click="playWord(entry)">
             <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
           </button>
           <span>{{ entry.phonetic || '-' }}</span>
         </div>
         <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
+        <div class="vocab-tags">
+          <el-tag
+            v-for="tag in tagsForEntry(entry)"
+            :key="tag.id"
+            size="small"
+            effect="plain"
+          >
+            {{ tag.name }}
+          </el-tag>
+          <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
+        </div>
         <div class="vocab-level">
           <span class="vocab-level-label">{{ levelLabel(entry.level) }}</span>
           <el-select
@@ -80,10 +109,74 @@
           </el-select>
         </div>
         <div class="vocab-action">
-          <el-button text type="danger" @click="removeWord(entry.word)">移除</el-button>
+          <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
         </div>
       </div>
     </section>
+
+    <Teleport to="body">
+      <div v-if="tagDialog.visible" class="tag-dialog-overlay" @click.self="tagDialog.visible = false">
+        <div class="tag-dialog">
+          <div class="tag-dialog-header">
+            <div>
+              <h3>设置单词</h3>
+              <p>调整掌握水平、标签和移除操作。</p>
+            </div>
+            <button class="tag-dialog-close" @click="tagDialog.visible = false">&times;</button>
+          </div>
+          <div class="tag-dialog-body">
+            <div class="tag-dialog-field">
+              <div class="tag-dialog-label">单词名称</div>
+              <div class="tag-dialog-word">{{ tagDialog.word }}</div>
+            </div>
+            <div class="tag-dialog-field">
+              <div class="tag-dialog-label">掌握水平</div>
+              <el-select
+                v-model="tagDialog.level"
+                class="tag-dialog-control"
+                :teleported="false"
+              >
+                <el-option
+                  v-for="level in VOCABULARY_LEVELS"
+                  :key="level.value"
+                  :label="level.label"
+                  :value="level.value"
+                />
+              </el-select>
+            </div>
+            <div class="tag-dialog-field">
+              <div class="tag-dialog-label">单词标签</div>
+              <div class="tag-dialog-control-wrap">
+                <el-select
+                  v-model="tagDialog.tagIds"
+                  multiple
+                  clearable
+                  placeholder="选择标签"
+                  class="tag-dialog-control"
+                  :teleported="false"
+                >
+                  <el-option
+                    v-for="tag in vocabularyStore.tags"
+                    :key="tag.id"
+                    :label="tag.name"
+                    :value="tag.id"
+                  />
+                </el-select>
+                <div v-if="!vocabularyStore.tags.length" class="tag-dialog-empty">
+                  还没有标签，请先到设置里添加。
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="tag-dialog-footer">
+            <el-button type="danger" plain @click="removeWordFromDialog">移除单词</el-button>
+            <span class="tag-dialog-spacer"></span>
+            <el-button @click="tagDialog.visible = false">取消</el-button>
+            <el-button type="primary" @click="saveWordTags">保存</el-button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
 
     <input
       ref="importInputRef"
@@ -96,22 +189,31 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
+import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { useVocabularyStore, VOCABULARY_LEVELS } from '../../stores/vocabulary.js'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
 const vocabularyStore = useVocabularyStore()
+const bookStore = useBookStore()
 
 const searchText = ref('')
 const levelFilter = ref('all')
+const tagFilter = ref([])
 const sortMode = ref('alphabet')
 const importInputRef = ref(null)
+const tagDialog = ref({
+  visible: false,
+  word: '',
+  level: 'unknown',
+  tagIds: []
+})
 
 const sortOptions = [
   { label: '字母排序', value: 'alphabet' },
@@ -125,7 +227,9 @@ const filteredWords = computed(() => {
       || entry.word.includes(keyword)
       || String(entry.meaning || '').toLowerCase().includes(keyword)
     const matchLevel = levelFilter.value === 'all' || entry.level === levelFilter.value
-    return matchKeyword && matchLevel
+    const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
+    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
+    return matchKeyword && matchLevel && matchTags
   })
 
   if (sortMode.value === 'createdAt') {
@@ -141,12 +245,57 @@ function goBack() {
   router.push(`/main/${active?.index || '001'}`)
 }
 
+function goSettings() {
+  router.push('/vocabulary/settings')
+}
+
 function levelLabel(level) {
   return VOCABULARY_LEVELS.find(item => item.value === level)?.label || '不认识'
 }
 
 function updateLevel(word, level) {
   vocabularyStore.updateLevel(word, level)
+}
+
+function tagsForEntry(entry) {
+  const tagIds = new Set(entry.tagIds || [])
+  return vocabularyStore.tags.filter(tag => tagIds.has(tag.id))
+}
+
+function openTagDialog(entry) {
+  tagDialog.value = {
+    visible: true,
+    word: entry.word,
+    level: entry.level || 'unknown',
+    tagIds: [...(entry.tagIds || [])]
+  }
+}
+
+function saveWordTags() {
+  vocabularyStore.updateWord(tagDialog.value.word, {
+    level: tagDialog.value.level,
+    tagIds: tagDialog.value.tagIds
+  })
+  tagDialog.value.visible = false
+  ElMessage.success('已保存设置')
+}
+
+async function playWord(entry) {
+  speak(entry.word, 'en-US')
+  if (entry.phonetic) return
+  try {
+    const result = await bookStore.translateWordToChinese(entry.word)
+    const phonetic = typeof result === 'object' ? result?.phonetic : ''
+    const meaning = typeof result === 'object' ? result?.meaning : ''
+    if (phonetic) {
+      vocabularyStore.updateWord(entry.word, {
+        phonetic,
+        meaning: entry.meaning || meaning || ''
+      })
+    }
+  } catch {
+    // 发音不受音标补查失败影响
+  }
 }
 
 async function removeWord(word) {
@@ -158,9 +307,18 @@ async function removeWord(word) {
     })
     vocabularyStore.removeWord(word)
     ElMessage.success('已移除')
+    return true
   } catch {
     // 用户取消
+    return false
   }
+}
+
+async function removeWordFromDialog() {
+  const word = tagDialog.value.word
+  tagDialog.value.visible = false
+  await nextTick()
+  const removed = await removeWord(word)
 }
 
 function exportWords() {
@@ -168,6 +326,7 @@ function exportWords() {
     schema: 'bilingual-reader-vocabulary',
     version: 1,
     exportedAt: new Date().toISOString(),
+    tags: vocabularyStore.tags,
     words: vocabularyStore.words
   }
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
@@ -212,6 +371,9 @@ async function handleImport(event) {
       ? payload
       : (payload.schema === 'bilingual-reader-vocabulary' ? payload.words : null)
     if (!Array.isArray(words)) throw new Error('不支持的生词本文件')
+    if (payload?.schema === 'bilingual-reader-vocabulary') {
+      vocabularyStore.importTags(payload.tags)
+    }
     const count = vocabularyStore.importWords(words)
     ElMessage.success(`已导入 ${count} 个单词`)
   } catch (error) {
@@ -270,6 +432,10 @@ async function handleImport(event) {
   width: 170px;
 }
 
+.vocab-tag-filter {
+  width: 190px;
+}
+
 .vocab-sort {
   flex-shrink: 0;
 }
@@ -287,7 +453,7 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1fr) minmax(150px, 1fr) minmax(260px, 2fr) 150px 86px;
+  grid-template-columns: minmax(130px, 0.9fr) minmax(140px, 0.9fr) minmax(240px, 1.8fr) minmax(150px, 1fr) 140px 150px;
   align-items: center;
   gap: 12px;
 }
@@ -350,6 +516,22 @@ async function handleImport(event) {
   white-space: pre-wrap;
 }
 
+.vocab-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.vocab-tag-empty {
+  color: #8c9996;
+}
+
+.vocab-tags-head {
+  text-align: center;
+}
+
 .vocab-action-head,
 .vocab-action {
   text-align: center;
@@ -361,7 +543,13 @@ async function handleImport(event) {
 
 .vocab-action {
   display: flex;
+  gap: 8px;
   justify-content: center;
+}
+
+.vocab-action :deep(.el-button) {
+  margin-left: 0;
+  background: #fff;
 }
 
 .vocab-level {
@@ -407,6 +595,116 @@ async function handleImport(event) {
   display: none;
 }
 
+.tag-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.42);
+}
+
+.tag-dialog {
+  width: 520px;
+  max-width: 92vw;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.tag-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 14px;
+  border-bottom: 1px solid #edf1ef;
+}
+
+.tag-dialog-header h3 {
+  margin: 0;
+  color: #16201f;
+  font-size: 18px;
+}
+
+.tag-dialog-header p {
+  margin: 6px 0 0;
+  color: #8c9996;
+  font-size: 13px;
+}
+
+.tag-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #63706d;
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.tag-dialog-close:hover {
+  background: #f0f4f3;
+  color: #16201f;
+}
+
+.tag-dialog-body {
+  padding: 18px 14px 8px;
+}
+
+.tag-dialog-field {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 8px 0;
+}
+
+.tag-dialog-label {
+  color: #40504c;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.tag-dialog-word {
+  color: #101919;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.tag-dialog-control,
+.tag-dialog-control-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.tag-dialog-empty {
+  margin-top: 8px;
+  color: #8c9996;
+  font-size: 13px;
+}
+
+.tag-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 22px 20px;
+  border-top: 1px solid #edf1ef;
+}
+
+.tag-dialog-spacer {
+  flex: 1;
+}
+
 @media (max-width: 900px) {
   .vocab-header,
   .vocab-toolbar {
@@ -420,7 +718,7 @@ async function handleImport(event) {
 
   .vocab-list-head,
   .vocab-row {
-    min-width: 820px;
+    min-width: 980px;
   }
 }
 </style>

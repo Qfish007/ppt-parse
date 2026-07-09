@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 const MainView = () => import('../pages/main/main.vue')
 const SettingView = () => import('../pages/setting/setting.vue')
 const VocabularyView = () => import('../pages/vocabulary/vocabulary.vue')
+const VocabularySettingsView = () => import('../pages/vocabulary/settings.vue')
 
 const routes = [
   {
@@ -27,6 +28,11 @@ const routes = [
     path: '/vocabulary',
     name: 'Vocabulary',
     component: VocabularyView
+  },
+  {
+    path: '/vocabulary/settings',
+    name: 'VocabularySettings',
+    component: VocabularySettingsView
   }
 ]
 
