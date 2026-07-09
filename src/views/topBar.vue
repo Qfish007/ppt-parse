@@ -1,5 +1,8 @@
 <template>
   <header v-if="!hidden" class="top-toolbar">
+    <div class="top-toolbar-left">
+      <el-button text size="large" :icon="Reading" @click="$emit('go-vocabulary')">生词本</el-button>
+    </div>
     <div class="top-toolbar-spacer"></div>
     <el-button text size="large" :icon="Setting" @click="$emit('go-setting')">设置</el-button>
     <el-button size="small" @click="$emit('cycle-column-visibility')">{{ columnToggleLabel }}</el-button>
@@ -8,7 +11,7 @@
 </template>
 
 <script setup>
-import { Setting } from '@element-plus/icons-vue'
+import { Reading, Setting } from '@element-plus/icons-vue'
 
 defineProps({
   hidden: {
@@ -21,5 +24,5 @@ defineProps({
   }
 })
 
-defineEmits(['go-setting', 'cycle-column-visibility', 'hide'])
+defineEmits(['go-vocabulary', 'go-setting', 'cycle-column-visibility', 'hide'])
 </script>

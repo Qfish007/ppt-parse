@@ -3,6 +3,7 @@
     <TopBar
       :hidden="isToolbarHidden"
       :column-toggle-label="columnToggleLabel"
+      @go-vocabulary="goVocabulary"
       @go-setting="goSetting"
       @cycle-column-visibility="cycleColumnVisibility"
       @hide="isToolbarHidden = true"
@@ -77,6 +78,7 @@
         @first-lang-edit="onFirstLangEdit"
         @chinese-edit="onChineseEdit"
         @translate-word="translateWord"
+        @add-word="addWordToVocabulary"
         @close-popup="closePopup"
       />
     </div>
@@ -89,6 +91,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
+import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { STORAGE_KEYS } from '../../stores/settings.js'
 import { speak, stopSpeech, speakEnglishQueue, speakChinese } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
@@ -106,6 +109,7 @@ import BodyParse from '../../views/bodyParse.vue'
 
 const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
+const vocabularyStore = useVocabularyStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -117,6 +121,10 @@ const bodyFontSize = ref(normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS
 
 function goSetting() {
   router.push('/setting')
+}
+
+function goVocabulary() {
+  router.push('/vocabulary')
 }
 
 // ============ 页面数据 ============
@@ -624,6 +632,30 @@ async function translateWord() {
   }
 }
 
+function isUsableMeaning(meaning) {
+  const value = String(meaning || '').trim()
+  return value
+    && value !== bookStore.WORD_FALLBACK_MEANING
+    && !value.startsWith('正在')
+    && !value.startsWith('翻译失败')
+}
+
+async function addWordToVocabulary() {
+  const word = wordPopup.word
+  if (!word) return
+
+  if (!isUsableMeaning(wordPopup.meaning)) {
+    await translateWord()
+  }
+
+  vocabularyStore.addWord({
+    word,
+    phonetic: wordPopup.phonetic,
+    meaning: isUsableMeaning(wordPopup.meaning) ? wordPopup.meaning : ''
+  })
+  ElMessage.success(`已加入生词本：${word}`)
+}
+
 // 点击弹窗外关闭
 function handleClickOutside(e) {
   if (wordPopup.visible && !e.target.closest('.word-popup') && !e.target.closest('.word')) {
@@ -765,6 +797,12 @@ onBeforeUnmount(() => {
 
 .top-toolbar :deep(.el-button) {
   margin-left: 0;
+}
+
+.top-toolbar-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
 }
 
 .top-toolbar-spacer {
@@ -1288,11 +1326,36 @@ onBeforeUnmount(() => {
   position: fixed;
   z-index: 20;
   width: min(280px, calc(100vw - 24px));
-  padding: 14px;
+  padding: 14px 40px 14px 14px;
   border: 1px solid #bed0ca;
   border-radius: 8px;
   background: #ffffff;
   box-shadow: 0 16px 42px rgba(22, 32, 31, 0.18);
+}
+
+.word-popup-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: #63706d;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.word-popup-x:hover {
+  border-color: #d7dfdc;
+  background: #f0f4f3;
+  color: #16201f;
 }
 
 .word-popup::before {
@@ -1340,13 +1403,14 @@ onBeforeUnmount(() => {
 
 .word-popup-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
 
 .word-popup-sound,
 .word-popup-translate,
-.word-popup-close {
+.word-popup-add {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1388,11 +1452,17 @@ onBeforeUnmount(() => {
   opacity: 0.72;
 }
 
-.word-popup-close {
+.word-popup-add {
   padding: 0 10px;
-  border: 1px solid #d7dfdc;
-  background: #fff;
-  color: #63706d;
+  border: 1px solid #c9d5d1;
+  background: #fffdfa;
+  color: #40504c;
+  font-weight: 700;
+}
+
+.word-popup-add:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 /* ============ 响应式 ============ */

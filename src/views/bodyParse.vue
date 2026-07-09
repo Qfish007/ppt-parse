@@ -182,6 +182,7 @@
 
     <Teleport to="body">
       <div v-if="wordPopup.visible" class="word-popup" :style="wordPopup.style">
+        <button class="word-popup-x" title="关闭" @click="$emit('close-popup')">&times;</button>
         <div class="word-popup-heading">
           <div class="word-popup-title">{{ wordPopup.word }}</div>
           <div v-if="wordPopup.phonetic" class="word-popup-phonetic">{{ wordPopup.phonetic }}</div>
@@ -195,7 +196,7 @@
           <button class="word-popup-translate" :disabled="wordPopup.translating" @click.stop="$emit('translate-word')">
             {{ wordPopup.translating ? '翻译中' : '翻译' }}
           </button>
-          <button class="word-popup-close" @click="$emit('close-popup')">关闭</button>
+          <button class="word-popup-add" :disabled="wordPopup.translating" @click.stop="$emit('add-word')">加入生词本</button>
         </div>
       </div>
     </Teleport>
@@ -277,6 +278,7 @@ defineEmits([
   'first-lang-edit',
   'chinese-edit',
   'translate-word',
+  'add-word',
   'close-popup'
 ])
 
