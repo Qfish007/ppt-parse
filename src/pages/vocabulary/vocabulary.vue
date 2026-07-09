@@ -8,7 +8,18 @@
         </el-button>
         <h2 class="vocab-title">生词本</h2>
       </div>
+      <div class="vocab-stats" aria-label="生词统计">
+        <span class="vocab-stat-total">总词汇：{{ levelStats.total }}</span>
+        <span class="level-unknown">不认识：{{ levelStats.unknown }}</span>
+        <span class="level-learning">已了解：{{ levelStats.learning }}</span>
+        <span class="level-mastered">已掌握：{{ levelStats.mastered }}</span>
+        <span class="level-familiar">已熟记：{{ levelStats.familiar }}</span>
+      </div>
       <div class="vocab-actions">
+        <el-button type="primary" plain @click="openManualDialog">
+          <el-icon><Plus /></el-icon>
+          手动录入
+        </el-button>
         <el-button @click="triggerImport">导入</el-button>
         <el-button type="primary" @click="exportWords">导出</el-button>
         <el-button @click="goSettings">设置</el-button>
@@ -22,11 +33,12 @@
         placeholder="搜索单词或中文意思"
         class="vocab-search"
       />
-      <el-select v-model="levelFilter" class="vocab-filter">
+      <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper">
         <el-option label="全部" value="all" />
         <el-option
           v-for="level in VOCABULARY_LEVELS"
           :key="level.value"
+          :class="levelClass(level.value)"
           :label="level.label"
           :value="level.value"
         />
@@ -100,16 +112,18 @@
           <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
         </div>
         <div class="vocab-level">
-          <span class="vocab-level-label">{{ levelLabel(entry.level) }}</span>
+          <span class="vocab-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
           <el-select
-            class="vocab-level-select"
+            :class="['vocab-level-select', levelClass(entry.level)]"
             :model-value="entry.level"
             size="small"
+            popper-class="vocab-level-popper"
             @change="value => updateLevel(entry.word, value)"
           >
             <el-option
               v-for="level in VOCABULARY_LEVELS"
               :key="level.value"
+              :class="levelClass(level.value)"
               :label="level.label"
               :value="level.value"
             />
@@ -140,12 +154,14 @@
               <div class="tag-dialog-label">掌握水平</div>
               <el-select
                 v-model="tagDialog.level"
-                class="tag-dialog-control"
+                :class="['tag-dialog-control', levelClass(tagDialog.level)]"
+                popper-class="vocab-level-popper"
                 :teleported="false"
               >
                 <el-option
                   v-for="level in VOCABULARY_LEVELS"
                   :key="level.value"
+                  :class="levelClass(level.value)"
                   :label="level.label"
                   :value="level.value"
                 />
@@ -194,6 +210,34 @@
       </div>
     </Teleport>
 
+    <el-dialog
+      v-model="manualDialog.visible"
+      title="手动录入"
+      width="420px"
+      class="manual-word-dialog"
+      :close-on-click-modal="!manualDialog.loading"
+      :close-on-press-escape="!manualDialog.loading"
+    >
+      <el-form @submit.prevent="submitManualWord">
+        <el-form-item label="单词">
+          <el-input
+            ref="manualInputRef"
+            v-model="manualDialog.word"
+            placeholder="输入一个英文单词"
+            clearable
+            :disabled="manualDialog.loading"
+            @keyup.enter="submitManualWord"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button :disabled="manualDialog.loading" @click="manualDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="manualDialog.loading" @click="submitManualWord">
+          录入
+        </el-button>
+      </template>
+    </el-dialog>
+
     <input
       ref="importInputRef"
       type="file"
@@ -208,7 +252,7 @@
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
@@ -224,6 +268,12 @@ const levelFilter = ref('all')
 const tagFilter = ref([])
 const sortMode = ref('alphabet')
 const importInputRef = ref(null)
+const manualInputRef = ref(null)
+const manualDialog = ref({
+  visible: false,
+  word: '',
+  loading: false
+})
 const tagDialog = ref({
   visible: false,
   word: '',
@@ -257,6 +307,24 @@ const filteredWords = computed(() => {
   return words
 })
 
+const levelStats = computed(() => {
+  const stats = {
+    total: filteredWords.value.length,
+    unknown: 0,
+    learning: 0,
+    mastered: 0,
+    familiar: 0
+  }
+  filteredWords.value.forEach(entry => {
+    if (Object.prototype.hasOwnProperty.call(stats, entry.level)) {
+      stats[entry.level] += 1
+    } else {
+      stats.unknown += 1
+    }
+  })
+  return stats
+})
+
 function goBack() {
   const active = projectsStore.getActiveProject()
   router.push(`/main/${active?.index || '001'}`)
@@ -266,12 +334,72 @@ function goSettings() {
   router.push('/vocabulary/settings')
 }
 
+function normalizeManualWord(value) {
+  return String(value || '').trim().toLowerCase()
+}
+
+function isSingleEnglishWord(value) {
+  return /^[a-z]+(?:[-'][a-z]+)?$/i.test(value)
+}
+
+async function openManualDialog() {
+  manualDialog.value = {
+    visible: true,
+    word: '',
+    loading: false
+  }
+  await nextTick()
+  manualInputRef.value?.focus?.()
+}
+
+async function submitManualWord() {
+  if (manualDialog.value.loading) return
+
+  const word = normalizeManualWord(manualDialog.value.word)
+  if (!word) {
+    ElMessage.warning('请输入要录入的单词')
+    return
+  }
+  if (!isSingleEnglishWord(word)) {
+    ElMessage.warning('手动录入只支持一个英文单词')
+    return
+  }
+
+  manualDialog.value.loading = true
+  try {
+    const result = await bookStore.translateWordToChinese(word)
+    const meaning = typeof result === 'object'
+      ? String(result?.meaning || '').trim()
+      : String(result || '').trim()
+    const phonetic = typeof result === 'object'
+      ? String(result?.phonetic || '').trim()
+      : ''
+
+    vocabularyStore.addWord({
+      word,
+      meaning,
+      phonetic,
+      memoryParts: autoMemoryParts(word)
+    })
+    manualDialog.value.visible = false
+    ElMessage.success(`已录入「${word}」`)
+  } catch (error) {
+    ElMessage.error(`录入失败：${error.message || '请稍后重试'}`)
+  } finally {
+    manualDialog.value.loading = false
+  }
+}
+
 function openWordDetail(word) {
   router.push(`/vocabulary/${encodeURIComponent(word)}`)
 }
 
 function levelLabel(level) {
   return VOCABULARY_LEVELS.find(item => item.value === level)?.label || '不认识'
+}
+
+function levelClass(level) {
+  return `level-${VOCABULARY_LEVELS.some(item => item.value === level) ? level : 'unknown'}`
 }
 
 function updateLevel(word, level) {
@@ -443,9 +571,9 @@ async function handleImport(event) {
 }
 
 .vocab-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) auto minmax(240px, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   max-width: 1180px;
   margin: 0 auto 18px;
@@ -464,6 +592,30 @@ async function handleImport(event) {
   color: #16201f;
   font-size: 22px;
   font-weight: 700;
+}
+
+.vocab-stats {
+  justify-self: center;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  min-width: 0;
+  color: #40504c;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.4;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.vocab-stat-total {
+  color: #16201f;
+}
+
+.vocab-actions {
+  justify-self: end;
 }
 
 .vocab-toolbar {
@@ -670,7 +822,6 @@ async function handleImport(event) {
 }
 
 .vocab-level-label {
-  color: #63706d;
   font-size: 13px;
   font-weight: 700;
 }
@@ -691,6 +842,62 @@ async function handleImport(event) {
 
 .vocab-row:hover .vocab-level-label {
   opacity: 0;
+}
+
+.level-unknown {
+  color: #e5484d !important;
+}
+
+.level-learning {
+  color: #1d68d8 !important;
+}
+
+.level-mastered {
+  color: #f08a24 !important;
+}
+
+.level-familiar {
+  color: #19a974 !important;
+}
+
+.vocab-level-select.level-unknown :deep(.el-select__placeholder),
+.tag-dialog-control.level-unknown :deep(.el-select__placeholder) {
+  color: #e5484d;
+}
+
+.vocab-level-select.level-learning :deep(.el-select__placeholder),
+.tag-dialog-control.level-learning :deep(.el-select__placeholder) {
+  color: #1d68d8;
+}
+
+.vocab-level-select.level-mastered :deep(.el-select__placeholder),
+.tag-dialog-control.level-mastered :deep(.el-select__placeholder) {
+  color: #f08a24;
+}
+
+.vocab-level-select.level-familiar :deep(.el-select__placeholder),
+.tag-dialog-control.level-familiar :deep(.el-select__placeholder) {
+  color: #19a974;
+}
+
+:global(.vocab-level-popper .level-unknown) {
+  color: #e5484d;
+}
+
+:global(.vocab-level-popper .level-learning) {
+  color: #1d68d8;
+}
+
+:global(.vocab-level-popper .level-mastered) {
+  color: #f08a24;
+}
+
+:global(.vocab-level-popper .level-familiar) {
+  color: #19a974;
+}
+
+:global(.vocab-level-popper .el-select-dropdown__item.is-selected) {
+  font-weight: 800;
 }
 
 .vocab-empty {
@@ -814,10 +1021,23 @@ async function handleImport(event) {
 }
 
 @media (max-width: 900px) {
-  .vocab-header,
+  .vocab-header {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
   .vocab-toolbar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .vocab-stats {
+    justify-self: stretch;
+    white-space: normal;
+  }
+
+  .vocab-actions {
+    justify-self: start;
   }
 
   .vocab-list {

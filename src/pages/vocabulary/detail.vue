@@ -51,11 +51,13 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
+import { useBookStore } from '../../stores/book.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 
 const route = useRoute()
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
+const bookStore = useBookStore()
 
 const word = computed(() => String(route.params.word || '').toLowerCase())
 const entry = computed(() => vocabularyStore.words.find(item => item.word === word.value) || null)
@@ -84,8 +86,26 @@ function autoMemoryParts(rawWord) {
   return [value.slice(0, 3), value.slice(3)]
 }
 
-function playWord() {
-  if (entry.value?.word) speak(entry.value.word, 'en-US')
+async function playWord() {
+  const currentEntry = entry.value
+  if (!currentEntry?.word) return
+
+  speak(currentEntry.word, 'en-US')
+  if (currentEntry.phonetic) return
+
+  try {
+    const result = await bookStore.translateWordToChinese(currentEntry.word)
+    const phonetic = typeof result === 'object' ? result?.phonetic : ''
+    const meaning = typeof result === 'object' ? result?.meaning : ''
+    if (phonetic || (!currentEntry.meaning && meaning)) {
+      vocabularyStore.updateWord(currentEntry.word, {
+        phonetic: phonetic || currentEntry.phonetic || '',
+        meaning: currentEntry.meaning || meaning || ''
+      })
+    }
+  } catch {
+    // 朗读不受音标补查失败影响
+  }
 }
 </script>
 
