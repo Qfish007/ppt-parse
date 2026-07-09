@@ -1,5 +1,12 @@
 <template>
-  <section class="panel-right" :style="{ flex }">
+  <section
+    class="panel-right"
+    :style="{
+      flex,
+      '--reader-body-font-size': `${bodyFontSize}px`,
+      '--reader-title-font-size': `${bodyFontSize + 12}px`
+    }"
+  >
     <div class="reader-header">
       <div class="reader-header-info">
         <span>第 {{ currentPage?.page || 0 }} 页 / {{ pageCount }} 页</span>
@@ -175,7 +182,10 @@
 
     <Teleport to="body">
       <div v-if="wordPopup.visible" class="word-popup" :style="wordPopup.style">
-        <div class="word-popup-title">{{ wordPopup.word }}</div>
+        <div class="word-popup-heading">
+          <div class="word-popup-title">{{ wordPopup.word }}</div>
+          <div v-if="wordPopup.phonetic" class="word-popup-phonetic">{{ wordPopup.phonetic }}</div>
+        </div>
         <div class="word-popup-meaning">{{ wordPopup.meaning }}</div>
         <div class="word-popup-actions">
           <button class="word-popup-sound" @click.stop="$emit('speak-en', wordPopup.word)">
@@ -216,6 +226,10 @@ defineProps({
   currentIndex: {
     type: Number,
     default: 0
+  },
+  bodyFontSize: {
+    type: Number,
+    default: 18
   },
   displayGroups: {
     type: Array,

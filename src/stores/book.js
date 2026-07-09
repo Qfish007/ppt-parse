@@ -6,6 +6,8 @@ import { reactive } from 'vue';
 
 /** localStorage 存储键 - 单词翻译缓存 */
 const WORD_TRANSLATION_CACHE_KEY = 'bilingual-reader-word-translations';
+/** localStorage 存储键 - 单词音标缓存 */
+const WORD_PHONETIC_CACHE_KEY = 'bilingual-reader-word-phonetics';
 /** localStorage 存储键 - 书籍编辑数据 */
 const BOOK_EDITS_KEY = 'bilingual-reader-edits';
 let bookStoreInstance = null;
@@ -119,13 +121,26 @@ export function useBookStore() {
 
   // 加载 localStorage 中的词典缓存
   const dictionary = reactive({ ...defaultDictionary });
+  const phonetics = reactive({ side: '/saɪd/' });
   try {
     const savedWordTranslations = JSON.parse(localStorage.getItem(WORD_TRANSLATION_CACHE_KEY) || '{}');
     Object.entries(savedWordTranslations).forEach(([word, meaning]) => {
       if (typeof meaning === 'string' && meaning.trim()) dictionary[word] = meaning.trim();
+      if (meaning && typeof meaning === 'object') {
+        if (typeof meaning.meaning === 'string' && meaning.meaning.trim()) dictionary[word] = meaning.meaning.trim();
+        if (typeof meaning.phonetic === 'string' && meaning.phonetic.trim()) phonetics[word] = meaning.phonetic.trim();
+      }
     });
   } catch {
     localStorage.removeItem(WORD_TRANSLATION_CACHE_KEY);
+  }
+  try {
+    const savedWordPhonetics = JSON.parse(localStorage.getItem(WORD_PHONETIC_CACHE_KEY) || '{}');
+    Object.entries(savedWordPhonetics).forEach(([word, phonetic]) => {
+      if (typeof phonetic === 'string' && phonetic.trim()) phonetics[word] = phonetic.trim();
+    });
+  } catch {
+    localStorage.removeItem(WORD_PHONETIC_CACHE_KEY);
   }
 
   const store = reactive({
@@ -135,6 +150,8 @@ export function useBookStore() {
     currentIndex: 0,
     /** 词典 */
     dictionary,
+    /** 音标缓存 */
+    phonetics,
     /** 单词翻译缓存 localStorage 键 */
     WORD_TRANSLATION_CACHE_KEY,
     /** 默认释义 */
@@ -209,20 +226,37 @@ export function useBookStore() {
     },
 
     /**
+     * 查单词音标
+     * @param {string} word
+     * @returns {string}
+     */
+    lookupWordPhonetic(word) {
+      const key = String(word || '').toLowerCase();
+      return phonetics[key] || '';
+    },
+
+    /**
      * 保存单词释义到 localStorage 和内存词典
      * @param {string} word
      * @param {string} meaning
      */
-    saveWordMeaning(word, meaning) {
+    saveWordMeaning(word, meaning, phonetic = '') {
       const key = String(word || '').toLowerCase().trim();
       const value = String(meaning || '').trim();
       if (!key || !value) return;
 
       dictionary[key] = value;
+      const phoneticValue = String(phonetic || '').trim();
+      if (phoneticValue) phonetics[key] = phoneticValue;
       try {
         const saved = JSON.parse(localStorage.getItem(WORD_TRANSLATION_CACHE_KEY) || '{}');
         saved[key] = value;
         localStorage.setItem(WORD_TRANSLATION_CACHE_KEY, JSON.stringify(saved));
+        if (phoneticValue) {
+          const savedPhonetics = JSON.parse(localStorage.getItem(WORD_PHONETIC_CACHE_KEY) || '{}');
+          savedPhonetics[key] = phoneticValue;
+          localStorage.setItem(WORD_PHONETIC_CACHE_KEY, JSON.stringify(savedPhonetics));
+        }
       } catch {
         // localStorage may be unavailable
       }
@@ -318,13 +352,18 @@ export function useBookStore() {
       const value = String(word || '').trim();
       if (!value) return '';
 
-      if (voiceMode === 'youdao' && typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {
+      if (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {
         try {
           const response = await fetch(`/youdao/translate?word=${encodeURIComponent(value)}`);
           if (response.ok) {
             const data = await response.json();
             const meaning = data?.data?.meaning;
-            if (meaning) return String(meaning).trim();
+            if (meaning) {
+              return {
+                meaning: String(meaning).trim(),
+                phonetic: String(data?.data?.phonetic || '').trim()
+              };
+            }
           }
         } catch {
           // fall through to iciba

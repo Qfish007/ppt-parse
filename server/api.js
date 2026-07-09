@@ -123,6 +123,51 @@ function signedYoudaoPronounceUrl(text, lang = 'en') {
   return url;
 }
 
+function decodeHtml(value) {
+  return String(value || '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizePhonetic(value) {
+  const text = decodeHtml(value).replace(/^\/|\/$/g, '').trim();
+  return text ? `/${text}/` : '';
+}
+
+function parseYoudaoWordInfo(html) {
+  const items = [];
+  const entryPattern = /<li class="word-exp"[^>]*>\s*<span class="pos"[^>]*>([\s\S]*?)<\/span>\s*<span class="trans"[^>]*>([\s\S]*?)<\/span>/g;
+  let match;
+  while ((match = entryPattern.exec(html))) {
+    const pos = decodeHtml(match[1]);
+    const trans = decodeHtml(match[2]);
+    if (trans) items.push(pos ? `${pos} ${trans}` : trans);
+    if (items.length >= 2) break;
+  }
+
+  const phoneticPatterns = [
+    /<span[^>]*class=["'][^"']*(?:pronounce|phone|phonetic|phonetics)[^"']*["'][^>]*>([\s\S]*?)<\/span>/i,
+    /(?:英|美)\s*\[([^\]]+)\]/i,
+    /\/([A-Za-zɑæʌəɜɪʊɔɒɛɡːˈˌθðʃʒŋɚɝ\s.-]+)\//
+  ];
+  const phoneticMatch = phoneticPatterns.map(pattern => html.match(pattern)).find(Boolean);
+  const phonetic = phoneticMatch
+    ? normalizePhonetic(phoneticMatch[1] || phoneticMatch[0])
+    : '';
+
+  return {
+    meaning: items.join('\n'),
+    phonetic
+  };
+}
+
 function youdaoDictVoiceUrl(text, lang = 'en') {
   const lan = /^zh/i.test(String(lang || '')) ? 'zh' : 'en';
   const url = new URL('https://dict.youdao.com/dictvoice');
@@ -254,6 +299,46 @@ async function handleIcibaTranslate(req, res) {
   }
 }
 
+async function handleYoudaoTranslate(req, res, url) {
+  if (req.method !== 'GET') {
+    sendJSON(res, { error: 'Method not allowed' }, 405);
+    return;
+  }
+
+  const word = String(url.searchParams.get('word') || '').trim();
+  if (!word) {
+    sendJSON(res, { error: 'word is required' }, 400);
+    return;
+  }
+
+  try {
+    const upstreamUrl = new URL('https://www.youdao.com/result');
+    upstreamUrl.searchParams.set('word', word);
+    upstreamUrl.searchParams.set('lang', 'en');
+
+    const upstream = await fetch(upstreamUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        Referer: 'https://www.youdao.com/'
+      }
+    });
+    const html = await upstream.text();
+    if (!upstream.ok) {
+      sendJSON(res, { error: `Youdao failed: ${upstream.status}` }, upstream.status);
+      return;
+    }
+
+    const info = parseYoudaoWordInfo(html);
+    if (!info.meaning && !info.phonetic) {
+      sendJSON(res, { error: 'No Youdao translation found' }, 404);
+      return;
+    }
+    sendJSON(res, { code: 1, data: { word, ...info, url: upstreamUrl.toString() } });
+  } catch (error) {
+    sendJSON(res, { error: error.message }, 500);
+  }
+}
+
 /**
  * API 路由处理
  */
@@ -286,6 +371,12 @@ export async function apiMiddleware(req, res, next) {
   // ============ POST /iciba/translate ============
   if (pathname === '/iciba/translate') {
     await handleIcibaTranslate(req, res);
+    return;
+  }
+
+  // ============ GET /youdao/translate ============
+  if (pathname === '/youdao/translate') {
+    await handleYoudaoTranslate(req, res, url);
     return;
   }
 

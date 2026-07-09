@@ -57,6 +57,7 @@
         :current-page="currentPage"
         :page-count="bookStore.book?.pages?.length || 0"
         :current-index="bookStore.currentIndex"
+        :body-font-size="bodyFontSize"
         :display-groups="displayGroups"
         :is-trans-project="isTransProject"
         :word-popup="wordPopup"
@@ -88,6 +89,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
+import { STORAGE_KEYS } from '../../stores/settings.js'
 import { speak, stopSpeech, speakEnglishQueue, speakChinese } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
 import { md5 } from '../../api/voice/youdao.js'
@@ -106,6 +108,7 @@ const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
 const route = useRoute()
 const router = useRouter()
+const bodyFontSize = ref(Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18)
 
 function goSetting() {
   router.push('/setting')
@@ -541,17 +544,29 @@ function onFirstLangEdit(event, group, field) {
 const wordPopup = reactive({
   visible: false,
   word: '',
+  phonetic: '',
   meaning: '',
   style: {},
   translating: false,
   _anchorRect: null
 })
 
+const COMMON_PHONETICS = {
+  side: '/saɪd/'
+}
+
+function normalizePhonetic(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  return text.startsWith('/') ? text : `/${text}/`
+}
+
 function onWordClick(event, word) {
   const cleanWord = String(word || '').trim()
   const rect = event.target.getBoundingClientRect()
   wordPopup._anchorRect = rect
   wordPopup.word = cleanWord
+  wordPopup.phonetic = normalizePhonetic(bookStore.lookupWordPhonetic?.(cleanWord) || COMMON_PHONETICS[cleanWord.toLowerCase()])
   wordPopup.meaning = bookStore.lookupWord(cleanWord)
   wordPopup.translating = false
   wordPopup.visible = true
@@ -589,11 +604,14 @@ async function translateWord() {
   wordPopup.meaning = '正在查询中文释义...'
 
   try {
-    const settings = JSON.parse(localStorage.getItem('bilingual-reader-voice-provider') || '"youdao"')
+    const settings = localStorage.getItem(STORAGE_KEYS.provider) || 'youdao'
     const translated = await bookStore.translateWordToChinese(word, settings)
-    if (!translated) throw new Error('empty translation')
-    bookStore.saveWordMeaning(word, translated)
-    wordPopup.meaning = translated
+    const meaning = typeof translated === 'string' ? translated : translated?.meaning
+    const phonetic = typeof translated === 'object' ? translated?.phonetic : ''
+    if (!meaning) throw new Error('empty translation')
+    bookStore.saveWordMeaning(word, meaning, phonetic)
+    wordPopup.meaning = meaning
+    wordPopup.phonetic = normalizePhonetic(phonetic || wordPopup.phonetic || COMMON_PHONETICS[word.toLowerCase()])
   } catch {
     wordPopup.meaning = '翻译失败。请确认已通过本地服务打开页面，或稍后再试。'
   } finally {
@@ -606,6 +624,10 @@ function handleClickOutside(e) {
   if (wordPopup.visible && !e.target.closest('.word-popup') && !e.target.closest('.word')) {
     closePopup()
   }
+}
+
+function refreshBodyFontSize() {
+  bodyFontSize.value = Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18
 }
 
 // ============ 拖拽调整宽度 ============
@@ -687,12 +709,15 @@ function handleKeydown(e) {
 // ============ 生命周期 ============
 
 onMounted(async () => {
+  refreshBodyFontSize()
   await syncProjectFromRoute()
   pageInputVal.value = bookStore.currentIndex + 1
   document.addEventListener('click', handleClickOutside, true)
   document.addEventListener('mousemove', handleMouseMove)
   document.addEventListener('mouseup', handleMouseUp)
   document.addEventListener('keydown', handleKeydown)
+  window.addEventListener('focus', refreshBodyFontSize)
+  window.addEventListener('storage', refreshBodyFontSize)
 })
 
 watch(() => route.params.index, (index) => {
@@ -704,6 +729,8 @@ onBeforeUnmount(() => {
   document.removeEventListener('mousemove', handleMouseMove)
   document.removeEventListener('mouseup', handleMouseUp)
   document.removeEventListener('keydown', handleKeydown)
+  window.removeEventListener('focus', refreshBodyFontSize)
+  window.removeEventListener('storage', refreshBodyFontSize)
   stopSpeech()
 })
 </script>
@@ -1163,7 +1190,7 @@ onBeforeUnmount(() => {
   margin: 0 0 6px;
   color: #101919;
   font-family: "Comic Sans MS", "Trebuchet MS", ui-rounded, system-ui, sans-serif;
-  font-size: 18px;
+  font-size: var(--reader-body-font-size, 18px);
   font-weight: 650;
   letter-spacing: 0;
   line-height: 1.78;
@@ -1177,7 +1204,7 @@ onBeforeUnmount(() => {
   margin-bottom: 6px;
   color: #d34b1f;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: 30px;
+  font-size: var(--reader-title-font-size, 30px);
   font-weight: 800;
   line-height: 1.15;
 }
@@ -1211,7 +1238,8 @@ onBeforeUnmount(() => {
 }
 
 .space {
-  display: inline;
+  display: inline-block;
+  width: calc(var(--reader-body-font-size, 18px) * 0.3);
 }
 
 .chinese {
@@ -1219,7 +1247,7 @@ onBeforeUnmount(() => {
   margin: 0 0 6px;
   color: #17211f;
   font-family: "Kaiti SC", "STKaiti", "KaiTi", "Songti SC", serif;
-  font-size: 18px;
+  font-size: var(--reader-body-font-size, 18px);
   font-weight: 600;
   letter-spacing: 0;
   line-height: 1.72;
@@ -1243,7 +1271,7 @@ onBeforeUnmount(() => {
 /* ============ 翻译类型项目：中文原文样式 ============ */
 .chinese-first {
   margin: 0 0 10px;
-  font-size: 19px;
+  font-size: calc(var(--reader-body-font-size, 18px) + 1px);
   font-weight: 700;
   border-bottom: 1px dashed #e3e9e6;
   padding-bottom: 8px;
@@ -1275,11 +1303,27 @@ onBeforeUnmount(() => {
   transform: translateX(-50%) rotate(45deg);
 }
 
+.word-popup-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
 .word-popup-title {
   color: #0f1b19;
   font-size: 24px;
   font-weight: 800;
   line-height: 1.2;
+}
+
+.word-popup-phonetic {
+  color: #126b62;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  white-space: nowrap;
 }
 
 .word-popup-meaning {

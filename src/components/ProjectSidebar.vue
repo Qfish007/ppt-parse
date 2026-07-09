@@ -17,33 +17,41 @@
         @click="selectProject(project.id)"
       >
         <div class="project-index">{{ project.index }}</div>
-        <div class="project-icon">
-          <el-icon v-if="project.type === 'default'" :size="18"><Reading /></el-icon>
-          <el-icon v-else-if="project.type === 'pdf'" :size="18"><Document /></el-icon>
-          <el-icon v-else-if="project.type === 'image'" :size="18"><Picture /></el-icon>
-          <el-icon v-else-if="project.type === 'word'" :size="18"><DocumentCopy /></el-icon>
-          <el-icon v-else-if="project.type === 'translate-en'" :size="18"><ChatDotRound /></el-icon>
-          <el-icon v-else-if="project.type === 'translate-zh'" :size="18"><Edit /></el-icon>
-          <el-icon v-else :size="18"><Files /></el-icon>
-        </div>
         <div class="project-info">
           <div class="project-name">{{ project.name }}</div>
           <div class="project-meta">
-            <span v-if="project.type === 'default'">内置书籍</span>
-            <template v-else>
-              <span>{{ typeLabel(project.type) }}</span>
-              <template v-if="project.pageCount"> · {{ project.pageCount }} 页</template>
-            </template>
+            <span class="project-type-text">
+              <template v-if="project.type === 'default'">内置书籍</template>
+              <template v-else>
+                <span>{{ typeLabel(project.type) }}</span>
+                <template v-if="project.pageCount"> · {{ project.pageCount }} 页</template>
+              </template>
+            </span>
+            <span class="project-actions">
+              <el-button
+                text
+                size="small"
+                @click.stop="importProject"
+                :icon="Upload"
+                title="导入"
+              />
+              <el-button
+                text
+                size="small"
+                @click.stop="exportProject(project)"
+                :icon="Download"
+                title="导出"
+              />
+              <el-button
+                v-if="project.deletable !== false"
+                text
+                size="small"
+                @click.stop="deleteProject(project.id)"
+                :icon="Delete"
+                title="删除"
+              />
+            </span>
           </div>
-        </div>
-        <div class="project-actions" v-if="project.deletable !== false">
-          <el-button
-            text
-            size="small"
-            @click.stop="deleteProject(project.id)"
-            :icon="Delete"
-            title="删除"
-          />
         </div>
       </div>
     </div>
@@ -104,7 +112,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Delete, Document, Picture, DocumentCopy,
-  Reading, Files, ChatDotRound, Edit
+  ChatDotRound, Edit, Upload, Download
 } from '@element-plus/icons-vue'
 import { isTranslationProject, translationTypeLabel } from '../utils/translation.js'
 import { useProjectsStore } from '../stores/projects.js'
@@ -168,6 +176,214 @@ function selectProject(id) {
   if (!project) return
   projectsStore.setActiveProject(project.id)
   router.push(`/main/${project.index}`)
+}
+
+function safeExportName(name) {
+  return String(name || '书籍')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim() || '书籍'
+}
+
+function dataUrlToAsset(dataUrl, fallbackName = 'file') {
+  const match = String(dataUrl || '').match(/^data:([^;,]+)?(?:;[^,]*)?;base64,(.*)$/)
+  if (!match) return null
+  return {
+    filename: fallbackName,
+    mime: match[1] || 'application/octet-stream',
+    base64: match[2]
+  }
+}
+
+function assetFetchPath(ref, project) {
+  if (ref.startsWith('./images/')) return `/static/demo${project.index}/images/${encodeURIComponent(ref.slice('./images/'.length))}`
+  if (ref.startsWith('images/')) return `/static/demo${project.index}/images/${encodeURIComponent(ref.slice('images/'.length))}`
+  return ref
+}
+
+async function fetchPathAsAsset(ref, project, fallbackName = 'file') {
+  const path = assetFetchPath(ref, project)
+  const res = await fetch(path)
+  if (!res.ok) throw new Error(`资源读取失败：${path}`)
+  const blob = await res.blob()
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] || '')
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+  return {
+    filename: decodeURIComponent(path.split('/').pop() || fallbackName),
+    mime: blob.type || 'application/octet-stream',
+    base64
+  }
+}
+
+async function collectProjectAssets(project) {
+  const refs = new Map()
+  const addRef = (ref, filename) => {
+    if (typeof ref !== 'string' || !ref) return
+    refs.set(ref, filename || decodeURIComponent(ref.split('/').pop() || 'file'))
+  }
+
+  ;(project.files || []).forEach(file => {
+    addRef(file.path, file.name)
+    addRef(file.dataUrl, file.name)
+  })
+  ;(project.parsedData?.pages || []).forEach((page, index) => {
+    addRef(page.image, `page-${String(index + 1).padStart(3, '0')}.png`)
+  })
+
+  const assets = {}
+  for (const [ref, filename] of refs.entries()) {
+    if (ref.startsWith('data:')) {
+      const asset = dataUrlToAsset(ref, filename)
+      if (asset) assets[ref] = asset
+    } else if (ref.startsWith('/static/') || ref.startsWith('./images/') || ref.startsWith('images/')) {
+      assets[ref] = await fetchPathAsAsset(ref, project, filename)
+    }
+  }
+  return assets
+}
+
+async function buildExportProject(project) {
+  const exportProject = {
+    name: project.name,
+    type: project.type,
+    source: project.source,
+    pageCount: project.pageCount,
+    files: project.files || [],
+    parsedData: project.parsedData || null,
+    status: project.status || 'empty'
+  }
+
+  if (project.type === 'default' && !exportProject.parsedData) {
+    const res = await fetch(`/api/parse-result/${project.index}`)
+    if (res.ok) {
+      exportProject.parsedData = await res.json()
+      exportProject.pageCount = exportProject.parsedData?.pages?.length || exportProject.pageCount
+      exportProject.status = 'ready'
+    }
+  }
+
+  return exportProject
+}
+
+async function exportProject(project) {
+  try {
+    const exportProject = await buildExportProject(project)
+    const payload = {
+      schema: 'bilingual-reader-project',
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      project: exportProject,
+      assets: await collectProjectAssets({ ...project, ...exportProject })
+    }
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${safeExportName(project.name)}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    ElMessage.success(`已导出「${project.name}」`)
+  } catch (error) {
+    ElMessage.error(`导出失败：${error.message || '请稍后重试'}`)
+  }
+}
+
+function readImportFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        resolve(JSON.parse(String(reader.result || '{}')))
+      } catch {
+        reject(new Error('导入文件不是有效的 JSON'))
+      }
+    }
+    reader.onerror = reject
+    reader.readAsText(file)
+  })
+}
+
+async function uploadImportedAsset(index, type, asset) {
+  const res = await fetch('/api/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      index,
+      type,
+      filename: asset.filename || 'file',
+      fileData: asset.base64
+    })
+  })
+  const result = await res.json()
+  if (!result.success) throw new Error(result.error || '资源写入失败')
+  return result
+}
+
+function replaceAssetRefs(value, pathMap) {
+  if (typeof value === 'string') return pathMap.get(value) || value
+  if (Array.isArray(value)) return value.map(item => replaceAssetRefs(item, pathMap))
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, replaceAssetRefs(item, pathMap)]))
+  }
+  return value
+}
+
+async function importProject() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = 'application/json,.json'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+    try {
+      const payload = await readImportFile(file)
+      if (payload.schema !== 'bilingual-reader-project' || !payload.project?.name) {
+        throw new Error('不支持的导入文件')
+      }
+
+      const rawProject = payload.project
+      const project = projectsStore.addProject({
+        name: rawProject.name,
+        type: rawProject.type || 'image',
+        source: 'import',
+        status: 'importing'
+      })
+
+      const pathMap = new Map()
+      for (const [ref, asset] of Object.entries(payload.assets || {})) {
+        if (!asset?.base64) continue
+        const uploadType = rawProject.type === 'image' ? 'image' : rawProject.type
+        const result = await uploadImportedAsset(project.index, uploadType, asset)
+        pathMap.set(ref, result.path)
+      }
+
+      const files = replaceAssetRefs(rawProject.files || [], pathMap)
+      const parsedData = replaceAssetRefs(rawProject.parsedData || null, pathMap)
+      const pageCount = parsedData?.pages?.length || files.length || rawProject.pageCount || 0
+      const updatedProject = projectsStore.updateProject(project.id, {
+        name: rawProject.name,
+        type: rawProject.type || 'image',
+        files,
+        parsedData,
+        pageCount,
+        status: pageCount ? 'ready' : (rawProject.status || 'empty')
+      })
+
+      projectsStore.setActiveProject(project.id)
+      router.push(`/main/${updatedProject.index}`)
+      ElMessage.success(`已导入「${updatedProject.name}」`)
+    } catch (error) {
+      ElMessage.error(`导入失败：${error.message || '请检查文件后重试'}`)
+    }
+  }
+  input.click()
 }
 
 async function deleteProject(id) {
@@ -277,23 +493,6 @@ async function deleteProject(id) {
   color: #fff;
 }
 
-.project-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  background: #f6f9f8;
-  color: #8c9996;
-  flex-shrink: 0;
-}
-
-.project-item.active .project-icon {
-  background: #126b62;
-  color: #fff;
-}
-
 .project-info {
   flex: 1;
   min-width: 0;
@@ -310,19 +509,41 @@ async function deleteProject(id) {
 }
 
 .project-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 11px;
   color: #8c9996;
   margin-top: 2px;
+  min-height: 22px;
+}
+
+.project-type-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .project-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s;
   flex-shrink: 0;
 }
 
+.project-actions :deep(.el-button) {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+}
+
 .project-item:hover .project-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 </style>
 

@@ -107,7 +107,12 @@ function decodeHtml(value) {
     .trim();
 }
 
-function parseYoudaoMeaning(html) {
+function normalizePhonetic(value) {
+  const text = decodeHtml(value).replace(/^\/|\/$/g, "").trim();
+  return text ? `/${text}/` : "";
+}
+
+function parseYoudaoWordInfo(html) {
   const items = [];
   const entryPattern = /<li class="word-exp"[^>]*>\s*<span class="pos"[^>]*>([\s\S]*?)<\/span>\s*<span class="trans"[^>]*>([\s\S]*?)<\/span>/g;
   let match;
@@ -118,7 +123,18 @@ function parseYoudaoMeaning(html) {
     if (items.length >= 2) break;
   }
 
-  return items.join("\n");
+  const phoneticPatterns = [
+    /<span[^>]*class=["'][^"']*(?:pronounce|phone|phonetic|phonetics)[^"']*["'][^>]*>([\s\S]*?)<\/span>/i,
+    /(?:英|美)\s*\[([^\]]+)\]/i,
+    /\/([A-Za-zɑæʌəɜɪʊɔɒɛɡːˈˌθðʃʒŋɚɝ\s.-]+)\//
+  ];
+  const phoneticMatch = phoneticPatterns.map((pattern) => html.match(pattern)).find(Boolean);
+  const phonetic = phoneticMatch ? normalizePhonetic(phoneticMatch[1] || phoneticMatch[0]) : "";
+
+  return {
+    meaning: items.join("\n"),
+    phonetic
+  };
 }
 
 async function handleYoudaoTranslate(req, res) {
@@ -142,9 +158,9 @@ async function handleYoudaoTranslate(req, res) {
     const html = await upstream.text();
     if (!upstream.ok) return json(res, upstream.status, { error: `Youdao failed: ${upstream.status}` });
 
-    const meaning = parseYoudaoMeaning(html);
-    if (!meaning) return json(res, 404, { error: "No Youdao translation found" });
-    json(res, 200, { code: 1, data: { word, meaning, url: upstreamUrl.toString() } });
+    const info = parseYoudaoWordInfo(html);
+    if (!info.meaning && !info.phonetic) return json(res, 404, { error: "No Youdao translation found" });
+    json(res, 200, { code: 1, data: { word, ...info, url: upstreamUrl.toString() } });
   } catch (error) {
     json(res, 500, { error: error.message });
   }

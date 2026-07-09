@@ -7,7 +7,8 @@ import { reactive } from 'vue';
 /** localStorage 存储键 */
 export const STORAGE_KEYS = {
   rate: 'bilingual-reader-rate',
-  provider: 'bilingual-reader-voice-provider'
+  provider: 'bilingual-reader-voice-provider',
+  bodyFontSize: 'bilingual-reader-body-font-size'
 };
 
 /**
@@ -21,6 +22,8 @@ export function useSettingsStore() {
     speechRate: Number(localStorage.getItem(STORAGE_KEYS.rate)) || 0.9,
     /** 发音平台，默认 'youdao' */
     voiceProvider: localStorage.getItem(STORAGE_KEYS.provider) || 'youdao',
+    /** 第四栏正文字号，默认 18px */
+    bodyFontSize: Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18,
 
     /**
      * 保存语速到 localStorage
@@ -42,11 +45,22 @@ export function useSettingsStore() {
     },
 
     /**
+     * 保存第四栏正文字号到 localStorage
+     * @param {number} size
+     */
+    saveBodyFontSize(size) {
+      const value = Math.min(Math.max(Number(size) || 18, 14), 30);
+      this.bodyFontSize = value;
+      localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(value));
+    },
+
+    /**
      * 从 localStorage 重新加载设置
      */
     load() {
       this.speechRate = Number(localStorage.getItem(STORAGE_KEYS.rate)) || 0.9;
       this.voiceProvider = localStorage.getItem(STORAGE_KEYS.provider) || 'youdao';
+      this.bodyFontSize = Number(localStorage.getItem(STORAGE_KEYS.bodyFontSize)) || 18;
     }
   });
 
