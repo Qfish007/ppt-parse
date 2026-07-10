@@ -111,8 +111,15 @@ function normalizeBook(book, fallbackName = '默认生词本') {
   }
 }
 
-export function useVocabularyStore() {
-  if (vocabularyStoreInstance) return vocabularyStoreInstance
+export function useVocabularyStore(options) {
+  const lazy = !!(options && options.lazy)
+  if (vocabularyStoreInstance) {
+    // 兼容：如果之前是 lazy 初始化但没加载，这次非 lazy 需要立即确保加载完成
+    if (!lazy && !vocabularyStoreInstance._loaded) {
+      vocabularyStoreInstance.ensureLoaded()
+    }
+    return vocabularyStoreInstance
+  }
 
   const store = reactive({
     books: [],
@@ -121,6 +128,7 @@ export function useVocabularyStore() {
     statsVisible: true,
     words: [],
     tags: [],
+    _loaded: false,
 
     load() {
       let legacyWords = []
@@ -172,6 +180,18 @@ export function useVocabularyStore() {
       this.statsVisible = localStorage.getItem(VOCABULARY_STATS_VISIBLE_KEY) !== 'false'
       this.syncActiveBook()
       this.save()
+      this._loaded = true
+    },
+
+    /**
+     * 幂等：确保数据已从 localStorage 加载。
+     * 与 useVocabularyStore({ lazy: true }) 配合使用，
+     * 将昂贵的 JSON.parse + normalize 从"首帧前"延后到"首帧画出 loading 动画之后"再同步执行，
+     * 避免路由切换卡顿时用户以为无响应。
+     */
+    ensureLoaded() {
+      if (this._loaded) return
+      this.load()
     },
 
     save() {
@@ -436,7 +456,9 @@ export function useVocabularyStore() {
     }
   })
 
-  store.load()
+  // 默认（非 lazy）：立即同步加载（保持所有现有调用方语义不变）
+  // lazy=true：空壳 reactive，交给调用方在首帧画出后再 ensureLoaded()
+  if (!lazy) store.load()
   vocabularyStoreInstance = store
   return store
 }

@@ -1,5 +1,10 @@
 <template>
   <div class="vocab-page">
+    <!-- 首屏加载遮罩：立即展示，避免路由切换卡顿感 -->
+    <div v-if="pageLoading" class="vocab-loading-overlay" role="status" aria-live="polite">
+      <div class="vocab-loading-spinner" aria-hidden="true"></div>
+      <div class="vocab-loading-text">加载生词本中…</div>
+    </div>
     <header class="vocab-header">
       <div class="vocab-title-wrap">
         <el-button type="primary" @click="goBack">
@@ -208,7 +213,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
@@ -220,8 +225,22 @@ import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
-const vocabularyStore = useVocabularyStore()
+// 懒加载：只构造 reactive 空壳（<1ms），把昂贵 JSON.parse + normalize 延后到 loading 动画显示后
+const vocabularyStore = useVocabularyStore({ lazy: true })
 const bookStore = useBookStore()
+
+// ====== 首屏加载动画：先快速展示 loading → 再同步跑重数据 → loading 关闭 → 展示列表 ======
+// 这样路由切换时不会"卡一下再出现"，而是"立即 loading → 内容淡入"的流畅交互
+const pageLoading = ref(true)
+onMounted(async () => {
+  // 确保第一帧 loading spinner 先画出来
+  await nextTick()
+  await new Promise(r => setTimeout(r, 0))
+  // 然后同步跑 localStorage → normalize（可能几百毫秒）
+  // 此时用户看到 spinner，知道系统在工作，不会像卡顿那样以为没响应
+  vocabularyStore.ensureLoaded()
+  pageLoading.value = false
+})
 
 const searchText = ref('')
 const levelFilter = ref([])
@@ -658,11 +677,71 @@ async function handleImport(event) {
 </script>
 
 <style scoped>
+/* =========================================================
+   首屏加载骨架：与 box-sizing/布局 token 解耦，仅专注视觉
+   ========================================================= */
+.vocab-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(238, 244, 241, 0.92);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.vocab-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #d7dfdc;
+  border-top-color: #4a8c7f;
+  animation: vocab-spin 0.9s linear infinite;
+}
+
+.vocab-loading-text {
+  color: #394b48;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+@keyframes vocab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .vocab-page {
+  /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
+  --section-max: 1180px;
+  --section-hpad: 16px;
+  /* 页面级视觉衬垫：三块共同的水平外边距 */
+  --section-border: 1px;
+  /* toolbar/list 的 border 厚度 */
+  --section-inner-hpad: calc(var(--section-hpad) - var(--section-border));
+  /* toolbar/list 内部 padding(=15) + border(=1) = 与页面衬垫对齐 */
+
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28px 0;
+  padding: 28px var(--section-hpad);
+  /* ← 关键：整个页面 16px 水平衬垫，让三块视觉边缘从同一起点开始 */
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
+}
+
+/* ===== 三处统一宽度规则：完全同一条规则保证外框等宽 ===== */
+.vocab-header,
+.vocab-toolbar,
+.vocab-list {
+  width: 100% !important;
+  max-width: var(--section-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
 }
 
 .vocab-header {
@@ -670,8 +749,9 @@ async function handleImport(event) {
   grid-template-columns: minmax(240px, 1fr) auto;
   align-items: center;
   gap: 16px;
-  max-width: 1180px;
-  margin: 0 auto 18px;
+  margin-bottom: 18px;
+  padding: 0 !important;
+  /* ← 关键：页面级 padding 已承担水平衬垫，header 自身归零，让返回按钮外边缘直接对齐 toolbar/list 卡片外边缘 */
 }
 
 .vocab-title-wrap,
@@ -769,10 +849,9 @@ async function handleImport(event) {
 }
 
 .vocab-toolbar {
-  max-width: 1180px;
-  margin: 0 auto 12px;
-  padding: 14px;
-  border: 1px solid #d7dfdc;
+  margin-bottom: 12px;
+  padding: 14px var(--section-inner-hpad);
+  border: var(--section-border) solid #d7dfdc;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.88);
 }
@@ -795,9 +874,7 @@ async function handleImport(event) {
 }
 
 .vocab-list {
-  max-width: 1180px;
-  margin: 0 auto;
-  border: 1px solid #d7dfdc;
+  border: var(--section-border) solid #d7dfdc;
   border-radius: 8px;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.94);
@@ -813,7 +890,7 @@ async function handleImport(event) {
 }
 
 .vocab-list-head {
-  padding: 12px 16px;
+  padding: 12px var(--section-inner-hpad);
   color: #63706d;
   font-size: 12px;
   font-weight: 700;
@@ -822,7 +899,7 @@ async function handleImport(event) {
 
 .vocab-row {
   min-height: 58px;
-  padding: 10px 16px;
+  padding: 10px var(--section-inner-hpad);
   border-top: 1px solid #edf1ef;
 }
 

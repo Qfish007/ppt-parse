@@ -327,21 +327,30 @@ onMounted(() => {
 
 <style scoped>
 .vocab-test-page {
+  /* 测试页对齐 token：修改时只改这里 */
+  --test-max: 980px;
+  --test-border: 1px;
+
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28px;
+  padding: 28px;   /* 视觉衬垫：与页面其他区域保持一致的呼吸感 */
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
 }
 
+/* ===== 三块容器共享 EXACT 相同宽度规则：任意视口外盒宽必然一致 ===== */
 .test-header,
 .test-panel,
 .test-card {
-  max-width: 980px;
-  margin: 0 auto;
+  width: 100% !important;
+  max-width: var(--test-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
 }
 
 .test-header {
   margin-bottom: 18px;
+  padding: 0 !important;   /* header 无外框卡片：返回按钮贴 header 外盒边，使按钮边缘 == panel/card 的外卡边缘 */
 }
 
 .test-title-wrap {
