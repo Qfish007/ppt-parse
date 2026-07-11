@@ -162,7 +162,8 @@ function md5(input) {
  * @param {string} text - 要发音的文本
  * @returns {string} 签名后的 URL 字符串
  */
-export function signedYoudaoPronounceUrl(text) {
+export function signedYoudaoPronounceUrl(text, lang = 'en') {
+  const lan = /^zh/i.test(String(lang || '')) ? 'zh' : 'en';
   const params = {
     product: YOUDAO_VOICE_PRODUCT,
     appVersion: 1,
@@ -177,7 +178,7 @@ export function signedYoudaoPronounceUrl(text) {
     keyid: YOUDAO_VOICE_KEY_ID,
     mysticTime: Date.now(),
     yduuid: 'abcdefg',
-    le: 'en',
+    le: lan,
     rate: 4,
     word: text,
     type: 2
@@ -199,16 +200,18 @@ export function signedYoudaoPronounceUrl(text) {
 
 /**
  * 获取有道语音 URL
- * 如果是 http 协议，使用本地代理 `/tts/youdao?text=xxx`
+ * 如果是 http 协议，使用本地代理 `/tts/youdao?text=xxx&lan=xxx`
  * 否则使用 signedYoudaoPronounceUrl
  * @param {string} text - 要发音的文本
+ * @param {string} [lang='en'] - 语言：'en' 英文 / 'zh' 中文
  * @returns {string} 语音 URL
  */
-export function youdaoVoiceUrl(text) {
+export function youdaoVoiceUrl(text, lang = 'en') {
+  const lan = /^zh/i.test(String(lang || '')) ? 'zh' : 'en';
   if (typeof window !== 'undefined' && window.location.protocol.startsWith('http')) {
-    return `/tts/youdao?text=${encodeURIComponent(text)}`;
+    return `/tts/youdao?text=${encodeURIComponent(text)}&lan=${lan}`;
   }
-  return signedYoudaoPronounceUrl(text);
+  return signedYoudaoPronounceUrl(text, lan);
 }
 
 /**
@@ -217,13 +220,15 @@ export function youdaoVoiceUrl(text) {
  * @param {number} runId - 当前运行 ID，用于判断是否被中断
  * @param {Function} playAudioUrl - 播放音频 URL 的辅助函数（来自 index.js）
  * @param {Function} normalizeSpeechText - 标准化语音文本函数（来自 index.js）
+ * @param {string} [lang='en'] - 语言：'en' / 'zh'
  * @param {string} [fallbackProvider='browser'] - 失败时的回退提供商
+ * @param {string} [fallbackLang='en-US'] - 回退到 browser TTS 时使用的 lang
  * @returns {Promise}
  */
-export function playYoudaoText(text, runId, playAudioUrl, normalizeSpeechText, fallbackProvider = 'browser') {
+export function playYoudaoText(text, runId, playAudioUrl, normalizeSpeechText, lang = 'en', fallbackProvider = 'browser', fallbackLang = 'en-US') {
   const value = normalizeSpeechText(text);
   if (!value) return Promise.resolve();
-  return playAudioUrl(value, runId, youdaoVoiceUrl(value), fallbackProvider);
+  return playAudioUrl(value, runId, youdaoVoiceUrl(value, lang), fallbackProvider, fallbackLang);
 }
 
 // 导出 md5 供其他模块使用

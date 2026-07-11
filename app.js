@@ -989,7 +989,7 @@ function render() {
   } else {
     const header = document.createElement("header");
     header.className = "study-header";
-    header.innerHTML = `<span>第 ${page.page} 页</span><strong>逐段朗读</strong>`;
+    header.innerHTML = `<span>第 ${page.page} 页</span><strong></strong>`;
     els.pageContent.append(header);
     groupLines(page.lines).forEach((group, index) => els.pageContent.append(renderStudyBlock(group, index)));
   }
