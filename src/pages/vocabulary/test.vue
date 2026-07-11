@@ -3,7 +3,9 @@
     <header class="test-header">
       <div class="test-title-wrap">
         <el-button type="primary" @click="goBack">
-          <el-icon><ArrowLeft /></el-icon>
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
           返回生词本
         </el-button>
         <div>
@@ -15,49 +17,20 @@
 
     <section class="test-panel">
       <div class="test-controls">
-        <el-select
-          v-model="levelFilter"
-          class="test-control"
-          multiple
-          collapse-tags
-          collapse-tags-tooltip
-          clearable
-          placeholder="按水平筛选"
-        >
-          <el-option
-            v-for="level in VOCABULARY_LEVELS"
-            :key="level.value"
-            :label="level.label"
-            :value="level.value"
-          />
+        <el-select v-model="levelFilter" class="test-control" multiple collapse-tags collapse-tags-tooltip clearable
+          placeholder="按水平筛选">
+          <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :label="level.label" :value="level.value" />
         </el-select>
-        <el-select
-          v-model="tagFilter"
-          class="test-control"
-          multiple
-          collapse-tags
-          collapse-tags-tooltip
-          clearable
-          placeholder="按标签筛选"
-        >
-          <el-option
-            v-for="tag in defaultTags"
-            :key="tag.id"
-            :label="tag.name"
-            :value="tag.id"
-          />
+        <el-select v-model="tagFilter" class="test-control" multiple collapse-tags collapse-tags-tooltip clearable
+          placeholder="按标签筛选">
+          <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
         <el-select v-model="testMode" class="test-control" placeholder="测试方式">
           <el-option label="根据中文意思" value="meaning" />
           <el-option label="根据发音" value="sound" />
         </el-select>
-        <el-input-number
-          v-model="testCount"
-          class="test-count"
-          :min="1"
-          :max="Math.max(1, availableWords.length)"
-          controls-position="right"
-        />
+        <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
+          controls-position="right" />
         <el-button type="primary" :disabled="!availableWords.length" @click="startTest">
           开始测试
         </el-button>
@@ -85,19 +58,16 @@
           </div>
           <div v-else class="sound-prompt">
             <button class="sound-button" @click="playCurrentWord">
-              <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
             </button>
             <span>{{ currentWord.phonetic || '点击播放发音' }}</span>
           </div>
           <div class="answer-row">
-            <el-input
-              ref="answerInputRef"
-              v-model="answerText"
-              size="large"
-              placeholder="输入单词"
-              @keyup.enter="submitAnswer"
-            />
-            <el-button type="primary" size="large" @click="submitAnswer">提交</el-button>
+            <el-input ref="answerInputRef" v-model="answerText" size="large" class="answer-input" placeholder="输入单词"
+              @keyup.enter="submitAnswer" />
+            <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
           </div>
         </div>
       </section>
@@ -119,7 +89,8 @@
           <div class="result-block">
             <h4>正确列表</h4>
             <div v-if="!correctResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in correctResults" :key="`ok-${item.word}-${index}`" class="result-row is-correct">
+            <div v-for="(item, index) in correctResults" :key="`ok-${item.word}-${index}`"
+              class="result-row is-correct">
               <div class="result-word-line">
                 <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
@@ -333,7 +304,8 @@ onMounted(() => {
 
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28px;   /* 视觉衬垫：与页面其他区域保持一致的呼吸感 */
+  padding: 28px;
+  /* 视觉衬垫：与页面其他区域保持一致的呼吸感 */
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
 }
 
@@ -350,7 +322,8 @@ onMounted(() => {
 
 .test-header {
   margin-bottom: 18px;
-  padding: 0 !important;   /* header 无外框卡片：返回按钮贴 header 外盒边，使按钮边缘 == panel/card 的外卡边缘 */
+  padding: 0 !important;
+  /* header 无外框卡片：返回按钮贴 header 外盒边，使按钮边缘 == panel/card 的外卡边缘 */
 }
 
 .test-title-wrap {
@@ -485,9 +458,54 @@ onMounted(() => {
 }
 
 .answer-row {
+  /* ---------------- 用户需求：按钮另起一行（单列）+ 水平居中 ---------------- */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  row-gap: 18px;
+  column-gap: 0;
+  /* 不对所有项用 justify-items:center，否则 input 宽度会塌陷（撑不满行）。
+   * 改由：input 占满整列（默认行为），按钮单独 justify-self:center。*/
+}
+
+/* ---------------- 红框 answer-row: 字体 30px（用户需求） ---------------- */
+/* 30px 字号同步把 wrapper 高度/内边距调大，避免字母上沿下沿被裁切 */
+.answer-input :deep(.el-input__wrapper) {
+  font-size: 30px;
+  padding: 10px 16px;
+  min-height: 56px;
+  box-shadow: var(--el-input-border-color, #dcdfe6) 0 0 0 1px inset;
+  border-radius: 8px;
+}
+
+.answer-input :deep(.el-input__inner) {
+  font-size: 30px;
+  line-height: 36px;
+  height: 36px;
+  /* ---------------- 用户需求：输入框内输入的文字水平居中 ---------------- */
+  text-align: center;
+}
+
+.answer-input :deep(.el-input__inner::placeholder) {
+  font-size: 30px;
+  color: #a8b1ad;
+  /* ---------------- 用户需求：placeholder 文字也水平居中 ---------------- */
+  text-align: center;
+}
+
+/* 提交按钮字号 30px，同步把高度和内边距调高与 input 对齐（~56px）
+ * 注意：answer-submit 类直接绑在 ElButton 的根 button 上（见 DOM classList=el-button..answer-submit）
+ *       Vue scoped 的 ".answer-submit :deep(.el-button)" 写的是"子元素匹配"，自己不会是自己的子元素 → 失效
+ *       因此这里用 :global(.answer-submit.el-button) 命中根元素自身 */
+:global(.answer-submit.el-button) {
+  font-size: 30px;
+  font-weight: 800;
+  padding: 10px 36px;
+  min-height: 56px;
+  line-height: 36px;
+  border-radius: 8px;
+  /* ---------------- 用户需求：按钮另起一行，该行内水平居中 ---------------- */
+  /* answer-row 是 grid，用 justify-self 把按钮子项在自己的格子里水平居中（input 仍满行，互不影响） */
+  justify-self: center;
 }
 
 .result-head {
@@ -595,6 +613,7 @@ onMounted(() => {
 }
 
 @media (max-width: 720px) {
+
   .test-title-wrap,
   .result-head {
     align-items: flex-start;

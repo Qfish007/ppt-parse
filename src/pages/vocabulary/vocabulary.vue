@@ -1,10 +1,5 @@
 <template>
   <div class="vocab-page">
-    <!-- 首屏加载遮罩：立即展示，避免路由切换卡顿感 -->
-    <div v-if="pageLoading" class="vocab-loading-overlay" role="status" aria-live="polite">
-      <div class="vocab-loading-spinner" aria-hidden="true"></div>
-      <div class="vocab-loading-text">加载生词本中…</div>
-    </div>
     <header class="vocab-header">
       <div class="vocab-title-wrap">
         <el-button type="primary" @click="goBack">
@@ -54,45 +49,68 @@
         <span class="vocab-action-head">操作</span>
       </div>
 
-      <div v-if="!filteredWords.length" class="vocab-empty">
-        暂无生词。
+      <!-- 红框区骨架：加载数据时渲染 N 行占位，视觉上立即有内容、不阻塞 -->
+      <div v-if="listLoading" class="vocab-list-skeleton" aria-label="加载中">
+        <div v-for="n in 8" :key="`sk-${n}`" class="vocab-row vocab-skeleton-row" aria-hidden="true">
+          <div class="vocab-skeleton vocab-skeleton-word"></div>
+          <div class="vocab-skeleton vocab-skeleton-pronunciation"></div>
+          <div class="vocab-skeleton vocab-skeleton-memory"></div>
+          <div class="vocab-skeleton vocab-skeleton-meaning"></div>
+          <div class="vocab-skeleton vocab-skeleton-tags"></div>
+          <div class="vocab-skeleton vocab-skeleton-level"></div>
+          <div class="vocab-skeleton vocab-skeleton-action"></div>
+        </div>
       </div>
 
-      <div v-for="entry in filteredWords" :key="entry.word" class="vocab-row">
-        <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
-        <div class="vocab-pronunciation">
-          <button class="vocab-sound" @click="playWord(entry)">
-            <svg viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"></path>
-            </svg>
-          </button>
-          <span>{{ entry.phonetic || '-' }}</span>
+      <template v-else>
+        <div v-if="!pagedWords.length" class="vocab-empty">
+          暂无生词。
         </div>
-        <div class="vocab-memory">
-          <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
-            <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
-            <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
-          </template>
+
+        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row">
+          <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
+          <div class="vocab-pronunciation">
+            <button class="vocab-sound" @click="playWord(entry)">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
+            </button>
+            <span>{{ entry.phonetic || '-' }}</span>
+          </div>
+          <div class="vocab-memory">
+            <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
+              <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+              <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
+            </template>
+          </div>
+          <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
+          <div class="vocab-tags">
+            <el-tag v-for="tag in tagsForEntry(entry)" :key="tag.id" size="small" effect="plain">
+              {{ tag.name }}
+            </el-tag>
+            <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
+          </div>
+          <div class="vocab-level">
+            <span class="vocab-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
+            <el-select :class="['vocab-level-select', levelClass(entry.level)]" :model-value="entry.level" size="small"
+              popper-class="vocab-level-popper" @change="value => updateLevel(entry.word, value)">
+              <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
+                :label="level.label" :value="level.value" />
+            </el-select>
+          </div>
+          <div class="vocab-action">
+            <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
+          </div>
         </div>
-        <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
-        <div class="vocab-tags">
-          <el-tag v-for="tag in tagsForEntry(entry)" :key="tag.id" size="small" effect="plain">
-            {{ tag.name }}
-          </el-tag>
-          <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
-        </div>
-        <div class="vocab-level">
-          <span class="vocab-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
-          <el-select :class="['vocab-level-select', levelClass(entry.level)]" :model-value="entry.level" size="small"
-            popper-class="vocab-level-popper" @change="value => updateLevel(entry.word, value)">
-            <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
-              :label="level.label" :value="level.value" />
-          </el-select>
-        </div>
-        <div class="vocab-action">
-          <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
-        </div>
-      </div>
+      </template>
+    </section>
+
+    <!-- 分页条：与生词本三大块共用相同布局 token → 自动对齐 -->
+    <section v-if="!listLoading" class="vocab-pagination">
+      <el-pagination v-model:current-page="page" v-model:page-size="pageSize" :page-sizes="pageSizes"
+        :total="filteredWords.length" :pager-count="7" background size="small"
+        layout="total, sizes, prev, pager, next, jumper" @size-change="onPageSizeChange"
+        @current-change="onPageChange" />
     </section>
 
     <Teleport to="body">
@@ -213,7 +231,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
@@ -222,30 +240,105 @@ import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { useVocabularyStore, VOCABULARY_LEVELS } from '../../stores/vocabulary.js'
 import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
+import { clampPage, slicePage, totalPagesOf } from '../../utils/pagination.js'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
-// 懒加载：只构造 reactive 空壳（<1ms），把昂贵 JSON.parse + normalize 延后到 loading 动画显示后
+// 懒加载：只构造 reactive 空壳（<1ms），把昂贵 JSON.parse + normalize 延后到骨架渲染之后
 const vocabularyStore = useVocabularyStore({ lazy: true })
 const bookStore = useBookStore()
 
-// ====== 首屏加载动画：先快速展示 loading → 再同步跑重数据 → loading 关闭 → 展示列表 ======
-// 这样路由切换时不会"卡一下再出现"，而是"立即 loading → 内容淡入"的流畅交互
-const pageLoading = ref(true)
-onMounted(async () => {
-  // 确保第一帧 loading spinner 先画出来
-  await nextTick()
-  await new Promise(r => setTimeout(r, 0))
-  // 然后同步跑 localStorage → normalize（可能几百毫秒）
-  // 此时用户看到 spinner，知道系统在工作，不会像卡顿那样以为没响应
-  vocabularyStore.ensureLoaded()
-  pageLoading.value = false
-})
+// ========================================================================
+//  红框区本地骨架加载：不阻塞 header/toolbar，只让列表区闪一下骨架
+//  真实耗时大头 = Vue patch（大表 → DOM 几千节点），分页直接根治
+// ========================================================================
+const listLoading = ref(true)  // 默认 true：挂载瞬间骨架先显示
 
+async function runWithListLoading(fn) {
+  listLoading.value = true
+  try {
+    // 让浏览器先画骨架，避免同步重任务直接阻塞导致"白屏卡一下"
+    await nextTick()
+    await new Promise(r => setTimeout(r, 0))
+    if (typeof fn === 'function') await fn()
+  } finally {
+    listLoading.value = false
+  }
+}
+
+// —— 筛选 / 排序状态：必须在 watcher 与 filteredWords 之前声明，避免 TDZ ——
 const searchText = ref('')
 const levelFilter = ref([])
 const tagFilter = ref([])
 const sortMode = ref('alphabet')
+
+// —— 筛选 + 排序结果（后续所有 computed/watch 依赖它，必须最早就绪） ——
+const filteredWords = computed(() => {
+  const keyword = searchText.value.trim().toLowerCase()
+  let words = vocabularyStore.words.filter(entry => {
+    const matchKeyword = !keyword
+      || entry.word.includes(keyword)
+      || String(entry.meaning || '').toLowerCase().includes(keyword)
+    const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
+    const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
+    const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
+    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
+    return matchKeyword && matchLevel && matchTags
+  })
+  if (sortMode.value === 'createdAt') {
+    words = [...words].sort((a, b) => b.createdAt - a.createdAt)
+  } else {
+    words = [...words].sort((a, b) => a.word.localeCompare(b.word, 'en', { sensitivity: 'base' }))
+  }
+  return words
+})
+
+// ========================== 分页（根治列表 DOM 卡顿） ==========================
+const pageSizes = [10, 20, 50, 100, 200]
+const pageSize = ref(10)
+const page = ref(1)
+
+const pagedWords = computed(() =>
+  slicePage(filteredWords.value, page.value, pageSize.value)
+)
+
+function onPageChange(p) {
+  page.value = clampPage(filteredWords.value.length, p, pageSize.value)
+}
+function onPageSizeChange(size) {
+  pageSize.value = Math.max(1, Number(size) || 50)
+  page.value = clampPage(filteredWords.value.length, page.value, pageSize.value)
+}
+
+// —— 筛选/排序变化 → 回到第一页 ——
+watch([searchText, levelFilter, tagFilter, sortMode], () => {
+  page.value = 1
+})
+
+// —— 列表总数变化 → 若当前页已越界则回落到最后一页 ——
+watch(() => filteredWords.value.length, (n) => {
+  const clamped = clampPage(n, page.value, pageSize.value)
+  if (clamped !== page.value) page.value = clamped
+})
+
+// —— 切词库触发（设置页切换 activeBook → 切回词汇页时）：重加载 + 复位 ——
+let lastActiveBookId = null
+watch(() => vocabularyStore.activeBookId, (newId, oldId) => {
+  if (newId === lastActiveBookId) return
+  lastActiveBookId = newId
+  if (oldId != null) {
+    page.value = 1
+    runWithListLoading(() => vocabularyStore.ensureLoaded())
+  }
+})
+
+// —— 组件挂载：首屏骨架 → 跑重数据 → 关骨架 ——
+onMounted(() => {
+  runWithListLoading(() => {
+    vocabularyStore.ensureLoaded()
+    lastActiveBookId = vocabularyStore.activeBookId || null
+  })
+})
 const importInputRef = ref(null)
 const manualInputRef = ref(null)
 const statsBarRef = ref(null)
@@ -293,27 +386,6 @@ const statsBarStyle = computed(() => {
 })
 
 const activeBookName = computed(() => vocabularyStore.getActiveBook()?.name || '默认生词本')
-
-const filteredWords = computed(() => {
-  const keyword = searchText.value.trim().toLowerCase()
-  let words = vocabularyStore.words.filter(entry => {
-    const matchKeyword = !keyword
-      || entry.word.includes(keyword)
-      || String(entry.meaning || '').toLowerCase().includes(keyword)
-    const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
-    const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
-    const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
-    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
-    return matchKeyword && matchLevel && matchTags
-  })
-
-  if (sortMode.value === 'createdAt') {
-    words = [...words].sort((a, b) => b.createdAt - a.createdAt)
-  } else {
-    words = [...words].sort((a, b) => a.word.localeCompare(b.word, 'en', { sensitivity: 'base' }))
-  }
-  return words
-})
 
 const levelStats = computed(() => {
   const stats = {
@@ -678,42 +750,96 @@ async function handleImport(event) {
 
 <style scoped>
 /* =========================================================
-   首屏加载骨架：与 box-sizing/布局 token 解耦，仅专注视觉
+   红框列表区骨架 + shimmer：只在列表 body 显示 loading
    ========================================================= */
-.vocab-loading-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  background: rgba(238, 244, 241, 0.92);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+.vocab-list-skeleton {
+  position: relative;
+  overflow: hidden;
 }
 
-.vocab-loading-spinner {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 3px solid #d7dfdc;
-  border-top-color: #4a8c7f;
-  animation: vocab-spin 0.9s linear infinite;
+.vocab-skeleton-row {
+  min-height: 64px;
 }
 
-.vocab-loading-text {
-  color: #394b48;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 0.3px;
+.vocab-skeleton {
+  position: relative;
+  border-radius: 4px;
+  background: linear-gradient(90deg,
+      #eef1ee 0%,
+      #f4f7f5 40%,
+      #eef1ee 80%);
+  background-size: 200% 100%;
+  animation: vocab-shimmer 1.3s linear infinite;
+  overflow: hidden;
+  min-height: 16px;
 }
 
-@keyframes vocab-spin {
-  to {
-    transform: rotate(360deg);
+.vocab-skeleton-word {
+  width: 62%;
+  min-height: 18px;
+}
+
+.vocab-skeleton-pronunciation {
+  width: 75%;
+  min-height: 18px;
+}
+
+.vocab-skeleton-memory {
+  width: 55%;
+  min-height: 18px;
+}
+
+.vocab-skeleton-meaning {
+  width: 92%;
+  min-height: 18px;
+}
+
+.vocab-skeleton-tags {
+  width: 42%;
+  min-height: 18px;
+}
+
+.vocab-skeleton-level {
+  width: 68%;
+  min-height: 22px;
+  border-radius: 14px;
+}
+
+.vocab-skeleton-action {
+  width: 62%;
+  min-height: 22px;
+  border-radius: 14px;
+}
+
+@keyframes vocab-shimmer {
+  0% {
+    background-position: 200% 0;
   }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* 分页条：与 header/toolbar/list 保持完全同宽同起点 */
+.vocab-pagination {
+  width: 100% !important;
+  max-width: var(--section-max) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  margin-top: 16px;
+  box-sizing: border-box !important;
+  padding: 10px var(--section-inner-hpad);
+  display: flex;
+  justify-content: flex-end;
+  background: rgba(255, 255, 255, 0.94);
+  border: var(--section-border) solid #d7dfdc;
+  border-radius: 8px;
+  box-shadow: 0 12px 32px rgba(22, 32, 31, 0.06);
+}
+
+:deep(.vocab-pagination .el-pagination) {
+  justify-content: flex-end;
 }
 
 .vocab-page {
@@ -733,10 +859,11 @@ async function handleImport(event) {
   background: linear-gradient(135deg, #eef4f1 0%, #f8f7f2 48%, #edf1f8 100%);
 }
 
-/* ===== 三处统一宽度规则：完全同一条规则保证外框等宽 ===== */
+/* ===== 四处统一宽度规则：完全同一条规则保证外框等宽（含分页条） ===== */
 .vocab-header,
 .vocab-toolbar,
-.vocab-list {
+.vocab-list,
+.vocab-pagination {
   width: 100% !important;
   max-width: var(--section-max) !important;
   margin-left: auto !important;
