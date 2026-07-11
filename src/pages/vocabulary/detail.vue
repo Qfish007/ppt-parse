@@ -68,11 +68,16 @@ const memoryParts = computed(() => {
 })
 
 function goBack() {
-  if (route.query.from === 'test') {
-    router.push('/vocabulary/test')
+  // 优先返回上一级；首次直接打开 detail 页时 fallback 到来源对应页
+  if (window.history.length > 1) {
+    router.back()
     return
   }
-  router.push('/vocabulary')
+  if (route.query.from === 'test') {
+    router.push('/vocabulary/test')
+  } else {
+    router.push('/vocabulary')
+  }
 }
 
 function autoMemoryParts(rawWord) {

@@ -89,7 +89,11 @@ const bookName = ref('')
 const tagName = ref('')
 
 function goBack() {
-  router.push('/vocabulary')
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/vocabulary')
+  }
 }
 
 function toggleStatsVisible(visible) {

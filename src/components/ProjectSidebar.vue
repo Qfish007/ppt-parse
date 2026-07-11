@@ -9,13 +9,8 @@
 
     <!-- 项目列表 -->
     <div class="project-list">
-      <div
-        v-for="project in projectsStore.projects"
-        :key="project.id"
-        class="project-item"
-        :class="{ active: project.id === projectsStore.activeProjectId }"
-        @click="selectProject(project.id)"
-      >
+      <div v-for="project in projectsStore.projects" :key="project.id" class="project-item"
+        :class="{ active: project.id === projectsStore.activeProjectId }" @click="selectProject(project.id)">
         <div class="project-index">{{ project.index }}</div>
         <div class="project-info">
           <div class="project-name">{{ project.name }}</div>
@@ -28,28 +23,10 @@
               </template>
             </span>
             <span class="project-actions">
-              <el-button
-                text
-                size="small"
-                @click.stop="importProject"
-                :icon="Upload"
-                title="导入"
-              />
-              <el-button
-                text
-                size="small"
-                @click.stop="exportProject(project)"
-                :icon="Download"
-                title="导出"
-              />
-              <el-button
-                v-if="project.deletable !== false"
-                text
-                size="small"
-                @click.stop="deleteProject(project.id)"
-                :icon="Delete"
-                title="删除"
-              />
+              <el-button text size="small" @click.stop="importProject" :icon="Upload" title="导入" />
+              <el-button text size="small" @click.stop="exportProject(project)" :icon="Download" title="导出" />
+              <el-button v-if="project.deletable !== false" text size="small" @click.stop="deleteProject(project.id)"
+                :icon="Delete" title="删除" />
             </span>
           </div>
         </div>
@@ -66,31 +43,16 @@
           </div>
           <div class="dialog-body">
             <label class="form-label">项目名称</label>
-            <el-input
-              v-model="formData.name"
-              placeholder="请输入项目名称"
-              size="large"
-              @keyup.enter="confirmAdd"
-              ref="nameInputRef"
-            />
+            <el-input v-model="formData.name" placeholder="请输入项目名称" size="large" @keyup.enter="confirmAdd"
+              ref="nameInputRef" />
             <label class="form-label" style="margin-top: 20px">项目类型</label>
-            <el-select
-              v-model="formData.type"
-              placeholder="请选择项目类型"
-              size="large"
-              style="width: 100%"
-              :teleported="false"
-              :popper-append-to-body="false"
-              popper-class="add-project-select-dropdown"
-            >
-              <el-option
-                v-for="opt in typeOptions"
-                :key="opt.value"
-                :value="opt.value"
-                :label="opt.label"
-              >
+            <el-select v-model="formData.type" placeholder="请选择项目类型" size="large" style="width: 100%"
+              :teleported="false" :popper-append-to-body="false" popper-class="add-project-select-dropdown">
+              <el-option v-for="opt in typeOptions" :key="opt.value" :value="opt.value" :label="opt.label">
                 <span style="display: inline-flex; align-items: center; gap: 8px;">
-                  <el-icon :size="16"><component :is="opt.icon" /></el-icon>
+                  <el-icon :size="16">
+                    <component :is="opt.icon" />
+                  </el-icon>
                   <span>{{ opt.label }}</span>
                 </span>
               </el-option>
@@ -166,7 +128,7 @@ function confirmAdd() {
     status: 'empty'
   })
   projectsStore.setActiveProject(project.id)
-  router.push(`/main/${project.index}`)
+  router.push(`/books/${project.index}`)
   dialogVisible.value = false
   ElMessage.success(`项目「${formData.name.trim()}」已创建，请在右侧上传文件`)
 }
@@ -175,7 +137,7 @@ function selectProject(id) {
   const project = projectsStore.projects.find(item => item.id === id)
   if (!project) return
   projectsStore.setActiveProject(project.id)
-  router.push(`/main/${project.index}`)
+  router.push(`/books/${project.index}`)
 }
 
 function safeExportName(name) {
@@ -226,13 +188,13 @@ async function collectProjectAssets(project) {
     refs.set(ref, filename || decodeURIComponent(ref.split('/').pop() || 'file'))
   }
 
-  ;(project.files || []).forEach(file => {
-    addRef(file.path, file.name)
-    addRef(file.dataUrl, file.name)
-  })
-  ;(project.parsedData?.pages || []).forEach((page, index) => {
-    addRef(page.image, `page-${String(index + 1).padStart(3, '0')}.png`)
-  })
+    ; (project.files || []).forEach(file => {
+      addRef(file.path, file.name)
+      addRef(file.dataUrl, file.name)
+    })
+    ; (project.parsedData?.pages || []).forEach((page, index) => {
+      addRef(page.image, `page-${String(index + 1).padStart(3, '0')}.png`)
+    })
 
   const assets = {}
   for (const [ref, filename] of refs.entries()) {
@@ -377,7 +339,7 @@ async function importProject() {
       })
 
       projectsStore.setActiveProject(project.id)
-      router.push(`/main/${updatedProject.index}`)
+      router.push(`/books/${updatedProject.index}`)
       ElMessage.success(`已导入「${updatedProject.name}」`)
     } catch (error) {
       ElMessage.error(`导入失败：${error.message || '请检查文件后重试'}`)
@@ -398,7 +360,7 @@ async function deleteProject(id) {
     ElMessage.success('已删除')
     if (wasActive) {
       const active = projectsStore.getActiveProject()
-      if (active?.index) router.push(`/main/${active.index}`)
+      if (active?.index) router.push(`/books/${active.index}`)
     }
   } catch {
     // 用户取消
@@ -561,8 +523,13 @@ async function deleteProject(id) {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .dialog-card {
@@ -575,8 +542,15 @@ async function deleteProject(id) {
 }
 
 @keyframes slideUp {
-  from { transform: translateY(30px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .dialog-header {
@@ -675,15 +649,17 @@ async function deleteProject(id) {
 .dialog-body {
   overflow: visible !important;
 }
+
 /* 2) 非 teleported 下拉（在 dialog 内部）提高层级避免被内部裁剪 */
 .add-project-select-dropdown {
   z-index: 3200 !important;
 }
+
 /* 3) 兜底：直接 teleport 到 body 的 Element Plus 下拉/popper，z-index 必须 > dialog-overlay 的 3000 */
-body > .el-select-dropdown,
-body > .el-popper.el-select-dropdown,
-body > .el-overlay-popper,
-body > .el-popper {
+body>.el-select-dropdown,
+body>.el-popper.el-select-dropdown,
+body>.el-overlay-popper,
+body>.el-popper {
   z-index: 3200 !important;
 }
 </style>

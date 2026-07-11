@@ -6,7 +6,7 @@
           <el-icon>
             <ArrowLeft />
           </el-icon>
-          返回主页面
+          返回
         </el-button>
         <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
       </div>
@@ -406,8 +406,11 @@ const levelStats = computed(() => {
 })
 
 function goBack() {
-  const active = projectsStore.getActiveProject()
-  router.push(`/main/${active?.index || '001'}`)
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/home')
+  }
 }
 
 function goSettings() {

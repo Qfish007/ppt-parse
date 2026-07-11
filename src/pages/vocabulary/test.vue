@@ -156,7 +156,11 @@ const normalizedTestCount = computed(() => Math.min(Math.max(Number(testCount.va
 const currentWord = computed(() => testQueue.value[currentIndex.value] || null)
 
 function goBack() {
-  router.push('/vocabulary')
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/vocabulary')
+  }
 }
 
 function openWordDetail(word) {
