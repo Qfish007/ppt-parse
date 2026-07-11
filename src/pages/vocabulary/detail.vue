@@ -2,7 +2,9 @@
   <div class="word-detail-page">
     <header class="word-detail-header">
       <el-button type="primary" @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+        <el-icon>
+          <ArrowLeft />
+        </el-icon>
         {{ backLabel }}
       </el-button>
       <h2 class="word-detail-title">单词详情</h2>
@@ -15,7 +17,9 @@
           <h1>{{ entry.word }}</h1>
         </div>
         <button class="detail-sound" @click="playWord">
-          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+          <svg viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z"></path>
+          </svg>
         </button>
       </div>
 
@@ -60,7 +64,7 @@ const vocabularyStore = useVocabularyStore()
 const bookStore = useBookStore()
 
 const word = computed(() => String(route.params.word || '').toLowerCase())
-const backLabel = computed(() => route.query.from === 'test' ? '返回单词测试' : '返回生词本')
+const backLabel = computed(() => '返回')
 const entry = computed(() => vocabularyStore.words.find(item => item.word === word.value) || null)
 const memoryParts = computed(() => {
   if (entry.value?.memoryParts?.length) return entry.value.memoryParts

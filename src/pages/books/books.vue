@@ -1,8 +1,7 @@
 <template>
   <div class="main-page">
-    <TopBar :hidden="isToolbarHidden" :column-toggle-label="columnToggleLabel" :show-back="true" back-label="返回首页"
-      @go-vocabulary="goVocabulary" @go-setting="goSetting" @go-back="goBack"
-      @cycle-column-visibility="cycleColumnVisibility" @hide="isToolbarHidden = true" />
+    <TopBar :hidden="isToolbarHidden" :column-toggle-label="columnToggleLabel" :show-back="true" @go-vocabulary="goVocabulary"
+      @go-setting="goSetting" @go-back="goBack" @cycle-column-visibility="cycleColumnVisibility" @hide="isToolbarHidden = true" />
 
     <div class="main-workspace">
       <Menu :hidden="isProjectColumnHidden" :width="projectPanelWidth" />

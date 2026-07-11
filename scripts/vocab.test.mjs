@@ -334,12 +334,14 @@ test('统一返回样式：TopBar 内返回按钮为蓝底实心 type=primary + 
     assert.ok(hasGoBackEmit, `TopBar 必须 emit 'go-back'（取代老的 go-home 语义）`)
 })
 
-test('books.vue 模板：TopBar 上传 backLabel（如"返回首页"）+ 绑定 @go-back（而不是 @go-home 固定语义）', () => {
+test('books.vue 模板：TopBar 绑定 @go-back；back-label 可不传（默认=返回）或传="返回"（禁止传返回首页之类后缀）', () => {
     const booksSrc = fs.readFileSync(path.join(pagesDir, 'books', 'books.vue'), 'utf8')
-    const hasLabel = /back-label|backLabel/.test(booksSrc)
     const hasEvent = /@go-back|v-on:go-back/.test(booksSrc)
-    assert.ok(hasLabel, `books.vue 未给 TopBar 传 back-label/backLabel（用于显示"返回首页"之类）`)
+    // backLabel/back-label 允许：完全不传（走默认 '返回'）；传 :show-back="true"（无 label）；若传了 back-label 必须严格是「返回」不能有后缀
+    const explicitBadLabel = /back-label\s*=\s*['"`]返回[^'"`\s][^'"`]*['"`]/.test(booksSrc)
+    const explicitOK = explicitBadLabel ? false : true
     assert.ok(hasEvent, `books.vue 未给 TopBar 绑定 @go-back 事件`)
+    assert.ok(explicitOK, `books.vue back-label 属性若有则必须为'返回'，不可带后缀。当前存在后缀属性`)
 })
 
 test('次级页面也统一：books/setting.vue、vocabulary/test.vue、vocabulary/settings.vue、vocabulary/detail.vue 全部用 router.back() + fallback（不要固定 push）', () => {
@@ -359,6 +361,37 @@ test('次级页面也统一：books/setting.vue、vocabulary/test.vue、vocabula
         if (!hasBack) bad.push(`${path.basename(path.dirname(f))}/${path.basename(f)}: goBack 内没有 router.back()（仍为固定 push/replace）。体=${body.replace(/\s+/g, ' ').slice(0, 120)}`)
     }
     assert.deepEqual(bad, [], `4 个次级页面返回逻辑未统一为 router.back()：${JSON.stringify(bad)}`)
+})
+
+// -------------------- 用户：所有页面返回按钮文案统一为「返回」（不带任何后缀，禁止"返回生词本/返回首页/返回书籍/返回单词测试"） --------------------
+test('统一文案：所有页面顶部返回按钮文字严格是「返回」两个字，不允许「返回XXX」样式后缀', () => {
+    const pageFiles = [
+        path.join(pagesDir, 'books', 'books.vue'),
+        path.join(pagesDir, 'books', 'setting.vue'),
+        path.join(pagesDir, 'vocabulary', 'vocabulary.vue'),
+        path.join(pagesDir, 'vocabulary', 'detail.vue'),
+        path.join(pagesDir, 'vocabulary', 'test.vue'),
+        path.join(pagesDir, 'vocabulary', 'settings.vue'),
+        path.join(__dirname, '..', 'src', 'views', 'topBar.vue'),
+    ]
+    const bad = []
+    for (const f of pageFiles) {
+        const src = fs.readFileSync(f, 'utf8')
+        const name = f.includes('topBar') ? 'views/topBar.vue' : `${path.basename(path.dirname(f))}/${path.basename(f)}`
+        // 抓返回按钮相关：el-button 标签内的返回文字（按钮 children）、prop 传的 back-label/backLabel 值、computed backLabel 值
+        // 1. 模板内文字 children：匹配 >...< 之间含"返回"的片段
+        const badChildPattern = />\s*返回[\u4e00-\u9fa5A-Za-z0-9]+\s*</g
+        const badChildren = Array.from(src.matchAll(badChildPattern) || [])
+        badChildren.forEach(m => bad.push(`${name} 模板按钮文字含后缀：${m[0].replace(/\s+/g, ' ').trim()}`))
+        // 2. prop/attribute 中 back-label="返回XXX" 或 :back-label="'返回XXX'"（引号含额外字）
+        const attrBad = [...src.matchAll(/back-label\s*=\s*['"`]返回[^'"`\s][^'"`]*['"`]/g),
+        ...src.matchAll(/(?:backLabel|back-label)\s*:\s*['"`]返回[^'"`\s][^'"`]*['"`]/g)]
+        attrBad.forEach(m => bad.push(`${name} prop/attr 含后缀：${m[0].replace(/\s+/g, ' ').trim()}`))
+        // 3. computed backLabel 中 '返回XXX' 字面量（detail.vue 里的返回生词本/返回单词测试）
+        const computedBad = [...src.matchAll(/['"`]返回[^'"`\s][^'"`]*['"`]/g)]
+        computedBad.forEach(m => bad.push(`${name} 字符串字面量含后缀：${m[0]}`))
+    }
+    assert.deepEqual(bad, [], `发现 ${bad.length} 处返回按钮文案未统一：${JSON.stringify(bad)}`)
 })
 
 // ---------- 汇总打印 ----------

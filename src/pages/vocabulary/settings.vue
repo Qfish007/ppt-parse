@@ -6,7 +6,7 @@
           <el-icon>
             <ArrowLeft />
           </el-icon>
-          返回生词本
+          返回
         </el-button>
         <h2 class="settings-title">生词本设置</h2>
       </div>

@@ -6,7 +6,7 @@
           <el-icon>
             <ArrowLeft />
           </el-icon>
-          返回书籍
+          返回
         </el-button>
         <h2 class="setting-title">设置</h2>
       </div>

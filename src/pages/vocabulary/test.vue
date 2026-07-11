@@ -6,7 +6,7 @@
           <el-icon>
             <ArrowLeft />
           </el-icon>
-          返回生词本
+          返回
         </el-button>
         <div>
           <h2 class="test-title">单词测试</h2>
