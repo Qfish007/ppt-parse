@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 const HomeView = () => import('../pages/home/home.vue')
+const HomeSettingView = () => import('../pages/home/setting.vue')
 const BooksView = () => import('../pages/books/books.vue')
 const BooksSettingView = () => import('../pages/books/setting.vue')
 const VocabularyView = () => import('../pages/vocabulary/vocabulary.vue')
@@ -18,6 +19,11 @@ const routes = [
     path: '/home',
     name: 'Home',
     component: HomeView
+  },
+  {
+    path: '/home/setting',
+    name: 'HomeSetting',
+    component: HomeSettingView
   },
   // 书籍页：原 /main → /books（同时保留 /main 旧路由做兼容跳转）
   {

@@ -58,11 +58,11 @@ import {
   isTranslationProject,
   displayLineOrder,
 } from '../../utils/translation.js'
-import TopBar from '../../views/topBar.vue'
-import Menu from '../../views/menu.vue'
-import MenuSub from '../../views/menuSub.vue'
-import Body from '../../views/body.vue'
-import BodyParse from '../../views/bodyParse.vue'
+import TopBar from './views/topBar.vue'
+import Menu from './views/menu.vue'
+import MenuSub from './views/menuSub.vue'
+import Body from './views/body.vue'
+import BodyParse from './views/bodyParse.vue'
 
 const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
