@@ -1,18 +1,5 @@
 import { reactive } from 'vue'
-
-const VOCABULARY_STORAGE_KEY = 'bilingual-reader-vocabulary'
-const VOCABULARY_TAGS_STORAGE_KEY = 'bilingual-reader-vocabulary-tags'
-const VOCABULARY_BOOKS_STORAGE_KEY = 'bilingual-reader-vocabulary-books'
-const VOCABULARY_ACTIVE_BOOK_KEY = 'bilingual-reader-active-vocabulary-book'
-const VOCABULARY_DEFAULT_BOOK_KEY = 'bilingual-reader-default-vocabulary-book'
-const VOCABULARY_STATS_VISIBLE_KEY = 'bilingual-reader-vocabulary-stats-visible'
-
-export const VOCABULARY_LEVELS = [
-  { value: 'unknown', label: '不认识' },
-  { value: 'learning', label: '已了解' },
-  { value: 'mastered', label: '已掌握' },
-  { value: 'familiar', label: '已熟记' }
-]
+import { STORAGE_KEYS, VOCABULARY_LEVELS } from '../types/index.js'
 
 let vocabularyStoreInstance = null
 
@@ -134,17 +121,17 @@ export function useVocabularyStore(options) {
       let legacyWords = []
       let legacyTags = []
       try {
-        const savedBooks = JSON.parse(localStorage.getItem(VOCABULARY_BOOKS_STORAGE_KEY) || '[]')
+        const savedBooks = JSON.parse(localStorage.getItem(STORAGE_KEYS.VOCABULARY_BOOKS) || '[]')
         this.books = Array.isArray(savedBooks)
           ? savedBooks.map((book, index) => normalizeBook(book, index === 0 ? '默认生词本' : `生词本 ${index + 1}`)).filter(Boolean)
           : []
       } catch {
-        localStorage.removeItem(VOCABULARY_BOOKS_STORAGE_KEY)
+        localStorage.removeItem(STORAGE_KEYS.VOCABULARY_BOOKS)
         this.books = []
       }
 
       try {
-        const saved = JSON.parse(localStorage.getItem(VOCABULARY_STORAGE_KEY) || '[]')
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.VOCABULARY) || '[]')
         legacyWords = Array.isArray(saved)
           ? sortByAlphabet(saved.map(normalizeEntry).filter(Boolean))
           : []
@@ -152,7 +139,7 @@ export function useVocabularyStore(options) {
         legacyWords = []
       }
       try {
-        const savedTags = JSON.parse(localStorage.getItem(VOCABULARY_TAGS_STORAGE_KEY) || '[]')
+        const savedTags = JSON.parse(localStorage.getItem(STORAGE_KEYS.VOCABULARY_TAGS) || '[]')
         legacyTags = Array.isArray(savedTags)
           ? savedTags.map(normalizeTag).filter(Boolean)
           : []
@@ -169,15 +156,15 @@ export function useVocabularyStore(options) {
         })]
       }
 
-      const savedActiveBookId = localStorage.getItem(VOCABULARY_ACTIVE_BOOK_KEY)
-      const savedDefaultBookId = localStorage.getItem(VOCABULARY_DEFAULT_BOOK_KEY)
+      const savedActiveBookId = localStorage.getItem(STORAGE_KEYS.VOCABULARY_ACTIVE_BOOK)
+      const savedDefaultBookId = localStorage.getItem(STORAGE_KEYS.VOCABULARY_DEFAULT_BOOK)
       this.defaultBookId = this.books.some(book => book.id === savedDefaultBookId)
         ? savedDefaultBookId
         : this.books[0].id
       this.activeBookId = this.books.some(book => book.id === savedActiveBookId)
         ? savedActiveBookId
         : this.defaultBookId
-      this.statsVisible = localStorage.getItem(VOCABULARY_STATS_VISIBLE_KEY) !== 'false'
+      this.statsVisible = localStorage.getItem(STORAGE_KEYS.VOCABULARY_STATS_VISIBLE) !== 'false'
       this.syncActiveBook()
       this.save()
       this._loaded = true
@@ -195,10 +182,10 @@ export function useVocabularyStore(options) {
     },
 
     save() {
-      localStorage.setItem(VOCABULARY_BOOKS_STORAGE_KEY, JSON.stringify(this.books))
-      localStorage.setItem(VOCABULARY_ACTIVE_BOOK_KEY, this.activeBookId)
-      localStorage.setItem(VOCABULARY_DEFAULT_BOOK_KEY, this.defaultBookId)
-      localStorage.setItem(VOCABULARY_STATS_VISIBLE_KEY, String(this.statsVisible))
+      localStorage.setItem(STORAGE_KEYS.VOCABULARY_BOOKS, JSON.stringify(this.books))
+      localStorage.setItem(STORAGE_KEYS.VOCABULARY_ACTIVE_BOOK, this.activeBookId)
+      localStorage.setItem(STORAGE_KEYS.VOCABULARY_DEFAULT_BOOK, this.defaultBookId)
+      localStorage.setItem(STORAGE_KEYS.VOCABULARY_STATS_VISIBLE, String(this.statsVisible))
     },
 
     syncActiveBook() {

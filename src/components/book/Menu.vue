@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import ProjectSidebar from '../../../components/ProjectSidebar.vue'
+import ProjectSidebar from './ProjectSidebar.vue'
 
 defineProps({
   hidden: {

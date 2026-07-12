@@ -3,7 +3,9 @@
     <div class="setting-container">
       <div class="setting-header">
         <el-button type="primary" @click="goBack">
-          <el-icon><ArrowLeft /></el-icon>
+          <el-icon>
+            <ArrowLeft />
+          </el-icon>
           返回
         </el-button>
         <h2 class="setting-title">设置</h2>
@@ -13,26 +15,14 @@
         <el-form label-width="120px" label-position="right">
           <el-form-item label="语速">
             <div class="rate-wrapper">
-              <el-slider
-                v-model="speechRate"
-                :min="0.6"
-                :max="1.2"
-                :step="0.05"
-                :show-tooltip="true"
-                :format-tooltip="formatTooltip"
-                show-input
-                input-size="small"
-              />
+              <el-slider v-model="speechRate" :min="0.6" :max="1.2" :step="0.05" :show-tooltip="true"
+                :format-tooltip="formatTooltip" show-input input-size="small" />
               <span class="rate-value">{{ speechRate.toFixed(2) }}</span>
             </div>
           </el-form-item>
 
           <el-form-item label="发音平台">
-            <el-select
-              v-model="voiceProvider"
-              placeholder="请选择发音平台"
-              style="width: 100%"
-            >
+            <el-select v-model="voiceProvider" placeholder="请选择发音平台" style="width: 100%">
               <el-option label="有道" value="youdao" />
               <el-option label="百度" value="baidu" />
               <el-option label="浏览器" value="browser" />
@@ -48,15 +38,15 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
-import { STORAGE_KEYS } from '../../stores/settings.js'
+import { STORAGE_KEYS } from '../../types/index.js'
 
 const router = useRouter()
 
 const speechRate = ref(
-  parseFloat(localStorage.getItem(STORAGE_KEYS.rate)) || 0.9
+  parseFloat(localStorage.getItem(STORAGE_KEYS.RATE)) || 0.9
 )
 const voiceProvider = ref(
-  localStorage.getItem(STORAGE_KEYS.provider) || 'youdao'
+  localStorage.getItem(STORAGE_KEYS.PROVIDER) || 'youdao'
 )
 
 const formatTooltip = (val) => {
@@ -68,11 +58,11 @@ const goBack = () => {
 }
 
 watch(speechRate, (newVal) => {
-  localStorage.setItem(STORAGE_KEYS.rate, newVal.toString())
+  localStorage.setItem(STORAGE_KEYS.RATE, newVal.toString())
 })
 
 watch(voiceProvider, (newVal) => {
-  localStorage.setItem(STORAGE_KEYS.provider, newVal)
+  localStorage.setItem(STORAGE_KEYS.PROVIDER, newVal)
 })
 </script>
 

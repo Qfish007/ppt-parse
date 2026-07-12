@@ -76,8 +76,8 @@ import {
   Plus, Delete, Document, Picture, DocumentCopy,
   ChatDotRound, Edit, Upload, Download
 } from '@element-plus/icons-vue'
-import { isTranslationProject, translationTypeLabel } from '../utils/translation.js'
-import { useProjectsStore } from '../stores/projects.js'
+import { isTranslationProject, translationTypeLabel } from '../../utils/translation.js'
+import { useProjectsStore } from '../../stores/projects.js'
 
 const projectsStore = useProjectsStore()
 const router = useRouter()

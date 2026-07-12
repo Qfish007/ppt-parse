@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import ProjectDetail from '../../../components/ProjectDetail.vue'
+import ProjectDetail from './ProjectDetail.vue'
 
 defineProps({
   hidden: {

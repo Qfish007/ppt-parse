@@ -5,7 +5,7 @@ const HomeSettingView = () => import('../pages/home/setting.vue')
 const BooksView = () => import('../pages/books/books.vue')
 const BooksSettingView = () => import('../pages/books/setting.vue')
 const VocabularyView = () => import('../pages/vocabulary/vocabulary.vue')
-const VocabularySettingsView = () => import('../pages/vocabulary/settings.vue')
+const VocabularySettingsView = () => import('../pages/vocabulary/setting.vue')
 const VocabularyDetailView = () => import('../pages/vocabulary/detail.vue')
 const VocabularyTestView = () => import('../pages/vocabulary/test.vue')
 

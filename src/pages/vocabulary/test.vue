@@ -122,7 +122,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
-import { useVocabularyStore, VOCABULARY_LEVELS } from '../../stores/vocabulary.js'
+import { useVocabularyStore } from '../../stores/vocabulary.js'
+import { VOCABULARY_LEVELS } from '../../types/index.js'
 
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()

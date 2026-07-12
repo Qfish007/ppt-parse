@@ -1,7 +1,8 @@
 <template>
   <div class="main-page">
-    <TopBar :hidden="isToolbarHidden" :column-toggle-label="columnToggleLabel" :show-back="true" @go-vocabulary="goVocabulary"
-      @go-setting="goSetting" @go-back="goBack" @cycle-column-visibility="cycleColumnVisibility" @hide="isToolbarHidden = true" />
+    <TopBar :hidden="isToolbarHidden" :column-toggle-label="columnToggleLabel" :show-back="true"
+      @go-vocabulary="goVocabulary" @go-setting="goSetting" @go-back="goBack"
+      @cycle-column-visibility="cycleColumnVisibility" @hide="isToolbarHidden = true" />
 
     <div class="main-workspace">
       <Menu :hidden="isProjectColumnHidden" :width="projectPanelWidth" />
@@ -49,7 +50,7 @@ import { ElMessage } from 'element-plus'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
-import { STORAGE_KEYS } from '../../stores/settings.js'
+import { STORAGE_KEYS } from '../../types/index.js'
 import { speak, stopSpeech, speakEnglishQueue, speakChinese } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
 import { md5 } from '../../api/voice/youdao.js'
@@ -58,11 +59,11 @@ import {
   isTranslationProject,
   displayLineOrder,
 } from '../../utils/translation.js'
-import TopBar from './views/topBar.vue'
-import Menu from './views/menu.vue'
-import MenuSub from './views/menuSub.vue'
-import Body from './views/body.vue'
-import BodyParse from './views/bodyParse.vue'
+import TopBar from '../../components/book/TopBar.vue'
+import Menu from '../../components/book/Menu.vue'
+import MenuSub from '../../components/book/MenuSub.vue'
+import Body from '../../components/book/Body.vue'
+import BodyParse from '../../components/book/BodyParse.vue'
 
 const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
@@ -74,7 +75,7 @@ function normalizeBodyFontSize(size) {
   return Math.min(Math.max(Number(size) || 18, 14), 60)
 }
 
-const bodyFontSize = ref(normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize)))
+const bodyFontSize = ref(normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.BODY_FONT_SIZE)))
 
 function goSetting() {
   router.push('/books/setting')

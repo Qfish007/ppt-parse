@@ -1,12 +1,6 @@
-/**
- * 项目列表 Store
- * 管理左侧项目栏的书籍/项目列表
- * 索引规则：默认书籍固定001，新项目从002开始自动递增
- */
 import { reactive } from 'vue';
+import { STORAGE_KEYS } from '../types/index.js';
 
-const PROJECTS_STORAGE_KEY = 'bilingual-reader-projects';
-const ACTIVE_PROJECT_KEY = 'bilingual-reader-active-project';
 let projectsStoreInstance = null;
 
 /** 默认项目：《新标准小学衔接读本》，索引固定为001，不可删除 */
@@ -62,7 +56,7 @@ export function useProjectsStore() {
      */
     loadProjects() {
       try {
-        const saved = JSON.parse(localStorage.getItem(PROJECTS_STORAGE_KEY) || 'null');
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROJECTS) || 'null');
         if (Array.isArray(saved) && saved.length > 0) {
           // 迁移旧数据：确保每个项目都有 index 和 deletable 字段
           this.projects = saved.map((p, idx) => ({
@@ -84,7 +78,7 @@ export function useProjectsStore() {
         this.projects.unshift({ ...defaultProjects[0] });
         this.saveProjects();
       }
-      this.activeProjectId = localStorage.getItem(ACTIVE_PROJECT_KEY) || defaultProjects[0].id;
+      this.activeProjectId = localStorage.getItem(STORAGE_KEYS.ACTIVE_PROJECT) || defaultProjects[0].id;
     },
 
     /**
@@ -92,7 +86,7 @@ export function useProjectsStore() {
      */
     saveProjects() {
       try {
-        localStorage.setItem(PROJECTS_STORAGE_KEY, JSON.stringify(this.projects));
+        localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(this.projects));
       } catch {
         // localStorage may be unavailable
       }
@@ -103,7 +97,7 @@ export function useProjectsStore() {
      */
     setActiveProject(id) {
       this.activeProjectId = id;
-      localStorage.setItem(ACTIVE_PROJECT_KEY, id);
+      localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT, id);
     },
 
     /**

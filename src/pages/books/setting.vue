@@ -31,13 +31,13 @@ import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useProjectsStore } from '../../stores/projects.js'
-import { STORAGE_KEYS } from '../../stores/settings.js'
+import { STORAGE_KEYS } from '../../types/index.js'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
 
 const bodyFontSize = ref(
-  normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize))
+  normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.BODY_FONT_SIZE))
 )
 
 const formatFontTooltip = (val) => {
@@ -63,7 +63,7 @@ watch(bodyFontSize, (newVal) => {
     bodyFontSize.value = normalized
     return
   }
-  localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(normalized))
+  localStorage.setItem(STORAGE_KEYS.BODY_FONT_SIZE, String(normalized))
 })
 </script>
 
