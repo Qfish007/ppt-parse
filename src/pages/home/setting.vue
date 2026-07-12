@@ -4,7 +4,7 @@
       <div class="setting-header">
         <el-button type="primary" @click="goBack">
           <el-icon><ArrowLeft /></el-icon>
-          返回主页面
+          返回
         </el-button>
         <h2 class="setting-title">设置</h2>
       </div>
@@ -38,22 +38,6 @@
               <el-option label="浏览器" value="browser" />
             </el-select>
           </el-form-item>
-
-          <el-form-item label="正文字号">
-            <div class="rate-wrapper">
-              <el-slider
-                v-model="bodyFontSize"
-                :min="14"
-                :max="60"
-                :step="1"
-                :show-tooltip="true"
-                :format-tooltip="formatFontTooltip"
-                show-input
-                input-size="small"
-              />
-              <span class="rate-value">{{ bodyFontSize }}px</span>
-            </div>
-          </el-form-item>
         </el-form>
       </el-card>
     </div>
@@ -64,60 +48,31 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
-import { useProjectsStore } from '../../stores/projects.js'
 import { STORAGE_KEYS } from '../../stores/settings.js'
 
 const router = useRouter()
-const projectsStore = useProjectsStore()
 
-// 从 localStorage 读取设置，若无则使用默认值
 const speechRate = ref(
   parseFloat(localStorage.getItem(STORAGE_KEYS.rate)) || 0.9
 )
 const voiceProvider = ref(
   localStorage.getItem(STORAGE_KEYS.provider) || 'youdao'
 )
-const bodyFontSize = ref(
-  normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize))
-)
 
-// 格式化滑块提示
 const formatTooltip = (val) => {
   return val.toFixed(2)
 }
 
-const formatFontTooltip = (val) => {
-  return `${val}px`
-}
-
-function normalizeBodyFontSize(size) {
-  return Math.min(Math.max(Number(size) || 18, 14), 60)
-}
-
-// 返回主页面
 const goBack = () => {
-  const active = projectsStore.getActiveProject()
-  router.push(`/main/${active?.index || '001'}`)
+  router.push('/home')
 }
 
-// 监听语速变化，实时保存到 localStorage
 watch(speechRate, (newVal) => {
   localStorage.setItem(STORAGE_KEYS.rate, newVal.toString())
 })
 
-// 监听发音平台变化，实时保存到 localStorage
 watch(voiceProvider, (newVal) => {
   localStorage.setItem(STORAGE_KEYS.provider, newVal)
-})
-
-// 监听第四栏正文字号变化，实时保存到 localStorage
-watch(bodyFontSize, (newVal) => {
-  const normalized = normalizeBodyFontSize(newVal)
-  if (normalized !== newVal) {
-    bodyFontSize.value = normalized
-    return
-  }
-  localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(normalized))
 })
 </script>
 
