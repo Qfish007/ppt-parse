@@ -1,15 +1,26 @@
 <template>
   <div class="home-page">
     <header class="home-header">
-      <h1 class="home-title">双语逐页朗读器</h1>
-      <p class="home-subtitle">请选择要进入的功能</p>
+      <div class="home-header-left"></div>
+      <div class="home-header-center">
+        <h1 class="home-title">双语逐页朗读器</h1>
+        <p class="home-subtitle">请选择要进入的功能</p>
+      </div>
+      <button class="home-setting-btn" @click="goSetting" title="全局设置">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path
+            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          <circle cx="12" cy="12" r="3" />
+        </svg>
+      </button>
     </header>
 
     <section class="home-cards">
-      <!-- 生词本入口 -->
       <article class="home-card" @click="goVocabulary">
         <div class="home-card-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
             <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             <path d="M10 8h6M10 12h6M10 16h3" />
@@ -22,10 +33,10 @@
         </div>
       </article>
 
-      <!-- 我的书籍入口 -->
       <article class="home-card home-card--books" @click="goBooks">
         <div class="home-card-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
             <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
           </svg>
@@ -52,11 +63,14 @@ function goVocabulary() {
 }
 
 function goBooks() {
-  // 若存在最近激活/首个项目，直接进入对应 index；否则进入默认 001
   const active = projectsStore.getActiveProject()
   const first = (projectsStore.projects && projectsStore.projects[0]) || null
   const target = active?.index || first?.index || '001'
   router.push(`/books/${target}`)
+}
+
+function goSetting() {
+  router.push('/home/setting')
 }
 </script>
 
@@ -71,6 +85,13 @@ function goBooks() {
 .home-header {
   max-width: 1080px;
   margin: 0 auto 36px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.home-header-center {
+  flex: 1;
   text-align: center;
 }
 
@@ -87,6 +108,32 @@ function goBooks() {
   font-size: 16px;
   font-weight: 700;
   color: #63706d;
+}
+
+.home-setting-btn {
+  cursor: pointer;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #63706d;
+  display: grid;
+  place-items: center;
+  transition: all 160ms ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.home-setting-btn:hover {
+  background: #fff;
+  color: #16201f;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.home-setting-btn svg {
+  width: 22px;
+  height: 22px;
 }
 
 .home-cards {
@@ -179,6 +226,7 @@ function goBooks() {
   .home-cards {
     grid-template-columns: 1fr;
   }
+
   .home-title {
     font-size: 28px;
   }
