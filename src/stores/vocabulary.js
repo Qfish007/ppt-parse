@@ -180,12 +180,7 @@ export function useVocabularyStore(options) {
     },
 
     async save() {
-      console.log('[save] books count:', this.books.length);
       for (const book of this.books) {
-        console.log('[save] book:', book.id, book.name, 'words:', book.words.length);
-        if (book.words.length > 0) {
-          console.log('[save] first word:', JSON.stringify(book.words[0]));
-        }
         await vocabularyRepository.saveBook(book);
       }
       await vocabularyRepository.setActiveBookId(this.activeBookId);
@@ -419,12 +414,8 @@ export function useVocabularyStore(options) {
 
     async importWords(entries, target = 'active') {
       const list = Array.isArray(entries) ? entries : [];
-      console.log('[importWords] input count:', list.length, 'target:', target);
       const book = this.getTargetBook(target);
-      if (!book) {
-        console.log('[importWords] no target book found');
-        return 0;
-      }
+      if (!book) return 0;
 
       let count = 0;
       const seen = new Set(book.words.map(w => w.word));
@@ -443,7 +434,6 @@ export function useVocabularyStore(options) {
       this.syncActiveBook();
       await this.save();
 
-      console.log('[importWords] final count:', count);
       return count;
     },
 

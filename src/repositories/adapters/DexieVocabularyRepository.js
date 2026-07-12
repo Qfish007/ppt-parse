@@ -3,7 +3,12 @@ import { db } from '../../db/database.js';
 
 export class DexieVocabularyRepository extends IVocabularyRepository {
   async getBooks() {
-    return await db.vocabularyBooks.toArray();
+    const books = await db.vocabularyBooks.toArray();
+    for (const book of books) {
+      book.words = await db.vocabularyWords.where('bookId').equals(book.id).toArray();
+      book.tags = await db.vocabularyTags.where('bookId').equals(book.id).toArray();
+    }
+    return books;
   }
 
   async getBook(id) {
