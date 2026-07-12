@@ -335,13 +335,13 @@ test('统一返回样式：TopBar 内返回按钮为蓝底实心 type=primary + 
 })
 
 test('books.vue 模板：TopBar 绑定 @go-back；back-label 可不传（默认=返回）或传="返回"（禁止传返回首页之类后缀）', () => {
-    const booksSrc = fs.readFileSync(path.join(pagesDir, 'books', 'books.vue'), 'utf8')
-    const hasEvent = /@go-back|v-on:go-back/.test(booksSrc)
-    // backLabel/back-label 允许：完全不传（走默认 '返回'）；传 :show-back="true"（无 label）；若传了 back-label 必须严格是「返回」不能有后缀
-    const explicitBadLabel = /back-label\s*=\s*['"`]返回[^'"`\s][^'"`]*['"`]/.test(booksSrc)
-    const explicitOK = explicitBadLabel ? false : true
-    assert.ok(hasEvent, `books.vue 未给 TopBar 绑定 @go-back 事件`)
-    assert.ok(explicitOK, `books.vue back-label 属性若有则必须为'返回'，不可带后缀。当前存在后缀属性`)
+  const booksSrc = fs.readFileSync(path.join(pagesDir, 'books', 'books.vue'), 'utf8')
+  const hasEvent = /@go-back|v-on:go-back/.test(booksSrc)
+  // backLabel/back-label 允许：完全不传（走默认 '返回'）；传 :show-back="true"（无 label）；若传了 back-label 必须严格是「返回」不能有后缀
+  const explicitBadLabel = /back-label\s*=\s*['"`]返回[^'"`\s][^'"`]*['"`]/.test(booksSrc)
+  const explicitOK = explicitBadLabel ? false : true
+  assert.ok(hasEvent, `books.vue 未给 TopBar 绑定 @go-back 事件`)
+  assert.ok(explicitOK, `books.vue back-label 属性若有则必须为'返回'，不可带后缀。当前存在后缀属性`)
 })
 
 test('次级页面也统一：books/setting.vue、vocabulary/test.vue、vocabulary/settings.vue、vocabulary/detail.vue 全部用 router.back() + fallback（不要固定 push）', () => {

@@ -2,9 +2,7 @@
   <div class="word-detail-page">
     <header class="word-detail-header">
       <el-button type="primary" @click="goBack">
-        <el-icon>
-          <ArrowLeft />
-        </el-icon>
+        <el-icon><ArrowLeft /></el-icon>
         {{ backLabel }}
       </el-button>
       <h2 class="word-detail-title">单词详情</h2>
@@ -17,9 +15,7 @@
           <h1>{{ entry.word }}</h1>
         </div>
         <button class="detail-sound" @click="playWord">
-          <svg viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"></path>
-          </svg>
+          <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
         </button>
       </div>
 
