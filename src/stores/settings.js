@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { STORAGE_KEYS as GLOBAL_KEYS } from '../types/index.js';
+import { settingsRepository } from '../repositories/index.js';
 
 function normalizeBodyFontSize(size) {
   return Math.min(Math.max(Number(size) || 18, 14), 60);
@@ -7,33 +8,48 @@ function normalizeBodyFontSize(size) {
 
 export function useSettingsStore() {
   const store = reactive({
-    speechRate: Number(localStorage.getItem(GLOBAL_KEYS.RATE)) || 0.9,
-    voiceProvider: localStorage.getItem(GLOBAL_KEYS.PROVIDER) || 'youdao',
-    bodyFontSize: normalizeBodyFontSize(localStorage.getItem(GLOBAL_KEYS.BODY_FONT_SIZE)),
+    speechRate: 0.9,
+    voiceProvider: 'youdao',
+    bodyFontSize: 18,
+    _loaded: false,
 
-    saveRate(rate) {
+    async load() {
+      if (this._loaded) return;
+
+      const rate = await settingsRepository.get(GLOBAL_KEYS.RATE);
+      const provider = await settingsRepository.get(GLOBAL_KEYS.PROVIDER);
+      const fontSize = await settingsRepository.get(GLOBAL_KEYS.BODY_FONT_SIZE);
+
+      this.speechRate = Number(rate) || 0.9;
+      this.voiceProvider = provider || 'youdao';
+      this.bodyFontSize = normalizeBodyFontSize(fontSize);
+      this._loaded = true;
+    },
+
+    async saveRate(rate) {
       const value = Number(rate) || 0.9;
       this.speechRate = value;
-      localStorage.setItem(GLOBAL_KEYS.RATE, String(value));
+      await settingsRepository.set(GLOBAL_KEYS.RATE, String(value));
     },
 
-    saveProvider(provider) {
+    async saveProvider(provider) {
       this.voiceProvider = String(provider || 'youdao');
-      localStorage.setItem(GLOBAL_KEYS.PROVIDER, this.voiceProvider);
+      await settingsRepository.set(GLOBAL_KEYS.PROVIDER, this.voiceProvider);
     },
 
-    saveBodyFontSize(size) {
+    async saveBodyFontSize(size) {
       const value = normalizeBodyFontSize(size);
       this.bodyFontSize = value;
-      localStorage.setItem(GLOBAL_KEYS.BODY_FONT_SIZE, String(value));
+      await settingsRepository.set(GLOBAL_KEYS.BODY_FONT_SIZE, String(value));
     },
 
-    load() {
-      this.speechRate = Number(localStorage.getItem(GLOBAL_KEYS.RATE)) || 0.9;
-      this.voiceProvider = localStorage.getItem(GLOBAL_KEYS.PROVIDER) || 'youdao';
-      this.bodyFontSize = normalizeBodyFontSize(localStorage.getItem(GLOBAL_KEYS.BODY_FONT_SIZE));
+    ensureLoaded() {
+      if (!this._loaded) {
+        this.load();
+      }
     }
   });
 
+  store.load();
   return store;
 }

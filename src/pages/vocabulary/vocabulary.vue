@@ -739,14 +739,18 @@ async function handleImport(event) {
 
   try {
     const rawText = await readTextFile(file)
+    console.log('[Import] rawText length:', rawText.length)
     const { words, tags } = fmt.deserialize(rawText)
+    console.log('[Import] parsed words count:', words?.length || 0)
     if (!Array.isArray(words) || !words.length) throw new Error('未解析到任何单词')
     if (fmtId === 'default' && Array.isArray(tags) && tags.length) {
       vocabularyStore.importTags(tags)
     }
-    const count = vocabularyStore.importWords(words)
+    const count = await vocabularyStore.importWords(words)
+    console.log('[Import] imported count:', count)
     ElMessage.success(`已通过「${fmt.name}」导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
+    console.error('[Import] error:', error)
     ElMessage.error(`「${fmt.name}」导入失败：${error.message || '请检查文件后重试'}`)
   }
 }

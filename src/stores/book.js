@@ -3,19 +3,12 @@
  * 使用 Vue3 reactive 模拟 Pinia，管理书籍、词典和编辑状态
  */
 import { reactive } from 'vue';
+import { wordCacheRepository, bookEditsRepository } from '../repositories/index.js';
 
-/** localStorage 存储键 - 单词翻译缓存 */
-const WORD_TRANSLATION_CACHE_KEY = 'bilingual-reader-word-translations';
-/** localStorage 存储键 - 单词音标缓存 */
-const WORD_PHONETIC_CACHE_KEY = 'bilingual-reader-word-phonetics';
-/** localStorage 存储键 - 书籍编辑数据 */
-const BOOK_EDITS_KEY = 'bilingual-reader-edits';
 let bookStoreInstance = null;
 
-/** 默认释义 */
 const WORD_FALLBACK_MEANING = '释义待补充，可以继续点喇叭听发音。';
 
-/** 示例书籍数据 */
 const sampleBook = {
   title: '示例内容',
   pages: [
@@ -38,7 +31,6 @@ const sampleBook = {
   ]
 };
 
-/** 内置词典 */
 const defaultDictionary = {
   a: '一个；一件',
   about: '关于；大约',
@@ -102,69 +94,48 @@ const defaultDictionary = {
   world: '世界'
 };
 
-/**
- * 判断一行文本是否看起来像标题
- * @param {string} text
- * @returns {boolean}
- */
 function lineLooksLikeHeading(text) {
   const value = String(text || '').trim();
   return value.length <= 34 && !/[.!?。！？]$/.test(value);
 }
 
-/**
- * 书籍 store
- * @returns {Object} 响应式书籍对象
- */
 export function useBookStore() {
   if (bookStoreInstance) return bookStoreInstance;
 
-  // 加载 localStorage 中的词典缓存
   const dictionary = reactive({ ...defaultDictionary });
   const phonetics = reactive({ side: '/saɪd/' });
-  try {
-    const savedWordTranslations = JSON.parse(localStorage.getItem(WORD_TRANSLATION_CACHE_KEY) || '{}');
-    Object.entries(savedWordTranslations).forEach(([word, meaning]) => {
-      if (typeof meaning === 'string' && meaning.trim()) dictionary[word] = meaning.trim();
-      if (meaning && typeof meaning === 'object') {
-        if (typeof meaning.meaning === 'string' && meaning.meaning.trim()) dictionary[word] = meaning.meaning.trim();
-        if (typeof meaning.phonetic === 'string' && meaning.phonetic.trim()) phonetics[word] = meaning.phonetic.trim();
-      }
-    });
-  } catch {
-    localStorage.removeItem(WORD_TRANSLATION_CACHE_KEY);
-  }
-  try {
-    const savedWordPhonetics = JSON.parse(localStorage.getItem(WORD_PHONETIC_CACHE_KEY) || '{}');
-    Object.entries(savedWordPhonetics).forEach(([word, phonetic]) => {
-      if (typeof phonetic === 'string' && phonetic.trim()) phonetics[word] = phonetic.trim();
-    });
-  } catch {
-    localStorage.removeItem(WORD_PHONETIC_CACHE_KEY);
-  }
 
   const store = reactive({
-    /** 书籍数据 */
     book: null,
-    /** 当前页码索引 */
     currentIndex: 0,
-    /** 词典 */
     dictionary,
-    /** 音标缓存 */
     phonetics,
-    /** 单词翻译缓存 localStorage 键 */
-    WORD_TRANSLATION_CACHE_KEY,
-    /** 默认释义 */
     WORD_FALLBACK_MEANING,
 
-    /**
-     * 加载书籍
-     * 默认书籍从 /parse/ocr/demo001/content.json 加载
-     */
+    async loadWordCache() {
+      try {
+        const translations = await wordCacheRepository.getAllTranslations();
+        translations.forEach(item => {
+          if (typeof item.meaning === 'string' && item.meaning.trim()) {
+            dictionary[item.word] = item.meaning.trim();
+          }
+        });
+
+        const phoneticList = await wordCacheRepository.getAllPhonetics();
+        phoneticList.forEach(item => {
+          if (typeof item.phonetic === 'string' && item.phonetic.trim()) {
+            phonetics[item.word] = item.phonetic.trim();
+          }
+        });
+      } catch {
+        console.warn('Failed to load word cache from Dexie');
+      }
+    },
+
     async loadBook() {
-      // 先尝试从 localStorage 恢复编辑
+      await this.loadWordCache();
       this.loadEdits();
-      // 从新的文件路径加载默认书籍
+
       try {
         const response = await fetch('/parse/ocr/demo001/content.json');
         if (response.ok) {
@@ -176,9 +147,8 @@ export function useBookStore() {
           }
         }
       } catch {
-        // fall through to fallback
       }
-      // 回退到原来的方式
+
       try {
         const mod = await import('../data/content.generated.js');
         if (mod?.default && mod.default.pages?.length) {
@@ -187,16 +157,11 @@ export function useBookStore() {
           return;
         }
       } catch {
-        // fall through to sample
       }
+
       this.book = this.normalizeBook(sampleBook);
     },
 
-    /**
-     * 标准化书籍数据
-     * @param {Object} raw - 原始书籍数据
-     * @returns {Object} 标准化后的书籍
-     */
     normalizeBook(raw) {
       const pages = Array.isArray(raw.pages) ? raw.pages : [];
       return {
@@ -215,32 +180,17 @@ export function useBookStore() {
       };
     },
 
-    /**
-     * 查词典
-     * @param {string} word
-     * @returns {string} 释义
-     */
     lookupWord(word) {
       const key = String(word || '').toLowerCase();
       return dictionary[key] || WORD_FALLBACK_MEANING;
     },
 
-    /**
-     * 查单词音标
-     * @param {string} word
-     * @returns {string}
-     */
     lookupWordPhonetic(word) {
       const key = String(word || '').toLowerCase();
       return phonetics[key] || '';
     },
 
-    /**
-     * 保存单词释义到 localStorage 和内存词典
-     * @param {string} word
-     * @param {string} meaning
-     */
-    saveWordMeaning(word, meaning, phonetic = '') {
+    async saveWordMeaning(word, meaning, phonetic = '') {
       const key = String(word || '').toLowerCase().trim();
       const value = String(meaning || '').trim();
       if (!key || !value) return;
@@ -248,59 +198,32 @@ export function useBookStore() {
       dictionary[key] = value;
       const phoneticValue = String(phonetic || '').trim();
       if (phoneticValue) phonetics[key] = phoneticValue;
+
+      await wordCacheRepository.saveTranslation(key, value, phoneticValue);
+    },
+
+    async saveEdits() {
       try {
-        const saved = JSON.parse(localStorage.getItem(WORD_TRANSLATION_CACHE_KEY) || '{}');
-        saved[key] = value;
-        localStorage.setItem(WORD_TRANSLATION_CACHE_KEY, JSON.stringify(saved));
-        if (phoneticValue) {
-          const savedPhonetics = JSON.parse(localStorage.getItem(WORD_PHONETIC_CACHE_KEY) || '{}');
-          savedPhonetics[key] = phoneticValue;
-          localStorage.setItem(WORD_PHONETIC_CACHE_KEY, JSON.stringify(savedPhonetics));
-        }
+        await bookEditsRepository.saveEdits(this.book);
       } catch {
-        // localStorage may be unavailable
       }
     },
 
-    /**
-     * 保存编辑到 localStorage
-     */
-    saveEdits() {
+    async loadEdits() {
+      if (!this.book) return;
       try {
-        localStorage.setItem(BOOK_EDITS_KEY, JSON.stringify(this.book));
-      } catch {
-        // Local storage may be unavailable in some browser privacy modes.
-      }
-    },
-
-    /**
-     * 从 localStorage 加载编辑
-     */
-    loadEdits() {
-      try {
-        const saved = JSON.parse(localStorage.getItem(BOOK_EDITS_KEY) || 'null');
-        if (saved?.title === this.book.title && Array.isArray(saved.pages) && saved.pages.length === this.book.pages.length) {
+        const saved = await bookEditsRepository.getEdits(this.book.title);
+        if (saved && saved.title === this.book.title && Array.isArray(saved.pages) && saved.pages.length === this.book.pages.length) {
           this.book = this.normalizeBook(saved);
         }
       } catch {
-        localStorage.removeItem(BOOK_EDITS_KEY);
       }
     },
 
-    /**
-     * 文本分词
-     * @param {string} text
-     * @returns {string[]} 词元数组
-     */
     tokenize(text) {
       return text.match(/[A-Za-z]+(?:'[A-Za-z]+)?|[0-9]+|[^\sA-Za-z0-9]/g) || [];
     },
 
-    /**
-     * 行分组 - 将行按逻辑合并为段落块
-     * @param {Array<{en: string, zh: string}>} lines
-     * @returns {Array<{en: string, zh: string, sourceLines: Array}>}
-     */
     groupLines(lines) {
       const groups = [];
       let current = [];
@@ -341,13 +264,6 @@ export function useBookStore() {
       return groups;
     },
 
-    /**
-     * 翻译单词到中文
-     * 优先使用有道本地翻译，回退到 iciba
-     * @param {string} word - 要翻译的单词
-     * @param {string} [voiceMode='youdao'] - 发音模式
-     * @returns {Promise<string>} 翻译结果
-     */
     async translateWordToChinese(word, voiceMode = 'youdao') {
       const value = String(word || '').trim();
       if (!value) return '';
@@ -366,11 +282,9 @@ export function useBookStore() {
             }
           }
         } catch {
-          // fall through to iciba
         }
       }
 
-      // 动态导入避免循环依赖
       const { translateWithIciba } = await import('../api/voice/iciba.js');
       const { md5 } = await import('../api/voice/youdao.js');
       const [translation] = await translateWithIciba([value], 'en', 'zh', md5);

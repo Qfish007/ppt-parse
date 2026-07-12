@@ -1,9 +1,8 @@
 import { reactive } from 'vue';
-import { STORAGE_KEYS } from '../types/index.js';
+import { projectsRepository } from '../repositories/index.js';
 
 let projectsStoreInstance = null;
 
-/** 默认项目：《新标准小学衔接读本》，索引固定为001，不可删除 */
 const defaultProjects = [
   {
     id: 'default-book',
@@ -17,16 +16,10 @@ const defaultProjects = [
   }
 ];
 
-/**
- * 生成唯一ID
- */
 function generateId() {
   return 'proj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
-/**
- * 获取下一个可用的索引号（三位数字字符串）
- */
 function getNextIndex(projects) {
   const indexes = projects
     .map(p => parseInt(p.index, 10))
@@ -35,82 +28,67 @@ function getNextIndex(projects) {
   return String(maxIndex + 1).padStart(3, '0');
 }
 
-/**
- * 项目 store
- */
 export function useProjectsStore() {
   if (projectsStoreInstance) return projectsStoreInstance;
 
   const store = reactive({
-    /** 项目列表 */
     projects: [],
-    /** 当前选中的项目ID */
     activeProjectId: null,
-    /** 是否正在解析 */
     isParsing: false,
-    /** 解析进度 */
     parseProgress: { current: 0, total: 0, message: '' },
+    _loaded: false,
 
-    /**
-     * 加载项目列表（含旧数据迁移）
-     */
-    loadProjects() {
+    async loadProjects() {
+      if (this._loaded) return;
+
+      let savedProjects = [];
       try {
-        const saved = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROJECTS) || 'null');
-        if (Array.isArray(saved) && saved.length > 0) {
-          // 迁移旧数据：确保每个项目都有 index 和 deletable 字段
-          this.projects = saved.map((p, idx) => ({
-            ...p,
-            index: p.index || (idx === 0 ? '001' : String(idx + 1).padStart(3, '0')),
-            deletable: p.id === 'default-book' ? false : (p.deletable !== false)
-          }));
-          this.saveProjects();
-        } else {
-          this.projects = [...defaultProjects];
-          this.saveProjects();
-        }
+        savedProjects = await projectsRepository.getProjects();
       } catch {
-        this.projects = [...defaultProjects];
-        this.saveProjects();
+        savedProjects = [];
       }
-      // 确保默认书籍始终在第一位
+
+      if (savedProjects.length > 0) {
+        this.projects = savedProjects.map((p, idx) => ({
+          ...p,
+          index: p.index || (idx === 0 ? '001' : String(idx + 1).padStart(3, '0')),
+          deletable: p.id === 'default-book' ? false : (p.deletable !== false)
+        }));
+        await this.saveProjects();
+      } else {
+        this.projects = [...defaultProjects];
+        await this.saveProjects();
+      }
+
       if (!this.projects.find(p => p.id === 'default-book')) {
         this.projects.unshift({ ...defaultProjects[0] });
-        this.saveProjects();
+        await this.saveProjects();
       }
-      this.activeProjectId = localStorage.getItem(STORAGE_KEYS.ACTIVE_PROJECT) || defaultProjects[0].id;
+
+      const savedActiveProject = await projectsRepository.getActiveProjectId();
+      this.activeProjectId = savedActiveProject || defaultProjects[0].id;
+      this._loaded = true;
     },
 
-    /**
-     * 保存项目列表到 localStorage
-     */
-    saveProjects() {
+    async saveProjects() {
       try {
-        localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(this.projects));
+        for (const project of this.projects) {
+          await projectsRepository.saveProject(project);
+        }
       } catch {
-        // localStorage may be unavailable
       }
     },
 
-    /**
-     * 设置当前活跃项目
-     */
-    setActiveProject(id) {
+    async setActiveProject(id) {
       this.activeProjectId = id;
-      localStorage.setItem(STORAGE_KEYS.ACTIVE_PROJECT, id);
+      await projectsRepository.setActiveProjectId(id);
     },
 
-    /**
-     * 获取当前活跃项目
-     */
     getActiveProject() {
       return this.projects.find(p => p.id === this.activeProjectId) || this.projects[0] || null;
     },
 
-    /**
-     * 添加新项目
-     */
-    addProject(projectData) {
+    async addProject(projectData) {
       const index = getNextIndex(this.projects);
       const project = {
         id: generateId(),
@@ -126,25 +104,19 @@ export function useProjectsStore() {
         deletable: true
       };
       this.projects.push(project);
-      this.saveProjects();
+      await this.saveProjects();
       return project;
     },
 
-    /**
-     * 更新项目
-     */
-    updateProject(id, updates) {
+    async updateProject(id, updates) {
       const index = this.projects.findIndex(p => p.id === id);
       if (index === -1) return null;
       this.projects[index] = { ...this.projects[index], ...updates };
-      this.saveProjects();
+      await this.saveProjects();
       return this.projects[index];
     },
 
-    /**
-     * 删除项目
-     */
-    removeProject(id) {
+    async removeProject(id) {
       const project = this.projects.find(p => p.id === id);
       if (!project || project.deletable === false) return false;
 
@@ -152,21 +124,18 @@ export function useProjectsStore() {
       if (index === -1) return false;
 
       this.projects.splice(index, 1);
+      await projectsRepository.deleteProject(id);
+
       if (this.activeProjectId === id) {
         this.activeProjectId = this.projects[0]?.id || null;
         if (this.activeProjectId) {
-          localStorage.setItem(ACTIVE_PROJECT_KEY, this.activeProjectId);
-        } else {
-          localStorage.removeItem(ACTIVE_PROJECT_KEY);
+          await projectsRepository.setActiveProjectId(this.activeProjectId);
         }
       }
-      this.saveProjects();
+      await this.saveProjects();
       return true;
     },
 
-    /**
-     * 设置解析状态
-     */
     setParsingState(isParsing, progress = null) {
       this.isParsing = isParsing;
       if (progress) {

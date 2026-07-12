@@ -35,19 +35,22 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
-import { STORAGE_KEYS } from '../../types/index.js'
+import { useSettingsStore } from '../../stores/settings.js'
 
 const router = useRouter()
+const settingsStore = useSettingsStore()
 
-const speechRate = ref(
-  parseFloat(localStorage.getItem(STORAGE_KEYS.RATE)) || 0.9
-)
-const voiceProvider = ref(
-  localStorage.getItem(STORAGE_KEYS.PROVIDER) || 'youdao'
-)
+const speechRate = ref(0.9)
+const voiceProvider = ref('youdao')
+
+onMounted(async () => {
+  await settingsStore.load()
+  speechRate.value = settingsStore.speechRate
+  voiceProvider.value = settingsStore.voiceProvider
+})
 
 const formatTooltip = (val) => {
   return val.toFixed(2)
@@ -58,11 +61,11 @@ const goBack = () => {
 }
 
 watch(speechRate, (newVal) => {
-  localStorage.setItem(STORAGE_KEYS.RATE, newVal.toString())
+  settingsStore.saveRate(newVal)
 })
 
 watch(voiceProvider, (newVal) => {
-  localStorage.setItem(STORAGE_KEYS.PROVIDER, newVal)
+  settingsStore.saveProvider(newVal)
 })
 </script>
 
