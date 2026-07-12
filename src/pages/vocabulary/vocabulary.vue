@@ -861,7 +861,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1180px;
+  --section-max: 1200px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;
@@ -1028,7 +1028,7 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(130px, 0.85fr) minmax(150px, 1fr) minmax(220px, 1.6fr) minmax(140px, 0.9fr) 130px 120px;
+  grid-template-columns: 150px 150px 150px minmax(220px, 1.6fr) 100px 80px 60px;
   align-items: center;
   gap: 12px;
 }
