@@ -270,7 +270,7 @@ async function goNextQuestion() {
   if (testMode.value === 'sound') playCurrentWord()
 }
 
-function submitAnswer() {
+async function submitAnswer() {
   const entry = currentWord.value
   if (!entry) return
   const answer = answerText.value.trim().toLowerCase()
@@ -279,7 +279,7 @@ function submitAnswer() {
     return
   }
   const isCorrect = answer === entry.word
-  const updatedEntry = vocabularyStore.recordTestResult(entry.word, isCorrect, 'default') || entry
+  const updatedEntry = await vocabularyStore.recordTestResult(entry.word, isCorrect, 'default') || entry
   const result = {
     word: updatedEntry.word,
     meaning: updatedEntry.meaning,
@@ -304,7 +304,7 @@ onMounted(() => {
 <style scoped>
 .vocab-test-page {
   /* 测试页对齐 token：修改时只改这里 */
-  --test-max: 980px;
+  --test-max: 1500px;
   --test-border: 1px;
 
   min-height: 100vh;

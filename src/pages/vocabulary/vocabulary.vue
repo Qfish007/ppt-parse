@@ -861,7 +861,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1200px;
+  --section-max: 1500px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;
