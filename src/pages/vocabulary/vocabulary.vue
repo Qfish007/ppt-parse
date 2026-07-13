@@ -18,6 +18,7 @@
           手动录入
         </el-button>
         <el-button @click="goTest">测试</el-button>
+        <el-button @click="goPrint">打印</el-button>
         <el-button @click="openFormatDialog('import')">导入</el-button>
         <el-button type="primary" @click="openFormatDialog('export')">导出</el-button>
         <el-button @click="goSettings">设置</el-button>
@@ -433,6 +434,10 @@ function goSettings() {
 
 function goTest() {
   router.push('/vocabulary/test')
+}
+
+function goPrint() {
+  router.push('/vocabulary/print')
 }
 
 function clampStatsPosition(left, top) {
