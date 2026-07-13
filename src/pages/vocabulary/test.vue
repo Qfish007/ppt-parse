@@ -34,6 +34,12 @@
         <el-button type="primary" :disabled="!availableWords.length" @click="startTest">
           开始测试
         </el-button>
+        <el-button type="primary" plain :disabled="!availableWords.length" @click="goPrintPage">
+          <el-icon>
+            <Printer />
+          </el-icon>
+          打印
+        </el-button>
       </div>
       <div class="test-meta">
         当前可测试 {{ availableWords.length }} 个单词，将随机抽取 {{ normalizedTestCount }} 个。
@@ -120,7 +126,7 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Printer } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
@@ -162,6 +168,10 @@ function goBack() {
   } else {
     router.push('/vocabulary')
   }
+}
+
+function goPrintPage() {
+  router.push('/vocabulary/print')
 }
 
 function openWordDetail(word) {
