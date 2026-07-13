@@ -1,7 +1,8 @@
 <template>
   <div class="main-page">
-    <TopBar :hidden="isToolbarHidden" :column-toggle-label="columnToggleLabel" :show-back="true" @go-vocabulary="goVocabulary"
-      @go-setting="goSetting" @go-back="goBack" @cycle-column-visibility="cycleColumnVisibility" @hide="isToolbarHidden = true" />
+    <TopBar :hidden="isToolbarHidden" :column-toggle-label="columnToggleLabel" :show-back="true"
+      @go-vocabulary="goVocabulary" @go-setting="goSetting" @go-back="goBack"
+      @cycle-column-visibility="cycleColumnVisibility" @hide="isToolbarHidden = true" />
 
     <div class="main-workspace">
       <Menu :hidden="isProjectColumnHidden" :width="projectPanelWidth" />
@@ -49,8 +50,8 @@ import { ElMessage } from 'element-plus'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
-import { STORAGE_KEYS } from '../../stores/settings.js'
-import { speak, stopSpeech, speakEnglishQueue, speakChinese } from '../../api/voice/index.js'
+import { useSettingsStore } from '../../stores/settings.js'
+import { speak, stopSpeech, speakEnglishQueue, speakChinese, setSpeechConfig } from '../../api/voice/index.js'
 import { translateWithIciba } from '../../api/voice/iciba.js'
 import { md5 } from '../../api/voice/youdao.js'
 import { recognizeText } from '../../utils/ocr.js'
@@ -58,15 +59,16 @@ import {
   isTranslationProject,
   displayLineOrder,
 } from '../../utils/translation.js'
-import TopBar from './views/topBar.vue'
-import Menu from './views/menu.vue'
-import MenuSub from './views/menuSub.vue'
-import Body from './views/body.vue'
-import BodyParse from './views/bodyParse.vue'
+import TopBar from '../../components/book/TopBar.vue'
+import Menu from '../../components/book/Menu.vue'
+import MenuSub from '../../components/book/MenuSub.vue'
+import Body from '../../components/book/Body.vue'
+import BodyParse from '../../components/book/BodyParse.vue'
 
 const bookStore = useBookStore()
 const projectsStore = useProjectsStore()
 const vocabularyStore = useVocabularyStore()
+const settingsStore = useSettingsStore()
 const route = useRoute()
 const router = useRouter()
 
@@ -74,7 +76,7 @@ function normalizeBodyFontSize(size) {
   return Math.min(Math.max(Number(size) || 18, 14), 60)
 }
 
-const bodyFontSize = ref(normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize)))
+const bodyFontSize = ref(18)
 
 function goSetting() {
   router.push('/books/setting')
@@ -583,7 +585,7 @@ async function translateWord() {
   wordPopup.meaning = '正在查询中文释义...'
 
   try {
-    const settings = localStorage.getItem(STORAGE_KEYS.provider) || 'youdao'
+    const settings = settingsStore.voiceProvider || 'youdao'
     const translated = await bookStore.translateWordToChinese(word, settings)
     const meaning = typeof translated === 'string' ? translated : translated?.meaning
     const phonetic = typeof translated === 'object' ? translated?.phonetic : ''
@@ -630,7 +632,7 @@ function handleClickOutside(e) {
 }
 
 function refreshBodyFontSize() {
-  bodyFontSize.value = normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize))
+  bodyFontSize.value = settingsStore.bodyFontSize
 }
 
 // ============ 拖拽调整宽度 ============
@@ -712,7 +714,9 @@ function handleKeydown(e) {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  refreshBodyFontSize()
+  await settingsStore.load()
+  setSpeechConfig(settingsStore.speechRate, settingsStore.voiceProvider)
+  bodyFontSize.value = settingsStore.bodyFontSize
   await syncProjectFromRoute()
   pageInputVal.value = bookStore.currentIndex + 1
   document.addEventListener('click', handleClickOutside, true)

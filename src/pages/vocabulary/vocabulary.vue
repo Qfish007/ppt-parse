@@ -238,7 +238,8 @@ import { ArrowLeft, Plus } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
-import { useVocabularyStore, VOCABULARY_LEVELS } from '../../stores/vocabulary.js'
+import { useVocabularyStore } from '../../stores/vocabulary.js'
+import { VOCABULARY_LEVELS } from '../../types/index.js'
 import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
 import { clampPage, slicePage, totalPagesOf } from '../../utils/pagination.js'
 
@@ -295,24 +296,37 @@ const filteredWords = computed(() => {
 
 // ========================== 分页（根治列表 DOM 卡顿） ==========================
 const pageSizes = [10, 20, 50, 100, 200]
-const pageSize = ref(10)
-const page = ref(1)
+const pageSize = ref(Number(router.currentRoute.value.query.pageSize) || 10)
+const page = ref(Number(router.currentRoute.value.query.page) || 1)
 
 const pagedWords = computed(() =>
   slicePage(filteredWords.value, page.value, pageSize.value)
 )
 
+function updateRouteQuery() {
+  router.replace({
+    query: {
+      ...router.currentRoute.value.query,
+      page: page.value,
+      pageSize: pageSize.value
+    }
+  })
+}
+
 function onPageChange(p) {
   page.value = clampPage(filteredWords.value.length, p, pageSize.value)
+  updateRouteQuery()
 }
 function onPageSizeChange(size) {
   pageSize.value = Math.max(1, Number(size) || 50)
   page.value = clampPage(filteredWords.value.length, page.value, pageSize.value)
+  updateRouteQuery()
 }
 
 // —— 筛选/排序变化 → 回到第一页 ——
 watch([searchText, levelFilter, tagFilter, sortMode], () => {
   page.value = 1
+  updateRouteQuery()
 })
 
 // —— 列表总数变化 → 若当前页已越界则回落到最后一页 ——
@@ -743,7 +757,7 @@ async function handleImport(event) {
     if (fmtId === 'default' && Array.isArray(tags) && tags.length) {
       vocabularyStore.importTags(tags)
     }
-    const count = vocabularyStore.importWords(words)
+    const count = await vocabularyStore.importWords(words)
     ElMessage.success(`已通过「${fmt.name}」导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
     ElMessage.error(`「${fmt.name}」导入失败：${error.message || '请检查文件后重试'}`)
@@ -847,7 +861,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1180px;
+  --section-max: 1500px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;
@@ -1014,7 +1028,7 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(130px, 0.85fr) minmax(150px, 1fr) minmax(220px, 1.6fr) minmax(140px, 0.9fr) 130px 120px;
+  grid-template-columns: 150px 150px 150px minmax(220px, 1.6fr) 100px 80px 60px;
   align-items: center;
   gap: 12px;
 }

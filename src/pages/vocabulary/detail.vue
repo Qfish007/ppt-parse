@@ -38,7 +38,13 @@
           </div>
         </div>
         <div class="detail-item detail-meaning-item">
-          <div class="detail-label">中文意思</div>
+          <div class="detail-label-row">
+            <span class="detail-label">中文意思</span>
+            <button v-if="entry?.meaning" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
+              <span v-if="refreshing" class="btn-loading"></span>
+              {{ refreshing ? '查询中...' : '完整释义' }}
+            </button>
+          </div>
           <div class="detail-meaning">{{ entry.meaning || '暂无释义' }}</div>
         </div>
       </div>
@@ -51,7 +57,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
@@ -66,6 +72,7 @@ const bookStore = useBookStore()
 const word = computed(() => String(route.params.word || '').toLowerCase())
 const backLabel = computed(() => '返回')
 const entry = computed(() => vocabularyStore.words.find(item => item.word === word.value) || null)
+const refreshing = ref(false)
 const memoryParts = computed(() => {
   if (entry.value?.memoryParts?.length) return entry.value.memoryParts
   return autoMemoryParts(entry.value?.word || word.value)
@@ -121,6 +128,27 @@ async function playWord() {
     // 朗读不受音标补查失败影响
   }
 }
+
+async function refreshMeaning() {
+  const currentEntry = entry.value
+  if (!currentEntry?.word || refreshing.value) return
+
+  refreshing.value = true
+  try {
+    const result = await bookStore.translateWordToChinese(currentEntry.word)
+    const meaning = typeof result === 'object' ? result?.meaning : result
+    if (meaning) {
+      vocabularyStore.updateWord(currentEntry.word, {
+        meaning: String(meaning).trim(),
+        phonetic: typeof result === 'object' ? result?.phonetic || currentEntry.phonetic : currentEntry.phonetic
+      })
+    }
+  } catch {
+    // 查询失败不做处理
+  } finally {
+    refreshing.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -133,7 +161,7 @@ async function playWord() {
 
 .word-detail-header,
 .word-detail-card {
-  max-width: 900px;
+  max-width: 1500px;
   margin: 0 auto;
 }
 
@@ -215,10 +243,56 @@ async function playWord() {
   border-bottom: 0;
 }
 
+.detail-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .detail-label {
   color: #63706d;
   font-size: 13px;
   font-weight: 700;
+}
+
+.detail-refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border: 1px solid #126b62;
+  border-radius: 4px;
+  background: transparent;
+  color: #126b62;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.detail-refresh-btn:hover:not(:disabled) {
+  background: #eef7f4;
+}
+
+.detail-refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-loading {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #126b62;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .detail-phonetic {
