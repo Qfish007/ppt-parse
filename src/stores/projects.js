@@ -44,26 +44,33 @@ export function useProjectsStore() {
       let savedProjects = [];
       try {
         savedProjects = await projectsRepository.getProjects();
-      } catch {
+      } catch (e) {
+        console.error('Failed to load projects:', e);
         savedProjects = [];
       }
 
-      if (savedProjects.length > 0) {
-        this.projects = savedProjects.map((p, idx) => ({
+      const existingIds = new Set(this.projects.map(p => p.id));
+      const savedIds = new Set(savedProjects.map(p => p.id));
+
+      const newProjects = savedProjects
+        .filter(p => !existingIds.has(p.id))
+        .map((p, idx) => ({
           ...p,
           index: p.index || (idx === 0 ? '001' : String(idx + 1).padStart(3, '0')),
           deletable: p.id === 'default-book' ? false : (p.deletable !== false)
         }));
-        await this.saveProjects();
-      } else {
-        this.projects = [...defaultProjects];
-        await this.saveProjects();
-      }
+
+      this.projects.push(...newProjects);
 
       if (!this.projects.find(p => p.id === 'default-book')) {
         this.projects.unshift({ ...defaultProjects[0] });
-        await this.saveProjects();
       }
+
+      if (savedProjects.length === 0 && this.projects.length === 0) {
+        this.projects = [...defaultProjects];
+      }
+
+      await this.saveProjects();
 
       const savedActiveProject = await projectsRepository.getActiveProjectId();
       this.activeProjectId = savedActiveProject || defaultProjects[0].id;
@@ -73,9 +80,33 @@ export function useProjectsStore() {
     async saveProjects() {
       try {
         for (const project of this.projects) {
-          await projectsRepository.saveProject(project);
+          const safeProject = {
+            id: project.id,
+            index: project.index,
+            name: project.name,
+            type: project.type,
+            createdAt: project.createdAt,
+            source: project.source || 'user',
+            pageCount: project.pageCount || 0,
+            status: project.status || 'empty',
+            deletable: project.deletable !== false
+          };
+          if (project.files && Array.isArray(project.files)) {
+            safeProject.files = project.files.map(file => {
+              if (file && typeof file === 'object' && !(file instanceof File) && !(file instanceof Blob)) {
+                return JSON.parse(JSON.stringify(file));
+              }
+              return null;
+            }).filter(Boolean);
+          }
+          if (project.parsedData !== undefined && project.parsedData !== null) {
+            safeProject.parsedData = JSON.parse(JSON.stringify(project.parsedData));
+          }
+          await projectsRepository.saveProject(safeProject);
         }
-      } catch {
+      } catch (e) {
+        console.error('Failed to save projects:', e);
+        console.error('Error details:', JSON.stringify(e));
       }
     },
 
