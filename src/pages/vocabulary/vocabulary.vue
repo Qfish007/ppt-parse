@@ -252,6 +252,8 @@
         </div>
       </div>
       <template #footer>
+        <el-button type="danger" @click="deleteSelectedWords">删除所选</el-button>
+        <span class="batch-dialog-spacer"></span>
         <el-button @click="batchDialog.visible = false">取消</el-button>
         <el-button type="primary" :loading="batchDialog.loading" @click="saveBatchSettings">
           保存
@@ -613,6 +615,29 @@ async function saveBatchSettings() {
     batchDialog.loading = false
     batchDialog.level = ''
     batchDialog.tagIds = []
+  }
+}
+
+async function deleteSelectedWords() {
+  const count = selectedWords.value.length
+  if (!count) {
+    ElMessage.warning('请先选择要删除的单词')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${count} 个单词吗？此操作不可恢复。`, '提示', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    for (const word of selectedWords.value) {
+      vocabularyStore.removeWord(word)
+    }
+    ElMessage.success(`已删除 ${count} 个单词`)
+    batchDialog.visible = false
+    selectedWords.value = []
+  } catch {
+    // 用户取消
   }
 }
 
@@ -1715,5 +1740,15 @@ async function handleImport(event) {
   margin-top: 8px;
   font-size: 13px;
   color: #919d9a;
+}
+
+.batch-dialog-spacer {
+  flex: 1;
+}
+
+:global(.vocab-batch-dialog .el-dialog__footer) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 </style>
