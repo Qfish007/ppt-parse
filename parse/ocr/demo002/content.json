@@ -1,13 +1,35 @@
 {
-  "title": "English Translate Demo",
+  "title": "土豆单词学习第一期",
   "pages": [
     {
       "page": 1,
       "image": "",
       "lines": [
         {
-          "en": "Artificial intelligence is transforming education. It helps students learn more efficiently.",
-          "zh": "人工智能正在改变教育领域，帮助学生更高效地学习。",
+          "en": "across activity age air around bamboo beach bee body",
+          "zh": "在竹滩周围，随着活动时间的推移，空气中的成分也会发生变化（尤其是与蜜蜂身体相关的因素）。",
+          "breakAfter": true
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "image": "",
+      "lines": [
+        {
+          "en": "colorful",
+          "zh": "多彩的",
+          "breakAfter": true
+        }
+      ]
+    },
+    {
+      "page": 3,
+      "image": "",
+      "lines": [
+        {
+          "en": "colourful",
+          "zh": "颜色鲜艳的",
           "breakAfter": true
         }
       ]
