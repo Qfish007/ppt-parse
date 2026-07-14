@@ -196,6 +196,26 @@ async function syncProjectFromRoute(index = route.params.index) {
   await syncActiveProject(project.id)
 }
 
+async function saveBookToProject() {
+  const project = projectsStore.getActiveProject()
+  if (!project || project.id === 'default-book' || !bookStore.book) return
+
+  await projectsStore.updateProject(project.id, {
+    parsedData: {
+      title: bookStore.book.title,
+      pages: bookStore.book.pages
+    },
+    pageCount: bookStore.book.pages?.length || 0,
+    status: bookStore.book.pages?.length ? 'ready' : 'empty'
+  })
+}
+
+watch(() => [bookStore.book, bookStore.currentIndex], async () => {
+  if (bookStore.book) {
+    await saveBookToProject()
+  }
+}, { deep: true })
+
 // ============ 用户项目 OCR ============
 
 const isUserProjectPage = computed(() => {
@@ -499,6 +519,7 @@ function onChineseEdit(event, group) {
     })
   }
   bookStore.saveEdits()
+  saveBookToProject()
 }
 
 /**
@@ -518,6 +539,7 @@ function onFirstLangEdit(event, group, field) {
     })
   }
   bookStore.saveEdits()
+  saveBookToProject()
 }
 
 // ============ 单词弹窗 ============
@@ -717,6 +739,7 @@ onMounted(async () => {
   await settingsStore.load()
   setSpeechConfig(settingsStore.speechRate, settingsStore.voiceProvider)
   bodyFontSize.value = settingsStore.bodyFontSize
+  await projectsStore.loadProjects()
   await syncProjectFromRoute()
   pageInputVal.value = bookStore.currentIndex + 1
   document.addEventListener('click', handleClickOutside, true)

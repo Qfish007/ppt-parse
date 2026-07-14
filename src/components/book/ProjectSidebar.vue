@@ -112,7 +112,7 @@ function openAddDialog() {
   nextTick(() => nameInputRef.value?.focus())
 }
 
-function confirmAdd() {
+async function confirmAdd() {
   if (!formData.name.trim()) {
     ElMessage.warning('请输入项目名称')
     return
@@ -122,7 +122,7 @@ function confirmAdd() {
     return
   }
 
-  const project = projectsStore.addProject({
+  const project = await projectsStore.addProject({
     name: formData.name.trim(),
     type: formData.type,
     status: 'empty'

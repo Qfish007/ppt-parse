@@ -17,11 +17,19 @@
           </el-icon>
           手动录入
         </el-button>
+        <el-button @click="openBatchDialog" :disabled="selectedWords.length === 0">批量设置</el-button>
         <el-button @click="goTest">测试</el-button>
         <el-button @click="goPrint">打印</el-button>
         <el-button @click="openFormatDialog('import')">导入</el-button>
         <el-button type="primary" @click="openFormatDialog('export')">导出</el-button>
-        <el-button @click="goSettings">设置</el-button>
+        <el-button @click="goSettings" title="设置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </el-button>
       </div>
     </header>
 
@@ -41,6 +49,9 @@
 
     <section class="vocab-list">
       <div class="vocab-list-head">
+        <span class="vocab-check-head">
+          <el-checkbox :indeterminate="isIndeterminate" v-model="selectAll" @change="handleSelectAll" />
+        </span>
         <span>单词</span>
         <span>发音</span>
         <span class="vocab-memory-head">辅助记忆</span>
@@ -69,6 +80,9 @@
         </div>
 
         <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row">
+          <span class="vocab-check">
+            <el-checkbox v-model="selectedWords" :value="entry.word" />
+          </span>
           <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
           <div class="vocab-pronunciation">
             <button class="vocab-sound" @click="playWord(entry)">
@@ -164,12 +178,20 @@
       </div>
     </Teleport>
 
-    <el-dialog v-model="manualDialog.visible" title="手动录入" width="420px" class="manual-word-dialog"
+    <el-dialog v-model="manualDialog.visible" title="手动录入" width="460px" class="manual-word-dialog"
       :close-on-click-modal="!manualDialog.loading" :close-on-press-escape="!manualDialog.loading">
-      <el-form @submit.prevent="submitManualWord">
+      <el-form @submit.prevent="submitManualWord" :label-width="'80px'">
+        <el-form-item label="录入模式">
+          <el-select v-model="manualDialog.mode" size="small">
+            <el-option label="单个录入" value="single" />
+            <el-option label="多个录入" value="multiple" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="单词">
-          <el-input ref="manualInputRef" v-model="manualDialog.word" placeholder="输入一个英文单词" clearable
-            :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
+          <el-input v-if="manualDialog.mode === 'single'" ref="manualInputRef" v-model="manualDialog.word"
+            placeholder="输入一个英文单词" clearable :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
+          <el-input v-else type="textarea" ref="manualInputRef" v-model="manualDialog.word"
+            placeholder="输入英文单词，用逗号分隔，支持多行" :rows="4" clearable :disabled="manualDialog.loading" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -204,6 +226,39 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="batchDialog.visible" title="批量设置" width="460px" class="vocab-batch-dialog"
+      :close-on-click-modal="true">
+      <div class="batch-dialog-body">
+        <div class="batch-dialog-hint">已选择 {{ selectedWords.length }} 个单词</div>
+        <div class="batch-dialog-field">
+          <div class="batch-dialog-label">掌握水平</div>
+          <el-select v-model="batchDialog.level" :class="['batch-dialog-control', levelClass(batchDialog.level)]"
+            popper-class="vocab-level-popper" placeholder="不修改">
+            <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
+              :label="level.label" :value="level.value" />
+          </el-select>
+        </div>
+        <div class="batch-dialog-field">
+          <div class="batch-dialog-label">单词标签</div>
+          <div class="batch-dialog-control-wrap">
+            <el-select v-model="batchDialog.tagIds" multiple clearable placeholder="选择标签（多选）"
+              class="batch-dialog-control">
+              <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+            </el-select>
+            <div v-if="!vocabularyStore.tags.length" class="batch-dialog-empty">
+              还没有标签，请先到设置里添加。
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="batchDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="batchDialog.loading" @click="saveBatchSettings">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
+
     <div v-if="vocabularyStore.statsVisible" ref="statsBarRef" class="vocab-stats-bar"
       :class="{ 'is-dragging': statsDrag.dragging }" :style="statsBarStyle" aria-label="生词统计"
       @pointerdown="startStatsDrag">
@@ -232,7 +287,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
@@ -273,6 +328,19 @@ const searchText = ref('')
 const levelFilter = ref([])
 const tagFilter = ref([])
 const sortMode = ref('alphabet')
+
+// —— 批量选择状态 ——
+const selectedWords = ref([])
+const selectAll = ref(false)
+const isIndeterminate = ref(false)
+
+// —— 批量设置弹窗 ——
+const batchDialog = reactive({
+  visible: false,
+  loading: false,
+  level: '',
+  tagIds: []
+})
 
 // —— 筛选 + 排序结果（后续所有 computed/watch 依赖它，必须最早就绪） ——
 const filteredWords = computed(() => {
@@ -367,6 +435,7 @@ const statsDrag = ref({
 const manualDialog = ref({
   visible: false,
   word: '',
+  mode: 'single',
   loading: false
 })
 const tagDialog = ref({
@@ -510,10 +579,48 @@ function isSingleEnglishWord(value) {
   return /^[a-z]+(?:[-'][a-z]+)?$/i.test(value)
 }
 
+function handleSelectAll(val) {
+  if (val) {
+    selectedWords.value = pagedWords.value.map(item => item.word)
+  } else {
+    selectedWords.value = []
+  }
+}
+
+function openBatchDialog() {
+  batchDialog.visible = true
+}
+
+async function saveBatchSettings() {
+  if (!selectedWords.value.length) {
+    ElMessage.warning('请先选择要设置的单词')
+    return
+  }
+  batchDialog.loading = true
+  try {
+    for (const word of selectedWords.value) {
+      if (batchDialog.level) {
+        await vocabularyStore.updateWord(word, { level: batchDialog.level })
+      }
+      if (batchDialog.tagIds && batchDialog.tagIds.length > 0) {
+        await vocabularyStore.updateWordTags(word, [...batchDialog.tagIds])
+      }
+    }
+    ElMessage.success(`成功更新 ${selectedWords.value.length} 个单词`)
+    batchDialog.visible = false
+    selectedWords.value = []
+  } finally {
+    batchDialog.loading = false
+    batchDialog.level = ''
+    batchDialog.tagIds = []
+  }
+}
+
 async function openManualDialog() {
   manualDialog.value = {
     visible: true,
     word: '',
+    mode: 'single',
     loading: false
   }
   await nextTick()
@@ -523,34 +630,60 @@ async function openManualDialog() {
 async function submitManualWord() {
   if (manualDialog.value.loading) return
 
-  const word = normalizeManualWord(manualDialog.value.word)
-  if (!word) {
+  const input = String(manualDialog.value.word || '').trim()
+  if (!input) {
     ElMessage.warning('请输入要录入的单词')
     return
   }
-  if (!isSingleEnglishWord(word)) {
-    ElMessage.warning('手动录入只支持一个英文单词')
-    return
+
+  let words = []
+  if (manualDialog.value.mode === 'multiple') {
+    words = input.split(/[,，\n\r]+/).map(w => normalizeManualWord(w)).filter(w => w && isSingleEnglishWord(w))
+    if (!words.length) {
+      ElMessage.warning('没有有效的单词，请输入英文单词，用逗号或换行分隔')
+      return
+    }
+  } else {
+    const word = normalizeManualWord(input)
+    if (!isSingleEnglishWord(word)) {
+      ElMessage.warning('手动录入只支持一个英文单词')
+      return
+    }
+    words = [word]
   }
 
   manualDialog.value.loading = true
   try {
-    const result = await bookStore.translateWordToChinese(word)
-    const meaning = typeof result === 'object'
-      ? String(result?.meaning || '').trim()
-      : String(result || '').trim()
-    const phonetic = typeof result === 'object'
-      ? String(result?.phonetic || '').trim()
-      : ''
+    let successCount = 0
+    for (const word of words) {
+      try {
+        const result = await bookStore.translateWordToChinese(word)
+        const meaning = typeof result === 'object'
+          ? String(result?.meaning || '').trim()
+          : String(result || '').trim()
+        const phonetic = typeof result === 'object'
+          ? String(result?.phonetic || '').trim()
+          : ''
 
-    vocabularyStore.addWord({
-      word,
-      meaning,
-      phonetic,
-      memoryParts: autoMemoryParts(word)
-    })
+        vocabularyStore.addWord({
+          word,
+          meaning,
+          phonetic,
+          memoryParts: autoMemoryParts(word)
+        })
+        successCount++
+      } catch (err) {
+        console.warn(`录入单词「${word}」失败:`, err)
+      }
+    }
     manualDialog.value.visible = false
-    ElMessage.success(`已录入「${word}」`)
+    if (successCount === words.length) {
+      ElMessage.success(`已录入 ${successCount} 个单词`)
+    } else if (successCount > 0) {
+      ElMessage.success(`成功录入 ${successCount} 个单词，${words.length - successCount} 个失败`)
+    } else {
+      ElMessage.error('所有单词录入失败')
+    }
   } catch (error) {
     ElMessage.error(`录入失败：${error.message || '请稍后重试'}`)
   } finally {
@@ -1033,9 +1166,14 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: 150px 150px 150px minmax(220px, 1.6fr) 100px 80px 60px;
+  grid-template-columns: 48px 150px 150px 150px minmax(220px, 1.6fr) 100px 80px 60px;
   align-items: center;
   gap: 12px;
+}
+
+.vocab-check-head,
+.vocab-check {
+  justify-self: center;
 }
 
 .vocab-list-head {
@@ -1537,5 +1675,45 @@ async function handleImport(event) {
   color: #63706d;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.batch-dialog-body {
+  padding: 8px 0;
+}
+
+.batch-dialog-hint {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #63706d;
+}
+
+.batch-dialog-field {
+  margin-bottom: 16px;
+}
+
+.batch-dialog-field:last-child {
+  margin-bottom: 0;
+}
+
+.batch-dialog-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #16201f;
+}
+
+.batch-dialog-control {
+  width: 100%;
+}
+
+.batch-dialog-control-wrap {
+  position: relative;
+}
+
+.batch-dialog-empty {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #919d9a;
 }
 </style>
