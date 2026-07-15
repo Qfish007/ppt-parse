@@ -279,7 +279,12 @@ async function doPrint() {
     font-weight: 600;
     line-height: 1.35;
     color: #111827;
-    min-height: ${meaningMinHeight.toFixed(1)}px;
+    height: ${meaningMinHeight.toFixed(1)}px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
     word-break: break-word;
   }
   .meaning-line {
@@ -504,7 +509,12 @@ onMounted(() => {
   font-weight: 600;
   line-height: 1.35;
   color: #111827;
-  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
+  height: calc(var(--font-size, 16px) * 1.35 * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
   word-break: break-word;
 }
 
