@@ -189,9 +189,15 @@
         </el-form-item>
         <el-form-item label="单词">
           <el-input v-if="manualDialog.mode === 'single'" ref="manualInputRef" v-model="manualDialog.word"
-            placeholder="输入一个英文单词" clearable :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
+            placeholder="输入英文单词或短语" clearable :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
           <el-input v-else type="textarea" ref="manualInputRef" v-model="manualDialog.word"
             placeholder="输入英文单词，用逗号分隔，支持多行" :rows="4" clearable :disabled="manualDialog.loading" />
+        </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="manualDialog.tagIds" multiple size="small" placeholder="选择标签">
+            <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+          </el-select>
+          <div v-if="!vocabularyStore.tags.length" class="tag-dialog-empty">暂无标签</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -438,7 +444,8 @@ const manualDialog = ref({
   visible: false,
   word: '',
   mode: 'single',
-  loading: false
+  loading: false,
+  tagIds: []
 })
 const tagDialog = ref({
   visible: false,
@@ -578,7 +585,9 @@ function normalizeManualWord(value) {
 }
 
 function isSingleEnglishWord(value) {
-  return /^[a-z]+(?:[-'][a-z]+)?$/i.test(value)
+  if (!value) return false
+  const word = value.trim().toLowerCase()
+  return /^[a-z]+(?:[-'][a-z]+)?(?:\s+[a-z]+(?:[-'][a-z]+)?)*(?:\s*\([^)]+\))?$/i.test(word)
 }
 
 function handleSelectAll(val) {
@@ -646,7 +655,8 @@ async function openManualDialog() {
     visible: true,
     word: '',
     mode: 'single',
-    loading: false
+    loading: false,
+    tagIds: []
   }
   await nextTick()
   manualInputRef.value?.focus?.()
@@ -671,7 +681,7 @@ async function submitManualWord() {
   } else {
     const word = normalizeManualWord(input)
     if (!isSingleEnglishWord(word)) {
-      ElMessage.warning('手动录入只支持一个英文单词')
+      ElMessage.warning('请输入有效的英文单词或短语')
       return
     }
     words = [word]
@@ -694,7 +704,8 @@ async function submitManualWord() {
           word,
           meaning,
           phonetic,
-          memoryParts: autoMemoryParts(word)
+          memoryParts: autoMemoryParts(word),
+          tagIds: manualDialog.value.tagIds
         })
         successCount++
       } catch (err) {
