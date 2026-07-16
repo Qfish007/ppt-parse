@@ -34,7 +34,11 @@
     </header>
 
     <section class="vocab-toolbar">
-      <el-input v-model="searchText" clearable placeholder="搜索单词或中文意思" class="vocab-search" />
+      <el-select v-model="searchMode" class="vocab-search-mode" placeholder="搜单词">
+        <el-option label="搜单词" value="word" />
+        <el-option label="搜意思" value="meaning" />
+      </el-select>
+      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索单词' : '搜索中文意思'" class="vocab-search" />
       <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper" multiple collapse-tags
         collapse-tags-tooltip clearable placeholder="按水平筛选">
         <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
@@ -93,10 +97,13 @@
             <span>{{ entry.phonetic || '-' }}</span>
           </div>
           <div class="vocab-memory">
-            <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
-              <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
-              <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
+            <template v-if="memoryPartsForEntry(entry).length">
+              <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
+                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+                <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
+              </template>
             </template>
+            <span v-else class="memory-empty">-</span>
           </div>
           <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
           <div class="vocab-tags">
@@ -181,19 +188,18 @@
     <el-dialog v-model="manualDialog.visible" title="手动录入" width="460px" class="manual-word-dialog"
       :close-on-click-modal="!manualDialog.loading" :close-on-press-escape="!manualDialog.loading">
       <el-form @submit.prevent="submitManualWord" :label-width="'80px'">
-        <el-form-item label="录入模式">
-          <el-select v-model="manualDialog.mode" size="small">
-            <el-option label="单个录入" value="single" />
-            <el-option label="多个录入" value="multiple" />
+        <el-form-item label="录入格式">
+          <el-select v-model="manualDialog.format" size="small">
+            <el-option label="逗号分割" value="comma" />
+            <el-option label="格式1(标签+文本)" value="tag" />
           </el-select>
         </el-form-item>
-        <el-form-item label="单词">
-          <el-input v-if="manualDialog.mode === 'single'" ref="manualInputRef" v-model="manualDialog.word"
-            placeholder="输入英文单词或短语" clearable :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
-          <el-input v-else type="textarea" ref="manualInputRef" v-model="manualDialog.word"
-            placeholder="输入英文单词，用逗号分隔，支持多行" :rows="4" clearable :disabled="manualDialog.loading" />
+        <el-form-item label="内容">
+          <el-input type="textarea" ref="manualInputRef" v-model="manualDialog.word"
+            :placeholder="manualDialog.format === 'comma' ? '输入英文单词，用逗号分隔，支持多行' : '[标签名]\\nword:意思\\nword2:意思2'"
+            :rows="5" clearable :disabled="manualDialog.loading" />
         </el-form-item>
-        <el-form-item label="标签">
+        <el-form-item v-if="manualDialog.format === 'comma'" label="标签">
           <el-select v-model="manualDialog.tagIds" multiple size="small" placeholder="选择标签">
             <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
           </el-select>
@@ -333,6 +339,7 @@ async function runWithListLoading(fn) {
 
 // —— 筛选 / 排序状态：必须在 watcher 与 filteredWords 之前声明，避免 TDZ ——
 const searchText = ref('')
+const searchMode = ref('word')
 const levelFilter = ref([])
 const tagFilter = ref([])
 const sortMode = ref('alphabet')
@@ -354,9 +361,14 @@ const batchDialog = reactive({
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
   let words = vocabularyStore.words.filter(entry => {
-    const matchKeyword = !keyword
-      || entry.word.includes(keyword)
-      || String(entry.meaning || '').toLowerCase().includes(keyword)
+    let matchKeyword = !keyword
+    if (keyword) {
+      if (searchMode.value === 'word') {
+        matchKeyword = entry.word.toLowerCase().includes(keyword)
+      } else {
+        matchKeyword = String(entry.meaning || '').toLowerCase().includes(keyword)
+      }
+    }
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
@@ -443,7 +455,7 @@ const statsDrag = ref({
 const manualDialog = ref({
   visible: false,
   word: '',
-  mode: 'single',
+  format: 'comma',
   loading: false,
   tagIds: []
 })
@@ -654,7 +666,7 @@ async function openManualDialog() {
   manualDialog.value = {
     visible: true,
     word: '',
-    mode: 'single',
+    format: 'comma',
     loading: false,
     tagIds: []
   }
@@ -667,56 +679,60 @@ async function submitManualWord() {
 
   const input = String(manualDialog.value.word || '').trim()
   if (!input) {
-    ElMessage.warning('请输入要录入的单词')
+    ElMessage.warning('请输入要录入的内容')
     return
   }
 
-  let words = []
-  if (manualDialog.value.mode === 'multiple') {
-    words = input.split(/[,，\n\r]+/).map(w => normalizeManualWord(w)).filter(w => w && isSingleEnglishWord(w))
+  let wordEntries = []
+  if (manualDialog.value.format === 'comma') {
+    const words = input.split(/[,，\n\r]+/).map(w => normalizeManualWord(w)).filter(w => w && isSingleEnglishWord(w))
     if (!words.length) {
       ElMessage.warning('没有有效的单词，请输入英文单词，用逗号或换行分隔')
       return
     }
+    wordEntries = words.map(word => ({ word, meaning: '', phonetic: '', tagIds: manualDialog.value.tagIds }))
   } else {
-    const word = normalizeManualWord(input)
-    if (!isSingleEnglishWord(word)) {
-      ElMessage.warning('请输入有效的英文单词或短语')
+    wordEntries = await parseTagTextFormat(input)
+    if (!wordEntries.length) {
+      ElMessage.warning('未解析到有效的单词，请使用 [标签名]\\nword:意思 格式')
       return
     }
-    words = [word]
   }
 
   manualDialog.value.loading = true
   try {
     let successCount = 0
-    for (const word of words) {
+    for (const entry of wordEntries) {
       try {
-        const result = await bookStore.translateWordToChinese(word)
-        const meaning = typeof result === 'object'
-          ? String(result?.meaning || '').trim()
-          : String(result || '').trim()
-        const phonetic = typeof result === 'object'
-          ? String(result?.phonetic || '').trim()
-          : ''
+        let meaning = entry.meaning
+        let phonetic = entry.phonetic
+        if (!meaning) {
+          const result = await bookStore.translateWordToChinese(entry.word)
+          meaning = typeof result === 'object'
+            ? String(result?.meaning || '').trim()
+            : String(result || '').trim()
+          phonetic = typeof result === 'object'
+            ? String(result?.phonetic || '').trim()
+            : ''
+        }
 
         vocabularyStore.addWord({
-          word,
+          word: entry.word,
           meaning,
           phonetic,
-          memoryParts: autoMemoryParts(word),
-          tagIds: manualDialog.value.tagIds
+          memoryParts: autoMemoryParts(entry.word),
+          tagIds: entry.tagIds.length ? entry.tagIds : manualDialog.value.tagIds
         })
         successCount++
       } catch (err) {
-        console.warn(`录入单词「${word}」失败:`, err)
+        console.warn(`录入单词「${entry.word}」失败:`, err)
       }
     }
     manualDialog.value.visible = false
-    if (successCount === words.length) {
+    if (successCount === wordEntries.length) {
       ElMessage.success(`已录入 ${successCount} 个单词`)
     } else if (successCount > 0) {
-      ElMessage.success(`成功录入 ${successCount} 个单词，${words.length - successCount} 个失败`)
+      ElMessage.success(`成功录入 ${successCount} 个单词，${wordEntries.length - successCount} 个失败`)
     } else {
       ElMessage.error('所有单词录入失败')
     }
@@ -725,6 +741,49 @@ async function submitManualWord() {
   } finally {
     manualDialog.value.loading = false
   }
+}
+
+async function parseTagTextFormat(text) {
+  const lines = text.split(/\r?\n/)
+  const entries = []
+  const tagNameMap = new Map()
+  let currentTagId = null
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    const tagMatch = trimmed.match(/^\[(.+)\]$/)
+    if (tagMatch) {
+      const tagName = tagMatch[1].trim()
+      if (tagName) {
+        if (!tagNameMap.has(tagName)) {
+          const tag = await vocabularyStore.addTag(tagName)
+          if (tag) {
+            tagNameMap.set(tagName, tag.id)
+          }
+        }
+        currentTagId = tagNameMap.get(tagName)
+      }
+      continue
+    }
+
+    const colonIdx = trimmed.indexOf(':')
+    if (colonIdx > 0) {
+      const word = normalizeManualWord(trimmed.substring(0, colonIdx))
+      const meaning = trimmed.substring(colonIdx + 1).trim()
+      if (word) {
+        entries.push({
+          word,
+          meaning,
+          phonetic: '',
+          tagIds: currentTagId ? [currentTagId] : []
+        })
+      }
+    }
+  }
+
+  return entries
 }
 
 function openWordDetail(word) {
@@ -757,6 +816,9 @@ function splitMemoryText(text) {
 
 function autoMemoryParts(word) {
   const value = String(word || '').trim()
+  if (!value) return []
+  if (value.includes('(') || value.includes(')')) return []
+  if (value.includes(' ') || value.includes('/')) return []
   const compoundMap = {
     everywhere: ['every', 'where'],
     somewhere: ['some', 'where'],
@@ -764,7 +826,7 @@ function autoMemoryParts(word) {
     nowhere: ['no', 'where']
   }
   if (compoundMap[value.toLowerCase()]) return compoundMap[value.toLowerCase()]
-  if (value.length <= 4) return value ? [value] : []
+  if (value.length <= 4) return [value]
   if (value.length <= 6) return [value.slice(0, 2), value.slice(2)]
   if (value.endsWith('ing') && value.length > 5) return [value.slice(0, -3), 'ing']
   if (value.endsWith('ed') && value.length > 5) return [value.slice(0, -2), 'ed']
@@ -928,7 +990,7 @@ async function handleImport(event) {
     const rawText = await readTextFile(file)
     const { words, tags } = fmt.deserialize(rawText)
     if (!Array.isArray(words) || !words.length) throw new Error('未解析到任何单词')
-    if (fmtId === 'default' && Array.isArray(tags) && tags.length) {
+    if (Array.isArray(tags) && tags.length) {
       vocabularyStore.importTags(tags)
     }
     const count = await vocabularyStore.importWords(words)
@@ -1172,6 +1234,11 @@ async function handleImport(event) {
   border: var(--section-border) solid #d7dfdc;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.88);
+}
+
+.vocab-search-mode {
+  width: 100px;
+  margin-right: 8px;
 }
 
 .vocab-search {
