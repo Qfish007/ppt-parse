@@ -52,16 +52,17 @@
     </section>
 
     <section class="vocab-list">
-      <div class="vocab-list-head">
+      <div class="vocab-list-head" :style="{ gridTemplateColumns, minWidth: listMinWidth }">
         <span class="vocab-check-head">
           <el-checkbox :indeterminate="isIndeterminate" v-model="selectAll" @change="handleSelectAll" />
         </span>
         <span>单词</span>
-        <span>发音</span>
-        <span class="vocab-memory-head">辅助记忆</span>
+        <span v-if="vocabularyStore.visibleColumns.pronunciation">发音</span>
+        <span v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory-head">辅助记忆</span>
         <span>中文意思</span>
-        <span class="vocab-tags-head">标签</span>
-        <span class="vocab-level-head">掌握水平</span>
+        <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
+        <span v-if="vocabularyStore.visibleColumns.level" class="vocab-level-head">掌握水平</span>
+        <span v-if="vocabularyStore.visibleColumns.note" class="vocab-note-head">备注</span>
         <span class="vocab-action-head">操作</span>
       </div>
 
@@ -83,12 +84,12 @@
           暂无生词。
         </div>
 
-        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row">
+        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row" :style="{ gridTemplateColumns, minWidth: listMinWidth }">
           <span class="vocab-check">
             <el-checkbox v-model="selectedWords" :value="entry.word" />
           </span>
           <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
-          <div class="vocab-pronunciation">
+          <div v-if="vocabularyStore.visibleColumns.pronunciation" class="vocab-pronunciation">
             <button class="vocab-sound" @click="playWord(entry)">
               <svg viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"></path>
@@ -96,7 +97,7 @@
             </button>
             <span>{{ entry.phonetic || '-' }}</span>
           </div>
-          <div class="vocab-memory">
+          <div v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory">
             <template v-if="memoryPartsForEntry(entry).length">
               <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
                 <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
@@ -105,20 +106,25 @@
             </template>
             <span v-else class="memory-empty">-</span>
           </div>
-          <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
-          <div class="vocab-tags">
+          <div class="vocab-meaning">
+            {{ entry.meaning || '暂无释义' }}
+          </div>
+          <div v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags">
             <el-tag v-for="tag in tagsForEntry(entry)" :key="tag.id" size="small" effect="plain">
               {{ tag.name }}
             </el-tag>
             <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
           </div>
-          <div class="vocab-level">
+          <div v-if="vocabularyStore.visibleColumns.level" class="vocab-level">
             <span class="vocab-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
             <el-select :class="['vocab-level-select', levelClass(entry.level)]" :model-value="entry.level" size="small"
               popper-class="vocab-level-popper" @change="value => updateLevel(entry.word, value)">
               <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
+          </div>
+          <div v-if="vocabularyStore.visibleColumns.note" class="vocab-note">
+            {{ entry.note || '-' }}
           </div>
           <div class="vocab-action">
             <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
@@ -148,7 +154,7 @@
           <div class="tag-dialog-body">
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">单词名称</div>
-              <div class="tag-dialog-word">{{ tagDialog.word }}</div>
+              <el-input v-model="tagDialog.word" class="tag-dialog-control" placeholder="输入单词或短语" />
             </div>
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">掌握水平</div>
@@ -173,6 +179,11 @@
                   还没有标签，请先到设置里添加。
                 </div>
               </div>
+            </div>
+            <div class="tag-dialog-field">
+              <div class="tag-dialog-label">备注</div>
+              <el-input v-model="tagDialog.note" type="textarea" :rows="3" class="tag-dialog-control"
+                placeholder="添加备注信息" />
             </div>
           </div>
           <div class="tag-dialog-footer">
@@ -383,6 +394,29 @@ const filteredWords = computed(() => {
   return words
 })
 
+const gridTemplateColumns = computed(() => {
+  const cols = ['48px', '150px']
+  if (vocabularyStore.visibleColumns.pronunciation) cols.push('150px')
+  if (vocabularyStore.visibleColumns.memory) cols.push('130px')
+  cols.push('1fr')
+  if (vocabularyStore.visibleColumns.tags) cols.push('100px')
+  if (vocabularyStore.visibleColumns.level) cols.push('80px')
+  if (vocabularyStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
+  cols.push('60px')
+  return cols.join(' ')
+})
+
+const listMinWidth = computed(() => {
+  let width = 48 + 150 + 220 + 60
+  if (vocabularyStore.visibleColumns.pronunciation) width += 150
+  if (vocabularyStore.visibleColumns.memory) width += 130
+  if (vocabularyStore.visibleColumns.tags) width += 100
+  if (vocabularyStore.visibleColumns.level) width += 80
+  if (vocabularyStore.visibleColumns.note) width += 60
+  width += 12 * (8 - (!vocabularyStore.visibleColumns.pronunciation) - (!vocabularyStore.visibleColumns.memory) - (!vocabularyStore.visibleColumns.tags) - (!vocabularyStore.visibleColumns.level) - (!vocabularyStore.visibleColumns.note))
+  return `${width}px`
+})
+
 // ========================== 分页（根治列表 DOM 卡顿） ==========================
 const pageSizes = [10, 20, 50, 100, 200]
 const pageSize = ref(Number(router.currentRoute.value.query.pageSize) || 10)
@@ -462,9 +496,11 @@ const manualDialog = ref({
 const tagDialog = ref({
   visible: false,
   word: '',
+  originalWord: '',
   level: 'unknown',
   memoryText: '',
-  tagIds: []
+  tagIds: [],
+  note: ''
 })
 const formatDialog = ref({
   visible: false,
@@ -843,18 +879,35 @@ function openTagDialog(entry) {
   tagDialog.value = {
     visible: true,
     word: entry.word,
+    originalWord: entry.word,
     level: entry.level || 'unknown',
     memoryText: (entry.memoryParts?.length ? entry.memoryParts : autoMemoryParts(entry.word)).join('.'),
-    tagIds: [...(entry.tagIds || [])]
+    tagIds: [...(entry.tagIds || [])],
+    note: entry.note || ''
   }
 }
 
-function saveWordTags() {
-  vocabularyStore.updateWord(tagDialog.value.word, {
+async function saveWordTags() {
+  const newWord = tagDialog.value.word.trim()
+  const originalWord = tagDialog.value.originalWord
+
+  if (!newWord) {
+    ElMessage.warning('单词名称不能为空')
+    return
+  }
+
+  if (newWord !== originalWord) {
+    await vocabularyStore.removeWord(originalWord)
+  }
+
+  await vocabularyStore.addWord({
+    word: newWord,
     level: tagDialog.value.level,
     memoryParts: splitMemoryText(tagDialog.value.memoryText),
-    tagIds: tagDialog.value.tagIds
+    tagIds: tagDialog.value.tagIds,
+    note: tagDialog.value.note
   })
+
   tagDialog.value.visible = false
   ElMessage.success('已保存设置')
 }
@@ -1269,7 +1322,6 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: 48px 150px 150px 150px minmax(220px, 1.6fr) 100px 80px 60px;
   align-items: center;
   gap: 12px;
 }
@@ -1344,14 +1396,16 @@ async function handleImport(event) {
 }
 
 .vocab-meaning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #40504c;
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
 }
 
-.vocab-memory-head,
-.vocab-memory {
+.vocab-memory-head {
   text-align: center;
 }
 
@@ -1359,11 +1413,11 @@ async function handleImport(event) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   min-width: 0;
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -1416,6 +1470,17 @@ async function handleImport(event) {
 
 .vocab-level-head {
   text-align: center;
+}
+
+.vocab-note-head {
+  min-width: 120px;
+}
+
+.vocab-note {
+  min-width: 120px;
+  color: #6b7a77;
+  font-size: 13px;
+  word-break: break-all;
 }
 
 .vocab-action {
@@ -1686,10 +1751,7 @@ async function handleImport(event) {
     overflow-x: auto;
   }
 
-  .vocab-list-head,
-  .vocab-row {
-    min-width: 1120px;
-  }
+  
 }
 
 :global(.vocab-format-dialog) {

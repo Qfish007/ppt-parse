@@ -40,6 +40,7 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
           tagIds: [...(word.tagIds || [])],
           memoryParts: [...(word.memoryParts || [])],
           level: word.level,
+          note: word.note || '',
           testTotalCount: word.testTotalCount,
           testCorrectCount: word.testCorrectCount,
           createdAt: word.createdAt,
@@ -117,5 +118,27 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
 
   async setStatsVisible(visible) {
     await db.settings.put({ key: 'vocabularyStatsVisible', value: String(visible) });
+  }
+
+  async getVisibleColumns() {
+    const result = await db.settings.get('vocabularyVisibleColumns');
+    if (result?.value) {
+      try {
+        return JSON.parse(result.value);
+      } catch {
+        // ignore
+      }
+    }
+    return {
+      pronunciation: true,
+      memory: true,
+      tags: true,
+      level: true,
+      note: false
+    };
+  }
+
+  async setVisibleColumns(columns) {
+    await db.settings.put({ key: 'vocabularyVisibleColumns', value: JSON.stringify(columns) });
   }
 }

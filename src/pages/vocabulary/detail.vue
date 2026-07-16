@@ -43,7 +43,7 @@
         <div class="detail-item detail-meaning-item">
           <div class="detail-label-row">
             <span class="detail-label">中文意思</span>
-            <button v-if="entry?.meaning" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
+            <button v-if="entry" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
               <span v-if="refreshing" class="btn-loading"></span>
               {{ refreshing ? '查询中...' : '完整释义' }}
             </button>
