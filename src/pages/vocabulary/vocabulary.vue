@@ -209,7 +209,7 @@
         </el-form-item>
         <el-form-item label="内容">
           <el-input type="textarea" ref="manualInputRef" v-model="manualDialog.word"
-            :placeholder="manualDialog.format === 'comma' ? '输入英文单词，用逗号分隔，支持多行' : '[标签名]\\nword:意思\\nword2:意思2'"
+            :placeholder="manualDialog.format === 'comma' ? '输入英文单词，用逗号分隔，支持多行' : '[标签1,标签2]\\nword:意思\\nword2:意思2'"
             :rows="5" clearable :disabled="manualDialog.loading" />
         </el-form-item>
         <el-form-item v-if="manualDialog.format === 'comma'" label="标签">
@@ -726,7 +726,7 @@ async function submitManualWord() {
   } else {
     wordEntries = await parseTagTextFormat(input)
     if (!wordEntries.length) {
-      ElMessage.warning('未解析到有效的单词，请使用 [标签名]\\nword:意思 格式')
+      ElMessage.warning('未解析到有效的单词，请使用 [标签1,标签2]\\nword:意思 格式')
       return
     }
   }
@@ -779,7 +779,7 @@ async function parseTagTextFormat(text) {
   const lines = text.split(/\r?\n/)
   const entries = []
   const tagNameMap = new Map()
-  let currentTagId = null
+  let currentTagIds = []
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -787,15 +787,19 @@ async function parseTagTextFormat(text) {
 
     const tagMatch = trimmed.match(/^\[(.+)\]$/)
     if (tagMatch) {
-      const tagName = tagMatch[1].trim()
-      if (tagName) {
+      const tagNames = tagMatch[1].split(',').map(n => n.trim()).filter(Boolean)
+      currentTagIds = []
+      for (const tagName of tagNames) {
         if (!tagNameMap.has(tagName)) {
           const tag = await vocabularyStore.addTag(tagName)
           if (tag) {
             tagNameMap.set(tagName, tag.id)
           }
         }
-        currentTagId = tagNameMap.get(tagName)
+        const tagId = tagNameMap.get(tagName)
+        if (tagId) {
+          currentTagIds.push(tagId)
+        }
       }
       continue
     }
@@ -809,7 +813,7 @@ async function parseTagTextFormat(text) {
           word,
           meaning,
           phonetic: '',
-          tagIds: currentTagId ? [currentTagId] : []
+          tagIds: [...currentTagIds]
         })
       }
     }

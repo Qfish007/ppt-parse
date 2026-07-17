@@ -225,36 +225,35 @@ const formatExternal1 = {
 const formatText2 = {
     id: 'text2',
     name: '文本格式2',
-    desc: '按标签分组，格式：[标签名]\\nword:意思',
+    desc: '按标签分组，格式：[标签1,标签2]\\nword:意思',
     importAccept: 'text/plain,.txt',
 
     serialize(words, tags, ctx = {}) {
         const lines = []
         const tagsById = new Map((tags || []).map(t => [t.id, t]))
-        const wordsByTag = new Map()
+        const wordsByTagCombination = new Map()
         words?.forEach(w => {
             const tagIds = Array.isArray(w.tagIds) ? w.tagIds : []
-            if (!tagIds.length) {
-                const list = wordsByTag.get('_untagged') || []
-                list.push(w)
-                wordsByTag.set('_untagged', list)
+            const sortedTagIds = [...tagIds].sort()
+            const key = sortedTagIds.length ? sortedTagIds.join(',') : '_untagged'
+            const list = wordsByTagCombination.get(key) || []
+            list.push(w)
+            wordsByTagCombination.set(key, list)
+        })
+        wordsByTagCombination.forEach((items, key) => {
+            if (key === '_untagged') {
+                items.forEach(w => {
+                    const meaning = String(w?.meaning || '').replace(/\n/g, '；')
+                    lines.push(`${w?.word} : ${meaning}`)
+                })
             } else {
-                tagIds.forEach(tid => {
-                    const list = wordsByTag.get(tid) || []
-                    list.push(w)
-                    wordsByTag.set(tid, list)
+                const tagNames = key.split(',').map(id => tagsById.get(id)?.name || id)
+                lines.push(`[${tagNames.join(',')}]`)
+                items.forEach(w => {
+                    const meaning = String(w?.meaning || '').replace(/\n/g, '；')
+                    lines.push(`${w?.word} : ${meaning}`)
                 })
             }
-        })
-        wordsByTag.forEach((items, tagId) => {
-            const tagName = tagId === '_untagged' ? '' : (tagsById.get(tagId)?.name || tagId)
-            if (tagName) {
-                lines.push(`[${tagName}]`)
-            }
-            items.forEach(w => {
-                const meaning = String(w?.meaning || '').replace(/\n/g, '；')
-                lines.push(`${w?.word} : ${meaning}`)
-            })
             lines.push('')
         })
         return {
@@ -272,7 +271,7 @@ const formatText2 = {
         const words = []
         const tags = []
         const tagNameMap = new Map()
-        let currentTagId = null
+        let currentTagIds = []
 
         for (const line of lines) {
             const trimmed = line.trim()
@@ -280,18 +279,20 @@ const formatText2 = {
 
             const tagMatch = trimmed.match(/^\[(.+)\]$/)
             if (tagMatch) {
-                const tagName = tagMatch[1].trim()
-                if (!tagName) continue
-                if (!tagNameMap.has(tagName)) {
-                    const tag = {
-                        id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
-                        name: tagName,
-                        createdAt: Date.now()
+                const tagNames = tagMatch[1].split(',').map(n => n.trim()).filter(Boolean)
+                currentTagIds = []
+                for (const tagName of tagNames) {
+                    if (!tagNameMap.has(tagName)) {
+                        const tag = {
+                            id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                            name: tagName,
+                            createdAt: Date.now()
+                        }
+                        tags.push(tag)
+                        tagNameMap.set(tagName, tag.id)
                     }
-                    tags.push(tag)
-                    tagNameMap.set(tagName, tag.id)
+                    currentTagIds.push(tagNameMap.get(tagName))
                 }
-                currentTagId = tagNameMap.get(tagName)
                 continue
             }
 
@@ -303,7 +304,7 @@ const formatText2 = {
                     words.push({
                         word,
                         meaning,
-                        tagIds: currentTagId ? [currentTagId] : []
+                        tagIds: [...currentTagIds]
                     })
                 }
             }
