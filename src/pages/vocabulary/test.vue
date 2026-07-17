@@ -53,6 +53,13 @@
           <div class="question-label">
             {{ testMode === 'meaning' ? '根据中文意思输入英文单词' : '根据发音输入英文单词' }}
           </div>
+          <div v-if="testMode === 'meaning'" class="sound-prompt-center">
+            <button class="sound-button" @click="playCurrentWord">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
+            </button>
+          </div>
           <div v-if="testMode === 'meaning'" class="question-prompt">
             {{ currentWord.meaning || '暂无释义' }}
           </div>
@@ -67,7 +74,10 @@
           <div class="answer-row">
             <el-input ref="answerInputRef" v-model="answerText" size="large" class="answer-input" placeholder="输入单词"
               @keyup.enter="submitAnswer" />
-            <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
+            <div class="answer-buttons">
+              <el-button size="large" class="answer-skip" @click="skipWord">跳过</el-button>
+              <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
+            </div>
           </div>
         </div>
       </section>
@@ -81,6 +91,7 @@
           <div>
             <div class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</div>
             <h3>{{ correctResults.length }} / {{ testQueue.length }}</h3>
+            <div class="result-accuracy">正确率：{{ accuracyRate }}%</div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
         </div>
@@ -93,8 +104,14 @@
               class="result-row is-correct">
               <div class="result-word-line">
                 <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                <button class="result-sound-btn" @click="playWord(item.word)">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"></path>
+                  </svg>
+                </button>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
               </div>
+              <span>{{ item.phonetic || '' }}</span>
               <span>{{ item.meaning || '暂无释义' }}</span>
             </div>
           </div>
@@ -104,8 +121,14 @@
             <div v-for="(item, index) in wrongResults" :key="`wrong-${item.word}-${index}`" class="result-row is-wrong">
               <div class="result-word-line">
                 <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                <button class="result-sound-btn" @click="playWord(item.word)">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"></path>
+                  </svg>
+                </button>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
               </div>
+              <span>{{ item.phonetic || '' }}</span>
               <span>你的答案：{{ item.answer || '-' }}</span>
               <span>{{ item.meaning || '暂无释义' }}</span>
             </div>
@@ -155,6 +178,11 @@ const availableWords = computed(() => {
 })
 const normalizedTestCount = computed(() => Math.min(Math.max(Number(testCount.value) || 1, 1), Math.max(availableWords.value.length, 1)))
 const currentWord = computed(() => testQueue.value[currentIndex.value] || null)
+const accuracyRate = computed(() => {
+  const total = correctResults.value.length + wrongResults.value.length
+  if (total === 0) return 0
+  return Math.round((correctResults.value.length / total) * 100)
+})
 
 function goBack() {
   if (window.history.length > 1) {
@@ -253,6 +281,10 @@ function playCurrentWord() {
   if (currentWord.value?.word) speak(currentWord.value.word, 'en-US')
 }
 
+function playWord(word) {
+  if (word) speak(word, 'en-US')
+}
+
 function resultStatText(item) {
   return `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
 }
@@ -268,6 +300,22 @@ async function goNextQuestion() {
   saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
+}
+
+async function skipWord() {
+  const entry = currentWord.value
+  if (!entry) return
+  const updatedEntry = await vocabularyStore.recordTestResult(entry.word, false, 'default') || entry
+  const result = {
+    word: updatedEntry.word,
+    meaning: updatedEntry.meaning,
+    phonetic: updatedEntry.phonetic,
+    testTotalCount: updatedEntry.testTotalCount,
+    testCorrectCount: updatedEntry.testCorrectCount,
+    answer: '跳过'
+  }
+  wrongResults.value.push(result)
+  goNextQuestion()
 }
 
 async function submitAnswer() {
@@ -434,6 +482,11 @@ onMounted(() => {
   line-height: 1.5;
 }
 
+.sound-prompt-center {
+  display: flex;
+  justify-content: center;
+}
+
 .sound-prompt {
   display: flex;
   align-items: center;
@@ -463,13 +516,16 @@ onMounted(() => {
 }
 
 .answer-row {
-  /* ---------------- 用户需求：按钮另起一行（单列）+ 水平居中 ---------------- */
   display: grid;
   grid-template-columns: 1fr;
   row-gap: 18px;
   column-gap: 0;
-  /* 不对所有项用 justify-items:center，否则 input 宽度会塌陷（撑不满行）。
-   * 改由：input 占满整列（默认行为），按钮单独 justify-self:center。*/
+}
+
+.answer-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
 }
 
 /* ---------------- 红框 answer-row: 字体 30px（用户需求） ---------------- */
@@ -480,6 +536,11 @@ onMounted(() => {
   min-height: 56px;
   box-shadow: var(--el-input-border-color, #dcdfe6) 0 0 0 1px inset;
   border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+}
+
+.answer-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #2f6feb, 0 0 20px rgba(47, 111, 235, 0.35), inset 0 0 0 1px #2f6feb;
 }
 
 .answer-input :deep(.el-input__inner) {
@@ -501,6 +562,7 @@ onMounted(() => {
  * 注意：answer-submit 类直接绑在 ElButton 的根 button 上（见 DOM classList=el-button..answer-submit）
  *       Vue scoped 的 ".answer-submit :deep(.el-button)" 写的是"子元素匹配"，自己不会是自己的子元素 → 失效
  *       因此这里用 :global(.answer-submit.el-button) 命中根元素自身 */
+:global(.answer-skip.el-button),
 :global(.answer-submit.el-button) {
   font-size: 30px;
   font-weight: 800;
@@ -531,6 +593,14 @@ onMounted(() => {
   margin: 4px 0 0;
   color: #16201f;
   font-size: 34px;
+}
+
+.result-accuracy {
+  margin: 8px 0 0;
+  color: #2f6feb;
+  font-size: 24px;
+  font-weight: 800;
+  text-shadow: 0 1px 2px rgba(47, 111, 235, 0.2);
 }
 
 .result-grid {
@@ -582,6 +652,33 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
+}
+
+.result-sound-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f0f0;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.result-sound-btn:hover {
+  background: #2f6feb;
+}
+
+.result-sound-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: #666;
+}
+
+.result-sound-btn:hover svg {
+  fill: #fff;
 }
 
 .result-stat {
