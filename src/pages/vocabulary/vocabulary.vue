@@ -11,17 +11,56 @@
         <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
       </div>
       <div class="vocab-actions">
-        <el-button type="primary" plain @click="openManualDialog">
-          <el-icon>
-            <Plus />
-          </el-icon>
-          手动录入
-        </el-button>
-        <el-button @click="openBatchDialog" :disabled="selectedWords.length === 0">批量设置</el-button>
-        <el-button @click="goTest">测试</el-button>
-        <el-button @click="goPrint">打印</el-button>
-        <el-button @click="openFormatDialog('import')">导入</el-button>
-        <el-button type="primary" @click="openFormatDialog('export')">导出</el-button>
+        <el-dropdown>
+          <el-button title="菜单">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="openManualDialog">
+                <el-icon>
+                  <Edit />
+                </el-icon>
+                录入
+              </el-dropdown-item>
+              <el-dropdown-item @click="openBatchDialog" :disabled="selectedWords.length === 0">
+                <el-icon>
+                  <List />
+                </el-icon>
+                批量
+              </el-dropdown-item>
+              <el-dropdown-item @click="goTest">
+                <el-icon>
+                  <List />
+                </el-icon>
+                测试
+              </el-dropdown-item>
+              <el-dropdown-item @click="goPrint">
+                <el-icon>
+                  <Printer />
+                </el-icon>
+                打印
+              </el-dropdown-item>
+              <el-dropdown-item @click="openFormatDialog('import')">
+                <el-icon>
+                  <Upload />
+                </el-icon>
+                导入
+              </el-dropdown-item>
+              <el-dropdown-item @click="openFormatDialog('export')">
+                <el-icon>
+                  <Download />
+                </el-icon>
+                导出
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-button @click="goSettings" title="设置">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -317,7 +356,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Plus } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus, ArrowDown, Edit, Upload, Download, Printer, List } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
@@ -1152,7 +1191,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1500px;
+  --section-max: 1200px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;

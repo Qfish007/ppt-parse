@@ -263,7 +263,7 @@ async function removeTag(tag) {
 
 .settings-header,
 .settings-card {
-  max-width: 1500px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
