@@ -12,64 +12,109 @@
       </div>
     </header>
 
-    <section class="settings-card">
-      <div class="display-setting-row">
-        <div>
-          <label class="field-label">统计显示</label>
-          <div class="setting-desc">控制生词本页面右侧悬浮统计是否显示。</div>
+    <section class="settings-card card-stat">
+      <div class="card-header">
+        <label class="field-label">统计显示</label>
+      </div>
+      <div class="card-body">
+        <div class="setting-desc">控制生词本页面右侧悬浮统计是否显示。</div>
+        <div class="display-setting-row">
+          <el-switch :model-value="vocabularyStore.statsVisible" @change="toggleStatsVisible" />
         </div>
-        <el-switch :model-value="vocabularyStore.statsVisible" active-text="显示" inactive-text="隐藏"
-          @change="toggleStatsVisible" />
       </div>
     </section>
 
-    <section class="settings-card">
-      <div class="book-editor">
+    <section class="settings-card card-column">
+      <div class="card-header">
+        <label class="field-label">单词列表列显示</label>
+      </div>
+      <div class="card-body">
+        <div class="setting-desc">控制生词本列表中各列的显示与隐藏。</div>
+        <div class="column-settings">
+          <div class="column-setting-row">
+            <span class="column-name">发音</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.pronunciation"
+              @change="value => updateVisibleColumn('pronunciation', value)" />
+          </div>
+          <div class="column-setting-row">
+            <span class="column-name">辅助记忆</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.memory"
+              @change="value => updateVisibleColumn('memory', value)" />
+          </div>
+          <div class="column-setting-row">
+            <span class="column-name">标签</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.tags"
+              @change="value => updateVisibleColumn('tags', value)" />
+          </div>
+          <div class="column-setting-row">
+            <span class="column-name">掌握水平</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.level"
+              @change="value => updateVisibleColumn('level', value)" />
+          </div>
+          <div class="column-setting-row">
+            <span class="column-name">备注</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.note"
+              @change="value => updateVisibleColumn('note', value)" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="settings-card card-book">
+      <div class="card-header">
         <label class="field-label">生词本管理</label>
-        <div class="tag-input-row">
-          <el-input v-model="bookName" clearable placeholder="例如：土豆学习、CET4、托福" @keyup.enter="addBook" />
-          <el-button type="primary" @click="addBook">添加词本</el-button>
-        </div>
       </div>
-
-      <div class="book-list">
-        <div v-for="book in vocabularyStore.books" :key="book.id" class="book-row">
-          <div class="book-info">
-            <span class="book-name">{{ book.name }}</span>
-            <el-tag v-if="book.id === vocabularyStore.activeBookId" size="small" type="success" effect="plain">
-              当前
-            </el-tag>
-            <span class="book-count">{{ book.words.length }} 个单词</span>
+      <div class="card-body">
+        <div class="book-editor">
+          <div class="tag-input-row">
+            <el-input v-model="bookName" clearable placeholder="例如：土豆学习、CET4、托福" @keyup.enter="addBook" />
+            <el-button type="primary" @click="addBook">添加词本</el-button>
           </div>
-          <div class="book-actions">
-            <el-button size="small" plain :disabled="book.id === vocabularyStore.activeBookId"
-              @click="setActiveBook(book)">
-              切换
-            </el-button>
-            <el-button size="small" plain @click="renameBook(book)">重命名</el-button>
-            <el-button size="small" type="danger" plain :disabled="vocabularyStore.books.length <= 1"
-              :title="vocabularyStore.books.length <= 1 ? '至少保留一个生词本' : '删除此生词本及其中全部单词'" @click="removeBook(book)">
-              删除
-            </el-button>
+        </div>
+
+        <div class="book-list">
+          <div v-for="book in vocabularyStore.books" :key="book.id" class="book-row">
+            <div class="book-info">
+              <span class="book-name">{{ book.name }}</span>
+              <el-tag v-if="book.id === vocabularyStore.activeBookId" size="small" type="success" effect="plain">
+                当前
+              </el-tag>
+              <span class="book-count">{{ book.words.length }} 个单词</span>
+            </div>
+            <div class="book-actions">
+              <el-button size="small" plain :disabled="book.id === vocabularyStore.activeBookId"
+                @click="setActiveBook(book)">
+                切换
+              </el-button>
+              <el-button size="small" plain @click="renameBook(book)">重命名</el-button>
+              <el-button size="small" type="danger" plain :disabled="vocabularyStore.books.length <= 1"
+                :title="vocabularyStore.books.length <= 1 ? '至少保留一个生词本' : '删除此生词本及其中全部单词'" @click="removeBook(book)">
+                删除
+              </el-button>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="settings-card">
-      <div class="tag-editor">
+    <section class="settings-card card-tag">
+      <div class="card-header">
         <label class="field-label">当前生词本标签：{{ vocabularyStore.getActiveBook()?.name || '默认生词本' }}</label>
-        <div class="tag-input-row">
-          <el-input v-model="tagName" clearable placeholder="例如：第一学期、本周、爸妈要求的" @keyup.enter="addTag" />
-          <el-button type="primary" @click="addTag">添加</el-button>
-        </div>
       </div>
+      <div class="card-body">
+        <div class="tag-editor">
+          <div class="tag-input-row">
+            <el-input v-model="tagName" clearable placeholder="例如：第一学期、本周、爸妈要求的" @keyup.enter="addTag" />
+            <el-button type="primary" @click="addTag">添加</el-button>
+          </div>
+        </div>
 
-      <div class="tag-list">
-        <div v-if="!vocabularyStore.tags.length" class="tag-empty">暂无自定义标签。</div>
-        <div v-for="tag in vocabularyStore.tags" :key="tag.id" class="tag-pill">
-          <span class="tag-name">{{ tag.name }}</span>
-          <button class="tag-remove" title="删除" @click="removeTag(tag)">&times;</button>
+        <div class="tag-list">
+          <div v-if="!vocabularyStore.tags.length" class="tag-empty">暂无自定义标签。</div>
+          <div v-for="tag in vocabularyStore.tags" :key="tag.id" class="tag-pill">
+            <span class="tag-name">{{ tag.name }}</span>
+            <button class="tag-remove" title="删除" @click="removeTag(tag)">&times;</button>
+          </div>
         </div>
       </div>
     </section>
@@ -99,6 +144,13 @@ function goBack() {
 function toggleStatsVisible(visible) {
   vocabularyStore.setStatsVisible(visible)
   ElMessage.success(visible ? '已显示统计' : '已隐藏统计')
+}
+
+function updateVisibleColumn(column, value) {
+  vocabularyStore.setVisibleColumns({
+    ...vocabularyStore.visibleColumns,
+    [column]: value
+  })
 }
 
 function addBook() {
@@ -235,18 +287,52 @@ async function removeTag(tag) {
 
 .settings-card {
   margin-bottom: 16px;
-  padding: 22px;
-  border: 1px solid #d7dfdc;
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.94);
+  overflow: hidden;
+  border: 1px solid #d7dfdc;
   box-shadow: 0 18px 50px rgba(22, 32, 31, 0.1);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 22px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #16201f;
+}
+
+.card-header .field-label {
+  margin-bottom: 0;
+}
+
+.card-body {
+  padding: 16px 22px;
+  padding-top: 16px;
+  background: rgba(255, 255, 255, 0.94);
+}
+
+.card-stat .card-header {
+  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
+}
+
+.card-column .card-header {
+  background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
+}
+
+.card-book .card-header {
+  background: linear-gradient(135deg, #fff7e6 0%, #ffe58f 100%);
+}
+
+.card-tag .card-header {
+  background: linear-gradient(135deg, #f9f0ff 0%, #efdbff 100%);
 }
 
 .field-label {
   display: block;
   margin-bottom: 10px;
-  color: #40504c;
-  font-size: 13px;
+  color: #16201f;
+  font-size: 16px;
   font-weight: 700;
 }
 
@@ -379,6 +465,29 @@ async function removeTag(tag) {
   padding: 10px 0 0;
   color: #8c9996;
   text-align: center;
+}
+
+.column-settings {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.column-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.column-name {
+  color: #16201f;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 @media (max-width: 720px) {

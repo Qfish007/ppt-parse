@@ -32,6 +32,10 @@
           <el-option label="4 列" :value="4" />
           <el-option label="5 列" :value="5" />
         </el-select>
+        <el-select v-model="printOrder" class="print-control" placeholder="顺序">
+          <el-option label="随机" :value="true" />
+          <el-option label="顺序" :value="false" />
+        </el-select>
         <el-input-number v-model="printCount" class="print-count" :min="1" :max="Math.max(1, availableWords.length)"
           controls-position="right" />
         <span class="print-count-tip">共 {{ Math.min(printCount, availableWords.length) }} 词 · 每页 {{ wordsPerPage }} · {{
@@ -120,6 +124,7 @@ const levelFilter = ref([])
 const tagFilter = ref([])
 const printCount = ref(100)
 const printCols = ref(3) // 默认3列
+const printOrder = ref(true) // true=随机, false=顺序
 const headerGap = ref(40) // 默认40px
 const rowGap = ref(20) // 默认20px
 const colGap = ref(20) // 默认20px
@@ -130,8 +135,8 @@ const rowsPerPage = computed(() => {
   const fs = Number(fontSize.value) || 16
   const rg = Number(rowGap.value) || 20
   const hg = Number(headerGap.value) || 40
-  // 行高 = 意思区高度(字号×1.4) + 单词与横线间距 + 横线高度(字号×1.2+4) + 行间距20px
-  const rowHeight = fs * 1.4 + rg + (fs * 1.2 + 4) + 20
+  // 行高 = 意思区高度(字号×1.4×2) + 单词与横线间距 + 横线高度(字号×1.2+4) + 行间距20px
+  const rowHeight = fs * 1.4 * 2 + rg + (fs * 1.2 + 4) + 20
   // A4 内容区高度约 700px（96dpi），减去标题区域高度
   const contentHeight = 700 - hg - 40
   return Math.max(8, Math.floor(contentHeight / rowHeight))
@@ -181,7 +186,8 @@ function resamplePrintWords() {
     return
   }
   const total = Math.min(Math.max(1, Number(printCount.value) || 1), candidates.length)
-  printWords.value = shuffleWords(candidates).slice(0, total)
+  const list = printOrder.value ? shuffleWords(candidates) : [...candidates]
+  printWords.value = list.slice(0, total)
 }
 
 function trimMeaning(meaning, maxLen = 28) {
@@ -196,7 +202,7 @@ function trimMeaning(meaning, maxLen = 28) {
 }
 
 // 任一项变化 → 重新抽取单词（列数变化不重抽，仅改变分页；分页由 computed 自动重排）
-watch([levelFilter, tagFilter, printCount], () => {
+watch([levelFilter, tagFilter, printCount, printOrder], () => {
   resamplePrintWords()
 }, { deep: true, immediate: true })
 
@@ -222,8 +228,8 @@ async function doPrint() {
   const meaningFontSize = Number(fontSize.value) || 16
   // 横线高度 = 字号 × 1.2 + 4，最小 18
   const lineHeight = Math.max(18, Math.round(meaningFontSize * 1.2 + 4))
-  // 意思区最小高度 = 字号 × 1.35
-  const meaningMinHeight = Math.max(meaningFontSize * 1.35, 16)
+  // 意思区最小高度 = 字号 × 1.35 × 2（默认两行）
+  const meaningMinHeight = Math.max(meaningFontSize * 1.35 * 2, 16)
 
   const iframe = document.createElement('iframe')
   iframe.style.position = 'fixed'
@@ -273,7 +279,12 @@ async function doPrint() {
     font-weight: 600;
     line-height: 1.35;
     color: #111827;
-    min-height: ${meaningMinHeight.toFixed(1)}px;
+    height: ${meaningMinHeight.toFixed(1)}px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
     word-break: break-word;
   }
   .meaning-line {
@@ -498,7 +509,12 @@ onMounted(() => {
   font-weight: 600;
   line-height: 1.35;
   color: #111827;
-  min-height: calc(var(--font-size, 16px) * 1.35);
+  height: calc(var(--font-size, 16px) * 1.35 * 2);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
   word-break: break-word;
 }
 

@@ -222,9 +222,104 @@ const formatExternal1 = {
     }
 }
 
+const formatText2 = {
+    id: 'text2',
+    name: '文本格式2',
+    desc: '按标签分组，格式：[标签名]\\nword:意思',
+    importAccept: 'text/plain,.txt',
+
+    serialize(words, tags, ctx = {}) {
+        const lines = []
+        const tagsById = new Map((tags || []).map(t => [t.id, t]))
+        const wordsByTag = new Map()
+        words?.forEach(w => {
+            const tagIds = Array.isArray(w.tagIds) ? w.tagIds : []
+            if (!tagIds.length) {
+                const list = wordsByTag.get('_untagged') || []
+                list.push(w)
+                wordsByTag.set('_untagged', list)
+            } else {
+                tagIds.forEach(tid => {
+                    const list = wordsByTag.get(tid) || []
+                    list.push(w)
+                    wordsByTag.set(tid, list)
+                })
+            }
+        })
+        wordsByTag.forEach((items, tagId) => {
+            const tagName = tagId === '_untagged' ? '' : (tagsById.get(tagId)?.name || tagId)
+            if (tagName) {
+                lines.push(`[${tagName}]`)
+            }
+            items.forEach(w => {
+                const meaning = String(w?.meaning || '').replace(/\n/g, '；')
+                lines.push(`${w?.word} : ${meaning}`)
+            })
+            lines.push('')
+        })
+        return {
+            content: lines.join('\n'),
+            mime: 'text/plain;charset=utf-8',
+            ext: 'txt'
+        }
+    },
+
+    deserialize(rawText) {
+        const text = String(rawText || '').trim()
+        if (!text) throw new Error('文本格式2文件内容为空')
+
+        const lines = text.split(/\r?\n/)
+        const words = []
+        const tags = []
+        const tagNameMap = new Map()
+        let currentTagId = null
+
+        for (const line of lines) {
+            const trimmed = line.trim()
+            if (!trimmed) continue
+
+            const tagMatch = trimmed.match(/^\[(.+)\]$/)
+            if (tagMatch) {
+                const tagName = tagMatch[1].trim()
+                if (!tagName) continue
+                if (!tagNameMap.has(tagName)) {
+                    const tag = {
+                        id: 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+                        name: tagName,
+                        createdAt: Date.now()
+                    }
+                    tags.push(tag)
+                    tagNameMap.set(tagName, tag.id)
+                }
+                currentTagId = tagNameMap.get(tagName)
+                continue
+            }
+
+            const colonIdx = trimmed.indexOf(':')
+            if (colonIdx > 0) {
+                const word = normalizeWordText(trimmed.substring(0, colonIdx))
+                const meaning = trimmed.substring(colonIdx + 1).trim()
+                if (word) {
+                    words.push({
+                        word,
+                        meaning,
+                        tagIds: currentTagId ? [currentTagId] : []
+                    })
+                }
+            }
+        }
+
+        if (!words.length) {
+            throw new Error('文本格式2中未找到有效的单词条目')
+        }
+
+        return { words, tags }
+    }
+}
+
 // ---------------- 注册中心 ----------------
 
-const REGISTRY = [formatDefault, formatText, formatExternal1]
+const REGISTRY = [formatDefault, formatText, formatText2, formatExternal1]
 
 export function getVocabFormatList() {
     return REGISTRY.map(f => ({

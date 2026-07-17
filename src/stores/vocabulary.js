@@ -71,6 +71,7 @@ function normalizeEntry(entry) {
     tagIds: normalizeTagIds(entry?.tagIds),
     memoryParts: normalizeMemoryParts(entry?.memoryParts),
     level,
+    note: String(entry?.note || '').trim(),
     testTotalCount: Math.max(0, Number(entry?.testTotalCount) || 0),
     testCorrectCount: Math.max(0, Number(entry?.testCorrectCount) || 0),
     createdAt: Number(entry?.createdAt) || now,
@@ -115,6 +116,13 @@ export function useVocabularyStore(options) {
     statsVisible: true,
     words: [],
     tags: [],
+    visibleColumns: {
+      pronunciation: true,
+      memory: true,
+      tags: true,
+      level: true,
+      note: false
+    },
     _loaded: false,
 
     async load() {
@@ -170,6 +178,7 @@ export function useVocabularyStore(options) {
         ? savedActiveBookId
         : this.defaultBookId;
       this.statsVisible = await vocabularyRepository.getStatsVisible();
+      this.visibleColumns = await vocabularyRepository.getVisibleColumns();
       this.syncActiveBook();
       this._loaded = true;
     },
@@ -186,6 +195,7 @@ export function useVocabularyStore(options) {
       await vocabularyRepository.setActiveBookId(this.activeBookId);
       await vocabularyRepository.setDefaultBookId(this.defaultBookId);
       await vocabularyRepository.setStatsVisible(this.statsVisible);
+      await vocabularyRepository.setVisibleColumns(this.visibleColumns);
     },
 
     syncActiveBook() {
@@ -281,6 +291,17 @@ export function useVocabularyStore(options) {
       await this.save();
     },
 
+    async setVisibleColumns(columns) {
+      this.visibleColumns = {
+        pronunciation: Boolean(columns?.pronunciation) !== false,
+        memory: Boolean(columns?.memory) !== false,
+        tags: Boolean(columns?.tags) !== false,
+        level: Boolean(columns?.level) !== false,
+        note: Boolean(columns?.note) !== false
+      };
+      await this.save();
+    },
+
     async addWord(entry, target = 'active') {
       const normalized = normalizeEntry(entry);
       if (!normalized) return null;
@@ -354,6 +375,7 @@ export function useVocabularyStore(options) {
       if (!entry) return null;
       if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
       if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
+      if (typeof updates.note === 'string') entry.note = updates.note.trim();
       if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;
       if (Array.isArray(updates.tagIds)) {
         const allowed = new Set(book.tags.map(tag => tag.id));

@@ -31,16 +31,19 @@
         <div class="detail-item">
           <div class="detail-label">辅助记忆</div>
           <div class="detail-memory">
-            <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
-              <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
-              <span v-if="index < memoryParts.length - 1" class="memory-dot">·</span>
+            <template v-if="memoryParts.length">
+              <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
+                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+                <span v-if="index < memoryParts.length - 1" class="memory-dot">·</span>
+              </template>
             </template>
+            <span v-else class="memory-empty">-</span>
           </div>
         </div>
         <div class="detail-item detail-meaning-item">
           <div class="detail-label-row">
             <span class="detail-label">中文意思</span>
-            <button v-if="entry?.meaning" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
+            <button v-if="entry" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
               <span v-if="refreshing" class="btn-loading"></span>
               {{ refreshing ? '查询中...' : '完整释义' }}
             </button>
@@ -93,6 +96,9 @@ function goBack() {
 
 function autoMemoryParts(rawWord) {
   const value = String(rawWord || '').trim()
+  if (!value) return []
+  if (value.includes('(') || value.includes(')')) return []
+  if (value.includes(' ') || value.includes('/')) return []
   const compoundMap = {
     everywhere: ['every', 'where'],
     somewhere: ['some', 'where'],
@@ -100,7 +106,7 @@ function autoMemoryParts(rawWord) {
     nowhere: ['no', 'where']
   }
   if (compoundMap[value.toLowerCase()]) return compoundMap[value.toLowerCase()]
-  if (value.length <= 4) return value ? [value] : []
+  if (value.length <= 4) return [value]
   if (value.length <= 6) return [value.slice(0, 2), value.slice(2)]
   if (value.endsWith('ing') && value.length > 5) return [value.slice(0, -3), 'ing']
   if (value.endsWith('ed') && value.length > 5) return [value.slice(0, -2), 'ed']
