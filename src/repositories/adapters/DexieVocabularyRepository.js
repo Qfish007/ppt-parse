@@ -28,10 +28,7 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
         createdAt: bookData.createdAt,
         updatedAt: bookData.updatedAt
       });
-      const existingWords = await db.vocabularyWords.where('bookId').equals(book.id).toArray();
-      for (const word of existingWords) {
-        await db.vocabularyWords.delete(word.word);
-      }
+      await db.vocabularyWords.where('bookId').equals(book.id).delete();
       for (const word of words) {
         await db.vocabularyWords.put({
           word: word.word,
@@ -48,10 +45,7 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
           bookId: book.id
         });
       }
-      const existingTags = await db.vocabularyTags.where('bookId').equals(book.id).toArray();
-      for (const tag of existingTags) {
-        await db.vocabularyTags.delete(tag.id);
-      }
+      await db.vocabularyTags.where('bookId').equals(book.id).delete();
       for (const tag of tags) {
         await db.vocabularyTags.put({ ...tag, bookId: book.id });
       }

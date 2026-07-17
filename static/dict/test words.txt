@@ -11,7 +11,6 @@ hello : 喂，哈啰，你好
 
 
 [第2页]
-
 pen : 钢笔
 pencil : 铅笔
 pencil case : 笔袋；铅笔盒

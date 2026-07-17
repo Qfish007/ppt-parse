@@ -1039,10 +1039,12 @@ async function handleImport(event) {
     const rawText = await readTextFile(file)
     const { words, tags } = fmt.deserialize(rawText)
     if (!Array.isArray(words) || !words.length) throw new Error('未解析到任何单词')
+    let tagIdMap = new Map()
     if (Array.isArray(tags) && tags.length) {
-      vocabularyStore.importTags(tags)
+      const result = await vocabularyStore.importTags(tags)
+      tagIdMap = result.tagIdMap || new Map()
     }
-    const count = await vocabularyStore.importWords(words)
+    const count = await vocabularyStore.importWords(words, 'active', tagIdMap)
     ElMessage.success(`已通过「${fmt.name}」导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
     ElMessage.error(`「${fmt.name}」导入失败：${error.message || '请检查文件后重试'}`)
