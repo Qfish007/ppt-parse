@@ -36,6 +36,10 @@
           <el-option label="随机" :value="true" />
           <el-option label="顺序" :value="false" />
         </el-select>
+        <div class="print-labels">
+          <el-checkbox v-model="showChinese">中文</el-checkbox>
+          <el-checkbox v-model="showEnglish">英文</el-checkbox>
+        </div>
         <el-input-number v-model="printCount" class="print-count" :min="1" :max="Math.max(1, availableWords.length)"
           controls-position="right" />
         <span class="print-count-tip">共 {{ Math.min(printCount, availableWords.length) }} 词 · 每页 {{ wordsPerPage }} · {{
@@ -97,9 +101,11 @@
             <span class="a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
           </div>
           <div class="a4-body">
-            <div v-for="(entry, i) in page" :key="i" class="word-row">
-              <div class="meaning-text">{{ trimMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}
-              </div>
+            <div v-for="(entry, i) in page" :key="i" class="word-row" :class="{ 'word-row-double': showEnglish && showChinese }">
+              <div v-if="showEnglish && !showChinese" class="meaning-text">{{ entry.word }}</div>
+              <div v-else-if="showChinese && !showEnglish" class="meaning-text">{{ trimMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
+              <div v-else-if="showEnglish && showChinese" class="meaning-text">{{ entry.word }}</div>
+              <div v-if="showEnglish && showChinese" class="meaning-text meaning-text-bottom">{{ trimMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
               <div class="meaning-line"></div>
             </div>
           </div>
@@ -129,6 +135,8 @@ const headerGap = ref(40) // 默认40px
 const rowGap = ref(20) // 默认20px
 const colGap = ref(20) // 默认20px
 const fontSize = ref(20) // 默认20px
+const showChinese = ref(true)
+const showEnglish = ref(false)
 const printWords = ref([])
 // 根据当前字体大小和间距动态计算每页能放多少行
 const rowsPerPage = computed(() => {
@@ -274,6 +282,13 @@ async function doPrint() {
     gap: ${rowGapMm.toFixed(2)}mm;
     min-width: 0;
   }
+  .word-row-double {
+    gap: ${(2 * 25.4 / 96).toFixed(2)}mm;
+  }
+  .word-row-double .meaning-text {
+    height: auto;
+    min-height: ${(meaningFontSize * 1.35).toFixed(1)}px;
+  }
   .meaning-text {
     font-size: ${meaningFontSize}px;
     font-weight: 600;
@@ -286,6 +301,10 @@ async function doPrint() {
     overflow: hidden;
     text-overflow: ellipsis;
     word-break: break-word;
+  }
+  .meaning-text-bottom {
+    height: ${(meaningFontSize * 1.35).toFixed(1)}px;
+    -webkit-line-clamp: 1;
   }
   .meaning-line {
     border-bottom: 1px solid #333;
@@ -385,6 +404,12 @@ onMounted(() => {
 
 .print-count {
   width: 150px;
+}
+
+.print-labels {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .print-count-tip {
@@ -504,6 +529,15 @@ onMounted(() => {
   min-width: 0;
 }
 
+.word-row-double {
+  gap: 2px;
+}
+
+.word-row-double .meaning-text {
+  height: auto;
+  min-height: calc(var(--font-size, 16px) * 1.35);
+}
+
 .meaning-text {
   font-size: var(--font-size, 16px);
   font-weight: 600;
@@ -516,6 +550,12 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   word-break: break-word;
+}
+
+.meaning-text-bottom {
+  height: auto;
+  min-height: calc(var(--font-size, 16px) * 1.35);
+  -webkit-line-clamp: 1;
 }
 
 .meaning-line {
