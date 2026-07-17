@@ -143,10 +143,18 @@ const rowsPerPage = computed(() => {
   const fs = Number(fontSize.value) || 16
   const rg = Number(rowGap.value) || 20
   const hg = Number(headerGap.value) || 40
-  // 行高 = 意思区高度(字号×1.4×2) + 单词与横线间距 + 横线高度(字号×1.2+4) + 行间距20px
-  const rowHeight = fs * 1.4 * 2 + rg + (fs * 1.2 + 4) + 20
-  // A4 内容区高度约 700px（96dpi），减去标题区域高度
-  const contentHeight = 700 - hg - 40
+  let textHeight
+  if (showEnglish.value && showChinese.value) {
+    textHeight = fs * 1.35 + 2 + fs * 1.35
+  } else {
+    textHeight = fs * 1.35 + rg + fs * 1.35
+  }
+  const underlineHeight = fs * 1.2 + 4
+  const rowHeight = textHeight + underlineHeight + 20
+  const a4HeightPx = 1123
+  const topMargin = 12 * 25.4 / 96 * 96
+  const bottomMargin = 12 * 25.4 / 96 * 96
+  const contentHeight = a4HeightPx - topMargin - bottomMargin - hg - 30
   return Math.max(8, Math.floor(contentHeight / rowHeight))
 })
 const wordsPerPage = computed(() => rowsPerPage.value * Math.max(1, Number(printCols.value) || 1))
@@ -221,6 +229,11 @@ watch(availableWords, () => {
   }
 })
 
+// 显示选项变化时重新计算分页
+watch([showEnglish, showChinese, fontSize, rowGap, headerGap, printCols], () => {
+  resamplePrintWords()
+})
+
 async function doPrint() {
   await nextTick()
   const target = document.getElementById('printContent')
@@ -228,20 +241,18 @@ async function doPrint() {
     ElMessage.error('打印内容未准备好')
     return
   }
+
   const cols = Math.max(1, Number(printCols.value) || 1)
   const headerGapMm = (Number(headerGap.value) || 32) * 25.4 / 96
   const rowGapMm = (Number(rowGap.value) || 22) * 25.4 / 96
   const colGapMm = (Number(colGap.value) || 22) * 25.4 / 96
-  // 字号直接用用户设置的 px 值
   const meaningFontSize = Number(fontSize.value) || 16
-  // 横线高度 = 字号 × 1.2 + 4，最小 18
   const lineHeight = Math.max(18, Math.round(meaningFontSize * 1.2 + 4))
-  // 意思区最小高度 = 字号 × 1.35 × 2（默认两行）
   const meaningMinHeight = Math.max(meaningFontSize * 1.35 * 2, 16)
 
   const iframe = document.createElement('iframe')
   iframe.style.position = 'fixed'
-  iframe.style.right = '0'
+  iframe.style.right = '-9999px'
   iframe.style.bottom = '0'
   iframe.style.width = '0'
   iframe.style.height = '0'
@@ -252,15 +263,17 @@ async function doPrint() {
   iDoc.open()
   iDoc.write(`<!doctype html><html><head><meta charset="utf-8"><title>单词默写练习</title>
 <style>
-  @page { size: A4 portrait; margin: 12mm 14mm; }
+  @page { size: A4 portrait; margin: 0; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1f2328; }
+  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1f2328; background: #fff; }
+  .print-pages { display: flex; flex-direction: column; gap: 0; }
   .a4-page {
-    width: 100%;
-    min-height: calc(100vh - 1px);
+    width: 210mm;
+    min-height: 297mm;
     page-break-after: always;
     break-after: page;
-    padding: 4mm 0mm;
+    padding: 12mm 14mm;
+    box-sizing: border-box;
   }
   .a4-page:last-child { page-break-after: auto; break-after: auto; }
   .a4-page-header {
@@ -312,7 +325,7 @@ async function doPrint() {
     width: 100%;
   }
 </style>
-</head><body>${target.innerHTML}</body></html>`)
+</head><body><div class="print-pages">${target.innerHTML}</div></body></html>`)
   iDoc.close()
 
   iframe.contentWindow.focus()
@@ -325,7 +338,7 @@ async function doPrint() {
     setTimeout(() => {
       if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe)
     }, 800)
-  }, 300)
+  }, 500)
 }
 
 onMounted(() => {
@@ -493,7 +506,7 @@ onMounted(() => {
   min-height: 1123px;
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
-  padding: 22mm 18mm;
+  padding: 32px 37px;
   box-sizing: border-box;
 }
 
@@ -575,4 +588,5 @@ onMounted(() => {
     width: 100%;
   }
 }
+
 </style>
