@@ -434,6 +434,42 @@ export function useVocabularyStore(options) {
       await this.save();
     },
 
+    async batchUpdateWords(words, updates = {}) {
+      const book = this.getActiveBook();
+      if (!book) return;
+      const now = Date.now();
+      const allowedTags = new Set(book.tags.map(tag => tag.id));
+      for (const word of words) {
+        const key = normalizeWord(word);
+        const entry = book.words.find(item => item.word === key);
+        if (!entry) continue;
+        if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
+        if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
+        if (typeof updates.note === 'string') entry.note = updates.note.trim();
+        if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;
+        if (Array.isArray(updates.tagIds)) {
+          entry.tagIds = normalizeTagIds(updates.tagIds).filter(id => allowedTags.has(id));
+        }
+        if (Array.isArray(updates.memoryParts) || typeof updates.memoryParts === 'string') {
+          entry.memoryParts = normalizeMemoryParts(updates.memoryParts);
+        }
+        entry.updatedAt = now;
+      }
+      book.updatedAt = now;
+      this.syncActiveBook();
+      await this.save();
+    },
+
+    async batchRemoveWords(words) {
+      const book = this.getActiveBook();
+      if (!book) return;
+      const keys = new Set(words.map(word => normalizeWord(word)));
+      book.words = book.words.filter(item => !keys.has(item.word));
+      book.updatedAt = Date.now();
+      this.syncActiveBook();
+      await this.save();
+    },
+
     async importWords(entries, target = 'active') {
       const list = Array.isArray(entries) ? entries : [];
       const book = this.getTargetBook(target);

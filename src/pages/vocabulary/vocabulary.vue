@@ -38,7 +38,8 @@
         <el-option label="搜单词" value="word" />
         <el-option label="搜意思" value="meaning" />
       </el-select>
-      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索单词' : '搜索中文意思'" class="vocab-search" />
+      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索单词' : '搜索中文意思'"
+        class="vocab-search" />
       <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper" multiple collapse-tags
         collapse-tags-tooltip clearable placeholder="按水平筛选">
         <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
@@ -84,7 +85,8 @@
           暂无生词。
         </div>
 
-        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row" :style="{ gridTemplateColumns, minWidth: listMinWidth }">
+        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row"
+          :style="{ gridTemplateColumns, minWidth: listMinWidth }">
           <span class="vocab-check">
             <el-checkbox v-model="selectedWords" :value="entry.word" />
           </span>
@@ -657,14 +659,10 @@ async function saveBatchSettings() {
   }
   batchDialog.loading = true
   try {
-    for (const word of selectedWords.value) {
-      if (batchDialog.level) {
-        await vocabularyStore.updateWord(word, { level: batchDialog.level })
-      }
-      if (batchDialog.tagIds && batchDialog.tagIds.length > 0) {
-        await vocabularyStore.updateWordTags(word, [...batchDialog.tagIds])
-      }
-    }
+    const updates = {}
+    if (batchDialog.level) updates.level = batchDialog.level
+    if (batchDialog.tagIds && batchDialog.tagIds.length > 0) updates.tagIds = [...batchDialog.tagIds]
+    await vocabularyStore.batchUpdateWords(selectedWords.value, updates)
     ElMessage.success(`成功更新 ${selectedWords.value.length} 个单词`)
     batchDialog.visible = false
     selectedWords.value = []
@@ -687,9 +685,7 @@ async function deleteSelectedWords() {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    for (const word of selectedWords.value) {
-      vocabularyStore.removeWord(word)
-    }
+    await vocabularyStore.batchRemoveWords(selectedWords.value)
     ElMessage.success(`已删除 ${count} 个单词`)
     batchDialog.visible = false
     selectedWords.value = []
@@ -1751,7 +1747,7 @@ async function handleImport(event) {
     overflow-x: auto;
   }
 
-  
+
 }
 
 :global(.vocab-format-dialog) {
