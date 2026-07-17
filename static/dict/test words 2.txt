@@ -1,23 +1,30 @@
-[第1页]
-
+[第1页,unit1,简单]
 Welcome : 欢迎
 hi : 嘿，喂，你好
 I : 我
 be (am, is, are) : 是
+
+
+[第1页,unit2]
 what : 什么
 your : 你的；你们的
 name : 名字
 hello : 喂，哈啰，你好
 
 
-[第2页]
-
+[第2页,unit1]
 pen : 钢笔
 pencil : 铅笔
 pencil case : 笔袋；铅笔盒
+
+
+[第2页,困难]
 bag : 袋；包
 for : 为了
 ruler : 尺子，直尺
+[第2页,unit3]
 eraser : 橡皮
+
+[第3页]
 this : 这，这个
 in : 在……里

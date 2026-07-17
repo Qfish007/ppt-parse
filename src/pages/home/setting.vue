@@ -30,6 +30,14 @@
           </el-form-item>
         </el-form>
       </el-card>
+
+      <el-card shadow="hover" class="setting-card cache-card">
+        <div class="cache-section">
+          <h3 class="cache-title">数据管理</h3>
+          <div class="cache-desc">清除本地所有数据缓存，包括生词本、设置、翻译缓存等。此操作不可撤销。</div>
+          <el-button type="danger" @click="clearCache">清除缓存</el-button>
+        </div>
+      </el-card>
     </div>
   </div>
 </template>
@@ -38,7 +46,9 @@
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '../../stores/settings.js'
+import { db, DB_NAME } from '../../db/database.js'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
@@ -67,6 +77,32 @@ watch(speechRate, (newVal) => {
 watch(voiceProvider, (newVal) => {
   settingsStore.saveProvider(newVal)
 })
+
+async function clearCache() {
+  try {
+    await ElMessageBox.confirm(
+      '确定要清除所有本地数据缓存吗？此操作将删除生词本、设置、翻译缓存等所有数据，且不可撤销！',
+      '清除缓存',
+      {
+        confirmButtonText: '确认清除',
+        cancelButtonText: '取消',
+        type: 'warning',
+        dangerouslyUseHTMLString: false
+      }
+    )
+
+    await db.delete()
+    localStorage.clear()
+
+    ElMessage.success('缓存已清除，页面将自动刷新')
+
+    setTimeout(() => {
+      window.location.reload()
+    }, 1000)
+  } catch {
+    // 用户取消
+  }
+}
 </script>
 
 <style scoped>
@@ -136,5 +172,28 @@ watch(voiceProvider, (newVal) => {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.cache-card {
+  margin-top: 16px;
+}
+
+.cache-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cache-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.cache-desc {
+  font-size: 13px;
+  color: #909399;
+  line-height: 1.5;
 }
 </style>

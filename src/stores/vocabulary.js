@@ -434,7 +434,43 @@ export function useVocabularyStore(options) {
       await this.save();
     },
 
-    async importWords(entries, target = 'active') {
+    async batchUpdateWords(words, updates = {}) {
+      const book = this.getActiveBook();
+      if (!book) return;
+      const now = Date.now();
+      const allowedTags = new Set(book.tags.map(tag => tag.id));
+      for (const word of words) {
+        const key = normalizeWord(word);
+        const entry = book.words.find(item => item.word === key);
+        if (!entry) continue;
+        if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
+        if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
+        if (typeof updates.note === 'string') entry.note = updates.note.trim();
+        if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;
+        if (Array.isArray(updates.tagIds)) {
+          entry.tagIds = normalizeTagIds(updates.tagIds).filter(id => allowedTags.has(id));
+        }
+        if (Array.isArray(updates.memoryParts) || typeof updates.memoryParts === 'string') {
+          entry.memoryParts = normalizeMemoryParts(updates.memoryParts);
+        }
+        entry.updatedAt = now;
+      }
+      book.updatedAt = now;
+      this.syncActiveBook();
+      await this.save();
+    },
+
+    async batchRemoveWords(words) {
+      const book = this.getActiveBook();
+      if (!book) return;
+      const keys = new Set(words.map(word => normalizeWord(word)));
+      book.words = book.words.filter(item => !keys.has(item.word));
+      book.updatedAt = Date.now();
+      this.syncActiveBook();
+      await this.save();
+    },
+
+    async importWords(entries, target = 'active', tagIdMap = new Map()) {
       const list = Array.isArray(entries) ? entries : [];
       const book = this.getTargetBook(target);
       if (!book) return 0;
@@ -445,6 +481,10 @@ export function useVocabularyStore(options) {
         const normalized = normalizeEntry(entry);
         if (!normalized) continue;
         if (seen.has(normalized.word)) continue;
+
+        if (tagIdMap.size > 0) {
+          normalized.tagIds = normalized.tagIds.map(id => tagIdMap.get(id) || id);
+        }
 
         seen.add(normalized.word);
         book.words.push(normalized);
@@ -461,22 +501,26 @@ export function useVocabularyStore(options) {
 
     async importTags(tags) {
       const book = this.getActiveBook();
-      if (!book) return 0;
+      if (!book) return { count: 0, tagIdMap: new Map() };
       const list = Array.isArray(tags) ? tags : [];
       let count = 0;
+      const tagIdMap = new Map();
       list.forEach(tag => {
         const normalized = normalizeTag(tag);
         if (!normalized) return;
         const existing = book.tags.find(item => item.id === normalized.id || item.name === normalized.name);
-        if (!existing) {
+        if (existing) {
+          tagIdMap.set(normalized.id, existing.id);
+        } else {
           book.tags.push(normalized);
+          tagIdMap.set(normalized.id, normalized.id);
           count += 1;
         }
       });
       book.updatedAt = Date.now();
       this.syncActiveBook();
       await this.save();
-      return count;
+      return { count, tagIdMap };
     }
   });
 

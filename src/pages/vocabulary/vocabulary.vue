@@ -11,17 +11,56 @@
         <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
       </div>
       <div class="vocab-actions">
-        <el-button type="primary" plain @click="openManualDialog">
-          <el-icon>
-            <Plus />
-          </el-icon>
-          手动录入
-        </el-button>
-        <el-button @click="openBatchDialog" :disabled="selectedWords.length === 0">批量设置</el-button>
-        <el-button @click="goTest">测试</el-button>
-        <el-button @click="goPrint">打印</el-button>
-        <el-button @click="openFormatDialog('import')">导入</el-button>
-        <el-button type="primary" @click="openFormatDialog('export')">导出</el-button>
+        <el-dropdown>
+          <el-button title="菜单">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="openManualDialog">
+                <el-icon>
+                  <Edit />
+                </el-icon>
+                录入
+              </el-dropdown-item>
+              <el-dropdown-item @click="openBatchDialog" :disabled="selectedWords.length === 0">
+                <el-icon>
+                  <List />
+                </el-icon>
+                批量
+              </el-dropdown-item>
+              <el-dropdown-item @click="goTest">
+                <el-icon>
+                  <List />
+                </el-icon>
+                测试
+              </el-dropdown-item>
+              <el-dropdown-item @click="goPrint">
+                <el-icon>
+                  <Printer />
+                </el-icon>
+                打印
+              </el-dropdown-item>
+              <el-dropdown-item @click="openFormatDialog('import')">
+                <el-icon>
+                  <Upload />
+                </el-icon>
+                导入
+              </el-dropdown-item>
+              <el-dropdown-item @click="openFormatDialog('export')">
+                <el-icon>
+                  <Download />
+                </el-icon>
+                导出
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-button @click="goSettings" title="设置">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" stroke-linejoin="round">
@@ -38,7 +77,8 @@
         <el-option label="搜单词" value="word" />
         <el-option label="搜意思" value="meaning" />
       </el-select>
-      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索单词' : '搜索中文意思'" class="vocab-search" />
+      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索单词' : '搜索中文意思'"
+        class="vocab-search" />
       <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper" multiple collapse-tags
         collapse-tags-tooltip clearable placeholder="按水平筛选">
         <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
@@ -59,7 +99,7 @@
         <span>单词</span>
         <span v-if="vocabularyStore.visibleColumns.pronunciation">发音</span>
         <span v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory-head">辅助记忆</span>
-        <span>中文意思</span>
+        <span>中文</span>
         <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
         <span v-if="vocabularyStore.visibleColumns.level" class="vocab-level-head">掌握水平</span>
         <span v-if="vocabularyStore.visibleColumns.note" class="vocab-note-head">备注</span>
@@ -84,7 +124,8 @@
           暂无生词。
         </div>
 
-        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row" :style="{ gridTemplateColumns, minWidth: listMinWidth }">
+        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row"
+          :style="{ gridTemplateColumns, minWidth: listMinWidth }">
           <span class="vocab-check">
             <el-checkbox v-model="selectedWords" :value="entry.word" />
           </span>
@@ -207,7 +248,7 @@
         </el-form-item>
         <el-form-item label="内容">
           <el-input type="textarea" ref="manualInputRef" v-model="manualDialog.word"
-            :placeholder="manualDialog.format === 'comma' ? '输入英文单词，用逗号分隔，支持多行' : '[标签名]\\nword:意思\\nword2:意思2'"
+            :placeholder="manualDialog.format === 'comma' ? '输入英文单词，用逗号分隔，支持多行' : '[标签1,标签2]\\nword:意思\\nword2:意思2'"
             :rows="5" clearable :disabled="manualDialog.loading" />
         </el-form-item>
         <el-form-item v-if="manualDialog.format === 'comma'" label="标签">
@@ -315,7 +356,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Plus } from '@element-plus/icons-vue'
+import { ArrowLeft, Plus, ArrowDown, Edit, Upload, Download, Printer, List } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
@@ -657,14 +698,10 @@ async function saveBatchSettings() {
   }
   batchDialog.loading = true
   try {
-    for (const word of selectedWords.value) {
-      if (batchDialog.level) {
-        await vocabularyStore.updateWord(word, { level: batchDialog.level })
-      }
-      if (batchDialog.tagIds && batchDialog.tagIds.length > 0) {
-        await vocabularyStore.updateWordTags(word, [...batchDialog.tagIds])
-      }
-    }
+    const updates = {}
+    if (batchDialog.level) updates.level = batchDialog.level
+    if (batchDialog.tagIds && batchDialog.tagIds.length > 0) updates.tagIds = [...batchDialog.tagIds]
+    await vocabularyStore.batchUpdateWords(selectedWords.value, updates)
     ElMessage.success(`成功更新 ${selectedWords.value.length} 个单词`)
     batchDialog.visible = false
     selectedWords.value = []
@@ -687,9 +724,7 @@ async function deleteSelectedWords() {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    for (const word of selectedWords.value) {
-      vocabularyStore.removeWord(word)
-    }
+    await vocabularyStore.batchRemoveWords(selectedWords.value)
     ElMessage.success(`已删除 ${count} 个单词`)
     batchDialog.visible = false
     selectedWords.value = []
@@ -730,7 +765,7 @@ async function submitManualWord() {
   } else {
     wordEntries = await parseTagTextFormat(input)
     if (!wordEntries.length) {
-      ElMessage.warning('未解析到有效的单词，请使用 [标签名]\\nword:意思 格式')
+      ElMessage.warning('未解析到有效的单词，请使用 [标签1,标签2]\\nword:意思 格式')
       return
     }
   }
@@ -783,7 +818,7 @@ async function parseTagTextFormat(text) {
   const lines = text.split(/\r?\n/)
   const entries = []
   const tagNameMap = new Map()
-  let currentTagId = null
+  let currentTagIds = []
 
   for (const line of lines) {
     const trimmed = line.trim()
@@ -791,15 +826,19 @@ async function parseTagTextFormat(text) {
 
     const tagMatch = trimmed.match(/^\[(.+)\]$/)
     if (tagMatch) {
-      const tagName = tagMatch[1].trim()
-      if (tagName) {
+      const tagNames = tagMatch[1].split(',').map(n => n.trim()).filter(Boolean)
+      currentTagIds = []
+      for (const tagName of tagNames) {
         if (!tagNameMap.has(tagName)) {
           const tag = await vocabularyStore.addTag(tagName)
           if (tag) {
             tagNameMap.set(tagName, tag.id)
           }
         }
-        currentTagId = tagNameMap.get(tagName)
+        const tagId = tagNameMap.get(tagName)
+        if (tagId) {
+          currentTagIds.push(tagId)
+        }
       }
       continue
     }
@@ -813,7 +852,7 @@ async function parseTagTextFormat(text) {
           word,
           meaning,
           phonetic: '',
-          tagIds: currentTagId ? [currentTagId] : []
+          tagIds: [...currentTagIds]
         })
       }
     }
@@ -1043,10 +1082,12 @@ async function handleImport(event) {
     const rawText = await readTextFile(file)
     const { words, tags } = fmt.deserialize(rawText)
     if (!Array.isArray(words) || !words.length) throw new Error('未解析到任何单词')
+    let tagIdMap = new Map()
     if (Array.isArray(tags) && tags.length) {
-      vocabularyStore.importTags(tags)
+      const result = await vocabularyStore.importTags(tags)
+      tagIdMap = result.tagIdMap || new Map()
     }
-    const count = await vocabularyStore.importWords(words)
+    const count = await vocabularyStore.importWords(words, 'active', tagIdMap)
     ElMessage.success(`已通过「${fmt.name}」导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
     ElMessage.error(`「${fmt.name}」导入失败：${error.message || '请检查文件后重试'}`)
@@ -1150,7 +1191,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1500px;
+  --section-max: 1200px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;
@@ -1212,13 +1253,13 @@ async function handleImport(event) {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 7px;
   max-width: calc(100vw - 24px);
-  padding: 10px;
+  padding: 7px;
   border: 1px solid rgba(207, 217, 214, 0.85);
-  border-radius: 22px;
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 18px 48px rgba(22, 32, 31, 0.18);
+  box-shadow: 0 12px 32px rgba(22, 32, 31, 0.18);
   backdrop-filter: blur(16px);
   color: #40504c;
   cursor: grab;
@@ -1239,34 +1280,34 @@ async function handleImport(event) {
   --stat-border: #d7dfdc;
   display: grid;
   grid-template-rows: auto auto;
-  gap: 7px;
-  min-width: 72px;
-  padding: 10px 10px 9px;
+  gap: 5px;
+  min-width: 48px;
+  padding: 7px 7px 6px;
   border: 1px solid var(--stat-border);
-  border-radius: 16px;
+  border-radius: 11px;
   background: linear-gradient(180deg, #ffffff 0%, var(--stat-bg) 100%);
-  box-shadow: 0 8px 20px rgba(22, 32, 31, 0.08);
+  box-shadow: 0 5px 13px rgba(22, 32, 31, 0.08);
   color: var(--stat-color) !important;
   line-height: 1.1;
   white-space: nowrap;
 }
 
 .vocab-stat-label {
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 800;
 }
 
 .vocab-stat-value {
   display: grid;
   place-items: center;
-  min-width: 48px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-width: 32px;
+  min-height: 22px;
+  padding: 0 8px;
   border-radius: 999px;
   background: var(--stat-color);
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
   color: #fff;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -1406,7 +1447,7 @@ async function handleImport(event) {
 }
 
 .vocab-memory-head {
-  text-align: center;
+  text-align: left;
 }
 
 .vocab-memory {
@@ -1731,27 +1772,27 @@ async function handleImport(event) {
 
   .vocab-stats-bar {
     right: 12px;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 18px;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 12px;
   }
 
   .vocab-stat {
-    min-width: 60px;
-    padding: 8px;
+    min-width: 40px;
+    padding: 5px;
   }
 
   .vocab-stat-value {
-    min-width: 40px;
-    min-height: 28px;
-    font-size: 20px;
+    min-width: 28px;
+    min-height: 18px;
+    font-size: 14px;
   }
 
   .vocab-list {
     overflow-x: auto;
   }
 
-  
+
 }
 
 :global(.vocab-format-dialog) {
