@@ -317,7 +317,7 @@ onMounted(() => {
 
 <style scoped>
 .vocab-print-page {
-  --print-max: 1500px;
+  --print-max: 1200px;
   min-height: 100vh;
   box-sizing: border-box;
   padding: 28px;
