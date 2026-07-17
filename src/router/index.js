@@ -5,9 +5,10 @@ const HomeSettingView = () => import('../pages/home/setting.vue')
 const BooksView = () => import('../pages/books/books.vue')
 const BooksSettingView = () => import('../pages/books/setting.vue')
 const VocabularyView = () => import('../pages/vocabulary/vocabulary.vue')
-const VocabularySettingsView = () => import('../pages/vocabulary/settings.vue')
+const VocabularySettingsView = () => import('../pages/vocabulary/setting.vue')
 const VocabularyDetailView = () => import('../pages/vocabulary/detail.vue')
 const VocabularyTestView = () => import('../pages/vocabulary/test.vue')
+const VocabularyPrintView = () => import('../pages/vocabulary/print.vue')
 
 const routes = [
   // 根路径 → 新主页面 home
@@ -68,6 +69,11 @@ const routes = [
     path: '/vocabulary/test',
     name: 'VocabularyTest',
     component: VocabularyTestView
+  },
+  {
+    path: '/vocabulary/print',
+    name: 'VocabularyPrint',
+    component: VocabularyPrintView
   },
   {
     path: '/vocabulary/:word',

@@ -1,13 +1,24 @@
 {
-  "title": "English Translate Demo",
+  "title": "二三年级",
   "pages": [
     {
       "page": 1,
       "image": "",
       "lines": [
         {
-          "en": "Artificial intelligence is transforming education. It helps students learn more efficiently.",
-          "zh": "人工智能正在改变教育领域，帮助学生更高效地学习。",
+          "en": "Welcome,hi,I,be (am,is,are),what,your,name,hello,my,goodbye,have,a (an),nice,day,good,morning,Ms,stand,stand up,sit,sit down,open,book,close,point,say,read,listen,write",
+          "zh": "欢迎，你好，我，是（am、is、are），你的名字是什么？你好，我的，再见，祝你（an）有个美好的一天，早上好，女士，请站起来，坐下，打开书，关闭书，指出，说，阅读，倾听，写作。",
+          "breakAfter": true
+        }
+      ]
+    },
+    {
+      "page": 2,
+      "image": "",
+      "lines": [
+        {
+          "en": "let's=let us,friend,to,meet,you,play,happy,new,do,they,welcome,everyone,nine,she,too,we,from,the,twin,he,come,and,oh,no,help,here,here you are,thank,together,OK,great,song,dear,sing,now,know,our,everybody,with,me",
+          "zh": "让我们，朋友，来见你，一起愉快地玩耍吧！欢迎所有人！她也来了，我们来自双胞胎家庭。哦不，别担心——这里就有你们了！谢谢大家！好啦，这首歌太棒了！亲爱的，请现在和我一起唱吧！让我们认识彼此，与所有人成为朋友吧。",
           "breakAfter": true
         }
       ]

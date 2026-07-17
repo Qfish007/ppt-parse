@@ -27,26 +27,30 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useProjectsStore } from '../../stores/projects.js'
-import { STORAGE_KEYS } from '../../stores/settings.js'
+import { useSettingsStore } from '../../stores/settings.js'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
+const settingsStore = useSettingsStore()
 
-const bodyFontSize = ref(
-  normalizeBodyFontSize(localStorage.getItem(STORAGE_KEYS.bodyFontSize))
-)
+const bodyFontSize = ref(18)
+
+function normalizeBodyFontSize(size) {
+  return Math.min(Math.max(Number(size) || 18, 14), 60)
+}
 
 const formatFontTooltip = (val) => {
   return `${val}px`
 }
 
-function normalizeBodyFontSize(size) {
-  return Math.min(Math.max(Number(size) || 18, 14), 60)
-}
+onMounted(async () => {
+  await settingsStore.load()
+  bodyFontSize.value = settingsStore.bodyFontSize
+})
 
 const goBack = () => {
   const active = projectsStore.getActiveProject()
@@ -63,7 +67,7 @@ watch(bodyFontSize, (newVal) => {
     bodyFontSize.value = normalized
     return
   }
-  localStorage.setItem(STORAGE_KEYS.bodyFontSize, String(normalized))
+  settingsStore.saveBodyFontSize(normalized)
 })
 </script>
 

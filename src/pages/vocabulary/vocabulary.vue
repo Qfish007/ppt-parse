@@ -17,15 +17,29 @@
           </el-icon>
           手动录入
         </el-button>
+        <el-button @click="openBatchDialog" :disabled="selectedWords.length === 0">批量设置</el-button>
         <el-button @click="goTest">测试</el-button>
+        <el-button @click="goPrint">打印</el-button>
         <el-button @click="openFormatDialog('import')">导入</el-button>
         <el-button type="primary" @click="openFormatDialog('export')">导出</el-button>
-        <el-button @click="goSettings">设置</el-button>
+        <el-button @click="goSettings" title="设置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </el-button>
       </div>
     </header>
 
     <section class="vocab-toolbar">
-      <el-input v-model="searchText" clearable placeholder="搜索单词或中文意思" class="vocab-search" />
+      <el-select v-model="searchMode" class="vocab-search-mode" placeholder="搜单词">
+        <el-option label="搜单词" value="word" />
+        <el-option label="搜意思" value="meaning" />
+      </el-select>
+      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索单词' : '搜索中文意思'"
+        class="vocab-search" />
       <el-select v-model="levelFilter" class="vocab-filter" popper-class="vocab-level-popper" multiple collapse-tags
         collapse-tags-tooltip clearable placeholder="按水平筛选">
         <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
@@ -39,13 +53,17 @@
     </section>
 
     <section class="vocab-list">
-      <div class="vocab-list-head">
+      <div class="vocab-list-head" :style="{ gridTemplateColumns, minWidth: listMinWidth }">
+        <span class="vocab-check-head">
+          <el-checkbox :indeterminate="isIndeterminate" v-model="selectAll" @change="handleSelectAll" />
+        </span>
         <span>单词</span>
-        <span>发音</span>
-        <span class="vocab-memory-head">辅助记忆</span>
+        <span v-if="vocabularyStore.visibleColumns.pronunciation">发音</span>
+        <span v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory-head">辅助记忆</span>
         <span>中文意思</span>
-        <span class="vocab-tags-head">标签</span>
-        <span class="vocab-level-head">掌握水平</span>
+        <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
+        <span v-if="vocabularyStore.visibleColumns.level" class="vocab-level-head">掌握水平</span>
+        <span v-if="vocabularyStore.visibleColumns.note" class="vocab-note-head">备注</span>
         <span class="vocab-action-head">操作</span>
       </div>
 
@@ -67,9 +85,13 @@
           暂无生词。
         </div>
 
-        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row">
+        <div v-for="entry in pagedWords" :key="entry.word" class="vocab-row"
+          :style="{ gridTemplateColumns, minWidth: listMinWidth }">
+          <span class="vocab-check">
+            <el-checkbox v-model="selectedWords" :value="entry.word" />
+          </span>
           <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
-          <div class="vocab-pronunciation">
+          <div v-if="vocabularyStore.visibleColumns.pronunciation" class="vocab-pronunciation">
             <button class="vocab-sound" @click="playWord(entry)">
               <svg viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"></path>
@@ -77,26 +99,34 @@
             </button>
             <span>{{ entry.phonetic || '-' }}</span>
           </div>
-          <div class="vocab-memory">
-            <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
-              <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
-              <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
+          <div v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory">
+            <template v-if="memoryPartsForEntry(entry).length">
+              <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
+                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+                <span v-if="index < memoryPartsForEntry(entry).length - 1" class="memory-dot">·</span>
+              </template>
             </template>
+            <span v-else class="memory-empty">-</span>
           </div>
-          <div class="vocab-meaning">{{ entry.meaning || '暂无释义' }}</div>
-          <div class="vocab-tags">
+          <div class="vocab-meaning">
+            {{ entry.meaning || '暂无释义' }}
+          </div>
+          <div v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags">
             <el-tag v-for="tag in tagsForEntry(entry)" :key="tag.id" size="small" effect="plain">
               {{ tag.name }}
             </el-tag>
             <span v-if="!tagsForEntry(entry).length" class="vocab-tag-empty">-</span>
           </div>
-          <div class="vocab-level">
+          <div v-if="vocabularyStore.visibleColumns.level" class="vocab-level">
             <span class="vocab-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
             <el-select :class="['vocab-level-select', levelClass(entry.level)]" :model-value="entry.level" size="small"
               popper-class="vocab-level-popper" @change="value => updateLevel(entry.word, value)">
               <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
+          </div>
+          <div v-if="vocabularyStore.visibleColumns.note" class="vocab-note">
+            {{ entry.note || '-' }}
           </div>
           <div class="vocab-action">
             <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
@@ -126,7 +156,7 @@
           <div class="tag-dialog-body">
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">单词名称</div>
-              <div class="tag-dialog-word">{{ tagDialog.word }}</div>
+              <el-input v-model="tagDialog.word" class="tag-dialog-control" placeholder="输入单词或短语" />
             </div>
             <div class="tag-dialog-field">
               <div class="tag-dialog-label">掌握水平</div>
@@ -152,6 +182,11 @@
                 </div>
               </div>
             </div>
+            <div class="tag-dialog-field">
+              <div class="tag-dialog-label">备注</div>
+              <el-input v-model="tagDialog.note" type="textarea" :rows="3" class="tag-dialog-control"
+                placeholder="添加备注信息" />
+            </div>
           </div>
           <div class="tag-dialog-footer">
             <el-button type="danger" plain @click="removeWordFromDialog">移除单词</el-button>
@@ -163,12 +198,25 @@
       </div>
     </Teleport>
 
-    <el-dialog v-model="manualDialog.visible" title="手动录入" width="420px" class="manual-word-dialog"
+    <el-dialog v-model="manualDialog.visible" title="手动录入" width="460px" class="manual-word-dialog"
       :close-on-click-modal="!manualDialog.loading" :close-on-press-escape="!manualDialog.loading">
-      <el-form @submit.prevent="submitManualWord">
-        <el-form-item label="单词">
-          <el-input ref="manualInputRef" v-model="manualDialog.word" placeholder="输入一个英文单词" clearable
-            :disabled="manualDialog.loading" @keyup.enter="submitManualWord" />
+      <el-form @submit.prevent="submitManualWord" :label-width="'80px'">
+        <el-form-item label="录入格式">
+          <el-select v-model="manualDialog.format" size="small">
+            <el-option label="逗号分割" value="comma" />
+            <el-option label="格式1(标签+文本)" value="tag" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="内容">
+          <el-input type="textarea" ref="manualInputRef" v-model="manualDialog.word"
+            :placeholder="manualDialog.format === 'comma' ? '输入英文单词，用逗号分隔，支持多行' : '[标签名]\\nword:意思\\nword2:意思2'"
+            :rows="5" clearable :disabled="manualDialog.loading" />
+        </el-form-item>
+        <el-form-item v-if="manualDialog.format === 'comma'" label="标签">
+          <el-select v-model="manualDialog.tagIds" multiple size="small" placeholder="选择标签">
+            <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+          </el-select>
+          <div v-if="!vocabularyStore.tags.length" class="tag-dialog-empty">暂无标签</div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -203,6 +251,41 @@
       </template>
     </el-dialog>
 
+    <el-dialog v-model="batchDialog.visible" title="批量设置" width="460px" class="vocab-batch-dialog"
+      :close-on-click-modal="true">
+      <div class="batch-dialog-body">
+        <div class="batch-dialog-hint">已选择 {{ selectedWords.length }} 个单词</div>
+        <div class="batch-dialog-field">
+          <div class="batch-dialog-label">掌握水平</div>
+          <el-select v-model="batchDialog.level" :class="['batch-dialog-control', levelClass(batchDialog.level)]"
+            popper-class="vocab-level-popper" placeholder="不修改">
+            <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
+              :label="level.label" :value="level.value" />
+          </el-select>
+        </div>
+        <div class="batch-dialog-field">
+          <div class="batch-dialog-label">单词标签</div>
+          <div class="batch-dialog-control-wrap">
+            <el-select v-model="batchDialog.tagIds" multiple clearable placeholder="选择标签（多选）"
+              class="batch-dialog-control">
+              <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+            </el-select>
+            <div v-if="!vocabularyStore.tags.length" class="batch-dialog-empty">
+              还没有标签，请先到设置里添加。
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <el-button type="danger" @click="deleteSelectedWords">删除所选</el-button>
+        <span class="batch-dialog-spacer"></span>
+        <el-button @click="batchDialog.visible = false">取消</el-button>
+        <el-button type="primary" :loading="batchDialog.loading" @click="saveBatchSettings">
+          保存
+        </el-button>
+      </template>
+    </el-dialog>
+
     <div v-if="vocabularyStore.statsVisible" ref="statsBarRef" class="vocab-stats-bar"
       :class="{ 'is-dragging': statsDrag.dragging }" :style="statsBarStyle" aria-label="生词统计"
       @pointerdown="startStatsDrag">
@@ -231,14 +314,15 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useProjectsStore } from '../../stores/projects.js'
-import { useVocabularyStore, VOCABULARY_LEVELS } from '../../stores/vocabulary.js'
+import { useVocabularyStore } from '../../stores/vocabulary.js'
+import { VOCABULARY_LEVELS } from '../../types/index.js'
 import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
 import { clampPage, slicePage, totalPagesOf } from '../../utils/pagination.js'
 
@@ -268,17 +352,36 @@ async function runWithListLoading(fn) {
 
 // —— 筛选 / 排序状态：必须在 watcher 与 filteredWords 之前声明，避免 TDZ ——
 const searchText = ref('')
+const searchMode = ref('word')
 const levelFilter = ref([])
 const tagFilter = ref([])
 const sortMode = ref('alphabet')
+
+// —— 批量选择状态 ——
+const selectedWords = ref([])
+const selectAll = ref(false)
+const isIndeterminate = ref(false)
+
+// —— 批量设置弹窗 ——
+const batchDialog = reactive({
+  visible: false,
+  loading: false,
+  level: '',
+  tagIds: []
+})
 
 // —— 筛选 + 排序结果（后续所有 computed/watch 依赖它，必须最早就绪） ——
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
   let words = vocabularyStore.words.filter(entry => {
-    const matchKeyword = !keyword
-      || entry.word.includes(keyword)
-      || String(entry.meaning || '').toLowerCase().includes(keyword)
+    let matchKeyword = !keyword
+    if (keyword) {
+      if (searchMode.value === 'word') {
+        matchKeyword = entry.word.toLowerCase().includes(keyword)
+      } else {
+        matchKeyword = String(entry.meaning || '').toLowerCase().includes(keyword)
+      }
+    }
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
@@ -293,26 +396,62 @@ const filteredWords = computed(() => {
   return words
 })
 
+const gridTemplateColumns = computed(() => {
+  const cols = ['48px', '150px']
+  if (vocabularyStore.visibleColumns.pronunciation) cols.push('150px')
+  if (vocabularyStore.visibleColumns.memory) cols.push('130px')
+  cols.push('1fr')
+  if (vocabularyStore.visibleColumns.tags) cols.push('100px')
+  if (vocabularyStore.visibleColumns.level) cols.push('80px')
+  if (vocabularyStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
+  cols.push('60px')
+  return cols.join(' ')
+})
+
+const listMinWidth = computed(() => {
+  let width = 48 + 150 + 220 + 60
+  if (vocabularyStore.visibleColumns.pronunciation) width += 150
+  if (vocabularyStore.visibleColumns.memory) width += 130
+  if (vocabularyStore.visibleColumns.tags) width += 100
+  if (vocabularyStore.visibleColumns.level) width += 80
+  if (vocabularyStore.visibleColumns.note) width += 60
+  width += 12 * (8 - (!vocabularyStore.visibleColumns.pronunciation) - (!vocabularyStore.visibleColumns.memory) - (!vocabularyStore.visibleColumns.tags) - (!vocabularyStore.visibleColumns.level) - (!vocabularyStore.visibleColumns.note))
+  return `${width}px`
+})
+
 // ========================== 分页（根治列表 DOM 卡顿） ==========================
 const pageSizes = [10, 20, 50, 100, 200]
-const pageSize = ref(10)
-const page = ref(1)
+const pageSize = ref(Number(router.currentRoute.value.query.pageSize) || 10)
+const page = ref(Number(router.currentRoute.value.query.page) || 1)
 
 const pagedWords = computed(() =>
   slicePage(filteredWords.value, page.value, pageSize.value)
 )
 
+function updateRouteQuery() {
+  router.replace({
+    query: {
+      ...router.currentRoute.value.query,
+      page: page.value,
+      pageSize: pageSize.value
+    }
+  })
+}
+
 function onPageChange(p) {
   page.value = clampPage(filteredWords.value.length, p, pageSize.value)
+  updateRouteQuery()
 }
 function onPageSizeChange(size) {
   pageSize.value = Math.max(1, Number(size) || 50)
   page.value = clampPage(filteredWords.value.length, page.value, pageSize.value)
+  updateRouteQuery()
 }
 
 // —— 筛选/排序变化 → 回到第一页 ——
 watch([searchText, levelFilter, tagFilter, sortMode], () => {
   page.value = 1
+  updateRouteQuery()
 })
 
 // —— 列表总数变化 → 若当前页已越界则回落到最后一页 ——
@@ -352,14 +491,18 @@ const statsDrag = ref({
 const manualDialog = ref({
   visible: false,
   word: '',
-  loading: false
+  format: 'comma',
+  loading: false,
+  tagIds: []
 })
 const tagDialog = ref({
   visible: false,
   word: '',
+  originalWord: '',
   level: 'unknown',
   memoryText: '',
-  tagIds: []
+  tagIds: [],
+  note: ''
 })
 const formatDialog = ref({
   visible: false,
@@ -419,6 +562,10 @@ function goSettings() {
 
 function goTest() {
   router.push('/vocabulary/test')
+}
+
+function goPrint() {
+  router.push('/vocabulary/print')
 }
 
 function clampStatsPosition(left, top) {
@@ -488,14 +635,72 @@ function normalizeManualWord(value) {
 }
 
 function isSingleEnglishWord(value) {
-  return /^[a-z]+(?:[-'][a-z]+)?$/i.test(value)
+  if (!value) return false
+  const word = value.trim().toLowerCase()
+  return /^[a-z]+(?:[-'][a-z]+)?(?:\s+[a-z]+(?:[-'][a-z]+)?)*(?:\s*\([^)]+\))?$/i.test(word)
+}
+
+function handleSelectAll(val) {
+  if (val) {
+    selectedWords.value = pagedWords.value.map(item => item.word)
+  } else {
+    selectedWords.value = []
+  }
+}
+
+function openBatchDialog() {
+  batchDialog.visible = true
+}
+
+async function saveBatchSettings() {
+  if (!selectedWords.value.length) {
+    ElMessage.warning('请先选择要设置的单词')
+    return
+  }
+  batchDialog.loading = true
+  try {
+    const updates = {}
+    if (batchDialog.level) updates.level = batchDialog.level
+    if (batchDialog.tagIds && batchDialog.tagIds.length > 0) updates.tagIds = [...batchDialog.tagIds]
+    await vocabularyStore.batchUpdateWords(selectedWords.value, updates)
+    ElMessage.success(`成功更新 ${selectedWords.value.length} 个单词`)
+    batchDialog.visible = false
+    selectedWords.value = []
+  } finally {
+    batchDialog.loading = false
+    batchDialog.level = ''
+    batchDialog.tagIds = []
+  }
+}
+
+async function deleteSelectedWords() {
+  const count = selectedWords.value.length
+  if (!count) {
+    ElMessage.warning('请先选择要删除的单词')
+    return
+  }
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${count} 个单词吗？此操作不可恢复。`, '提示', {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    await vocabularyStore.batchRemoveWords(selectedWords.value)
+    ElMessage.success(`已删除 ${count} 个单词`)
+    batchDialog.visible = false
+    selectedWords.value = []
+  } catch {
+    // 用户取消
+  }
 }
 
 async function openManualDialog() {
   manualDialog.value = {
     visible: true,
     word: '',
-    loading: false
+    format: 'comma',
+    loading: false,
+    tagIds: []
   }
   await nextTick()
   manualInputRef.value?.focus?.()
@@ -504,39 +709,113 @@ async function openManualDialog() {
 async function submitManualWord() {
   if (manualDialog.value.loading) return
 
-  const word = normalizeManualWord(manualDialog.value.word)
-  if (!word) {
-    ElMessage.warning('请输入要录入的单词')
+  const input = String(manualDialog.value.word || '').trim()
+  if (!input) {
+    ElMessage.warning('请输入要录入的内容')
     return
   }
-  if (!isSingleEnglishWord(word)) {
-    ElMessage.warning('手动录入只支持一个英文单词')
-    return
+
+  let wordEntries = []
+  if (manualDialog.value.format === 'comma') {
+    const words = input.split(/[,，\n\r]+/).map(w => normalizeManualWord(w)).filter(w => w && isSingleEnglishWord(w))
+    if (!words.length) {
+      ElMessage.warning('没有有效的单词，请输入英文单词，用逗号或换行分隔')
+      return
+    }
+    wordEntries = words.map(word => ({ word, meaning: '', phonetic: '', tagIds: manualDialog.value.tagIds }))
+  } else {
+    wordEntries = await parseTagTextFormat(input)
+    if (!wordEntries.length) {
+      ElMessage.warning('未解析到有效的单词，请使用 [标签名]\\nword:意思 格式')
+      return
+    }
   }
 
   manualDialog.value.loading = true
   try {
-    const result = await bookStore.translateWordToChinese(word)
-    const meaning = typeof result === 'object'
-      ? String(result?.meaning || '').trim()
-      : String(result || '').trim()
-    const phonetic = typeof result === 'object'
-      ? String(result?.phonetic || '').trim()
-      : ''
+    let successCount = 0
+    for (const entry of wordEntries) {
+      try {
+        let meaning = entry.meaning
+        let phonetic = entry.phonetic
+        if (!meaning) {
+          const result = await bookStore.translateWordToChinese(entry.word)
+          meaning = typeof result === 'object'
+            ? String(result?.meaning || '').trim()
+            : String(result || '').trim()
+          phonetic = typeof result === 'object'
+            ? String(result?.phonetic || '').trim()
+            : ''
+        }
 
-    vocabularyStore.addWord({
-      word,
-      meaning,
-      phonetic,
-      memoryParts: autoMemoryParts(word)
-    })
+        vocabularyStore.addWord({
+          word: entry.word,
+          meaning,
+          phonetic,
+          memoryParts: autoMemoryParts(entry.word),
+          tagIds: entry.tagIds.length ? entry.tagIds : manualDialog.value.tagIds
+        })
+        successCount++
+      } catch (err) {
+        console.warn(`录入单词「${entry.word}」失败:`, err)
+      }
+    }
     manualDialog.value.visible = false
-    ElMessage.success(`已录入「${word}」`)
+    if (successCount === wordEntries.length) {
+      ElMessage.success(`已录入 ${successCount} 个单词`)
+    } else if (successCount > 0) {
+      ElMessage.success(`成功录入 ${successCount} 个单词，${wordEntries.length - successCount} 个失败`)
+    } else {
+      ElMessage.error('所有单词录入失败')
+    }
   } catch (error) {
     ElMessage.error(`录入失败：${error.message || '请稍后重试'}`)
   } finally {
     manualDialog.value.loading = false
   }
+}
+
+async function parseTagTextFormat(text) {
+  const lines = text.split(/\r?\n/)
+  const entries = []
+  const tagNameMap = new Map()
+  let currentTagId = null
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) continue
+
+    const tagMatch = trimmed.match(/^\[(.+)\]$/)
+    if (tagMatch) {
+      const tagName = tagMatch[1].trim()
+      if (tagName) {
+        if (!tagNameMap.has(tagName)) {
+          const tag = await vocabularyStore.addTag(tagName)
+          if (tag) {
+            tagNameMap.set(tagName, tag.id)
+          }
+        }
+        currentTagId = tagNameMap.get(tagName)
+      }
+      continue
+    }
+
+    const colonIdx = trimmed.indexOf(':')
+    if (colonIdx > 0) {
+      const word = normalizeManualWord(trimmed.substring(0, colonIdx))
+      const meaning = trimmed.substring(colonIdx + 1).trim()
+      if (word) {
+        entries.push({
+          word,
+          meaning,
+          phonetic: '',
+          tagIds: currentTagId ? [currentTagId] : []
+        })
+      }
+    }
+  }
+
+  return entries
 }
 
 function openWordDetail(word) {
@@ -569,6 +848,9 @@ function splitMemoryText(text) {
 
 function autoMemoryParts(word) {
   const value = String(word || '').trim()
+  if (!value) return []
+  if (value.includes('(') || value.includes(')')) return []
+  if (value.includes(' ') || value.includes('/')) return []
   const compoundMap = {
     everywhere: ['every', 'where'],
     somewhere: ['some', 'where'],
@@ -576,7 +858,7 @@ function autoMemoryParts(word) {
     nowhere: ['no', 'where']
   }
   if (compoundMap[value.toLowerCase()]) return compoundMap[value.toLowerCase()]
-  if (value.length <= 4) return value ? [value] : []
+  if (value.length <= 4) return [value]
   if (value.length <= 6) return [value.slice(0, 2), value.slice(2)]
   if (value.endsWith('ing') && value.length > 5) return [value.slice(0, -3), 'ing']
   if (value.endsWith('ed') && value.length > 5) return [value.slice(0, -2), 'ed']
@@ -593,18 +875,35 @@ function openTagDialog(entry) {
   tagDialog.value = {
     visible: true,
     word: entry.word,
+    originalWord: entry.word,
     level: entry.level || 'unknown',
     memoryText: (entry.memoryParts?.length ? entry.memoryParts : autoMemoryParts(entry.word)).join('.'),
-    tagIds: [...(entry.tagIds || [])]
+    tagIds: [...(entry.tagIds || [])],
+    note: entry.note || ''
   }
 }
 
-function saveWordTags() {
-  vocabularyStore.updateWord(tagDialog.value.word, {
+async function saveWordTags() {
+  const newWord = tagDialog.value.word.trim()
+  const originalWord = tagDialog.value.originalWord
+
+  if (!newWord) {
+    ElMessage.warning('单词名称不能为空')
+    return
+  }
+
+  if (newWord !== originalWord) {
+    await vocabularyStore.removeWord(originalWord)
+  }
+
+  await vocabularyStore.addWord({
+    word: newWord,
     level: tagDialog.value.level,
     memoryParts: splitMemoryText(tagDialog.value.memoryText),
-    tagIds: tagDialog.value.tagIds
+    tagIds: tagDialog.value.tagIds,
+    note: tagDialog.value.note
   })
+
   tagDialog.value.visible = false
   ElMessage.success('已保存设置')
 }
@@ -740,10 +1039,10 @@ async function handleImport(event) {
     const rawText = await readTextFile(file)
     const { words, tags } = fmt.deserialize(rawText)
     if (!Array.isArray(words) || !words.length) throw new Error('未解析到任何单词')
-    if (fmtId === 'default' && Array.isArray(tags) && tags.length) {
+    if (Array.isArray(tags) && tags.length) {
       vocabularyStore.importTags(tags)
     }
-    const count = vocabularyStore.importWords(words)
+    const count = await vocabularyStore.importWords(words)
     ElMessage.success(`已通过「${fmt.name}」导入 ${count} 个单词到「${activeBookName.value}」`)
   } catch (error) {
     ElMessage.error(`「${fmt.name}」导入失败：${error.message || '请检查文件后重试'}`)
@@ -847,7 +1146,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1180px;
+  --section-max: 1500px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;
@@ -986,6 +1285,11 @@ async function handleImport(event) {
   background: rgba(255, 255, 255, 0.88);
 }
 
+.vocab-search-mode {
+  width: 100px;
+  margin-right: 8px;
+}
+
 .vocab-search {
   flex: 1;
   min-width: 220px;
@@ -1014,9 +1318,13 @@ async function handleImport(event) {
 .vocab-list-head,
 .vocab-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.8fr) minmax(130px, 0.85fr) minmax(150px, 1fr) minmax(220px, 1.6fr) minmax(140px, 0.9fr) 130px 120px;
   align-items: center;
   gap: 12px;
+}
+
+.vocab-check-head,
+.vocab-check {
+  justify-self: center;
 }
 
 .vocab-list-head {
@@ -1084,14 +1392,16 @@ async function handleImport(event) {
 }
 
 .vocab-meaning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   color: #40504c;
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
 }
 
-.vocab-memory-head,
-.vocab-memory {
+.vocab-memory-head {
   text-align: center;
 }
 
@@ -1099,11 +1409,11 @@ async function handleImport(event) {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 2px;
   min-width: 0;
-  font-size: 18px;
-  font-weight: 800;
+  font-size: 14px;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
@@ -1156,6 +1466,17 @@ async function handleImport(event) {
 
 .vocab-level-head {
   text-align: center;
+}
+
+.vocab-note-head {
+  min-width: 120px;
+}
+
+.vocab-note {
+  min-width: 120px;
+  color: #6b7a77;
+  font-size: 13px;
+  word-break: break-all;
 }
 
 .vocab-action {
@@ -1426,10 +1747,7 @@ async function handleImport(event) {
     overflow-x: auto;
   }
 
-  .vocab-list-head,
-  .vocab-row {
-    min-width: 1120px;
-  }
+
 }
 
 :global(.vocab-format-dialog) {
@@ -1518,5 +1836,55 @@ async function handleImport(event) {
   color: #63706d;
   font-size: 13px;
   line-height: 1.5;
+}
+
+.batch-dialog-body {
+  padding: 8px 0;
+}
+
+.batch-dialog-hint {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #63706d;
+}
+
+.batch-dialog-field {
+  margin-bottom: 16px;
+}
+
+.batch-dialog-field:last-child {
+  margin-bottom: 0;
+}
+
+.batch-dialog-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #16201f;
+}
+
+.batch-dialog-control {
+  width: 100%;
+}
+
+.batch-dialog-control-wrap {
+  position: relative;
+}
+
+.batch-dialog-empty {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #919d9a;
+}
+
+.batch-dialog-spacer {
+  flex: 1;
+}
+
+:global(.vocab-batch-dialog .el-dialog__footer) {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 </style>
