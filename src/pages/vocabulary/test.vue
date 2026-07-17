@@ -90,8 +90,11 @@
         <div class="result-head">
           <div>
             <div class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</div>
-            <h3>{{ correctResults.length }} / {{ testQueue.length }}</h3>
-            <div class="result-accuracy">正确率：{{ accuracyRate }}%</div>
+            <div class="result-main-row">
+              <span class="result-count">{{ correctResults.length }} / {{ testQueue.length }}</span>
+              <span class="result-divider">|</span>
+              <span class="result-accuracy" :class="accuracyColorClass">正确率：{{ accuracyRate }}%</span>
+            </div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
         </div>
@@ -182,6 +185,14 @@ const accuracyRate = computed(() => {
   const total = correctResults.value.length + wrongResults.value.length
   if (total === 0) return 0
   return Math.round((correctResults.value.length / total) * 100)
+})
+
+const accuracyColorClass = computed(() => {
+  const rate = accuracyRate.value
+  if (rate >= 90) return 'accuracy-excellent'
+  if (rate >= 80) return 'accuracy-good'
+  if (rate >= 60) return 'accuracy-warning'
+  return 'accuracy-danger'
 })
 
 function goBack() {
@@ -589,18 +600,44 @@ onMounted(() => {
   font-weight: 800;
 }
 
-.result-head h3 {
-  margin: 4px 0 0;
+.result-main-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.result-count {
   color: #16201f;
   font-size: 34px;
+  font-weight: 800;
+}
+
+.result-divider {
+  color: #d7dfdc;
+  font-size: 24px;
+  font-weight: 400;
 }
 
 .result-accuracy {
-  margin: 8px 0 0;
-  color: #2f6feb;
   font-size: 24px;
   font-weight: 800;
-  text-shadow: 0 1px 2px rgba(47, 111, 235, 0.2);
+}
+
+.accuracy-excellent {
+  color: #2d8a4e;
+}
+
+.accuracy-good {
+  color: #2f6feb;
+}
+
+.accuracy-warning {
+  color: #d97706;
+}
+
+.accuracy-danger {
+  color: #dc2626;
 }
 
 .result-grid {
