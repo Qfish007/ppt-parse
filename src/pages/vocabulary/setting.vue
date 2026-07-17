@@ -12,24 +12,12 @@
       </div>
     </header>
 
-    <section class="settings-card card-stat">
-      <div class="card-header">
-        <label class="field-label">统计显示</label>
-      </div>
-      <div class="card-body">
-        <div class="setting-desc">控制生词本页面右侧悬浮统计是否显示。</div>
-        <div class="display-setting-row">
-          <el-switch :model-value="vocabularyStore.statsVisible" @change="toggleStatsVisible" />
-        </div>
-      </div>
-    </section>
-
     <section class="settings-card card-column">
       <div class="card-header">
-        <label class="field-label">单词列表列显示</label>
+        <label class="field-label">列表显示设置</label>
       </div>
       <div class="card-body">
-        <div class="setting-desc">控制生词本列表中各列的显示与隐藏。</div>
+        <div class="setting-desc">控制生词本列表中各列的显示与隐藏，以及右侧悬浮统计的显示。</div>
         <div class="column-settings">
           <div class="column-setting-row">
             <span class="column-name">发音</span>
@@ -55,6 +43,10 @@
             <span class="column-name">备注</span>
             <el-switch :model-value="vocabularyStore.visibleColumns.note"
               @change="value => updateVisibleColumn('note', value)" />
+          </div>
+          <div class="column-setting-row">
+            <span class="column-name">统计显示</span>
+            <el-switch :model-value="vocabularyStore.statsVisible" @change="toggleStatsVisible" />
           </div>
         </div>
       </div>
@@ -312,10 +304,6 @@ async function removeTag(tag) {
   background: rgba(255, 255, 255, 0.94);
 }
 
-.card-stat .card-header {
-  background: linear-gradient(135deg, #e6f7ff 0%, #bae7ff 100%);
-}
-
 .card-column .card-header {
   background: linear-gradient(135deg, #f6ffed 0%, #d9f7be 100%);
 }
@@ -469,7 +457,7 @@ async function removeTag(tag) {
 
 .column-settings {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-top: 16px;
 }

@@ -99,7 +99,7 @@
         <span>单词</span>
         <span v-if="vocabularyStore.visibleColumns.pronunciation">发音</span>
         <span v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory-head">辅助记忆</span>
-        <span>中文意思</span>
+        <span>中文</span>
         <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
         <span v-if="vocabularyStore.visibleColumns.level" class="vocab-level-head">掌握水平</span>
         <span v-if="vocabularyStore.visibleColumns.note" class="vocab-note-head">备注</span>
@@ -1253,13 +1253,13 @@ async function handleImport(event) {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 7px;
   max-width: calc(100vw - 24px);
-  padding: 10px;
+  padding: 7px;
   border: 1px solid rgba(207, 217, 214, 0.85);
-  border-radius: 22px;
+  border-radius: 15px;
   background: rgba(255, 255, 255, 0.82);
-  box-shadow: 0 18px 48px rgba(22, 32, 31, 0.18);
+  box-shadow: 0 12px 32px rgba(22, 32, 31, 0.18);
   backdrop-filter: blur(16px);
   color: #40504c;
   cursor: grab;
@@ -1280,34 +1280,34 @@ async function handleImport(event) {
   --stat-border: #d7dfdc;
   display: grid;
   grid-template-rows: auto auto;
-  gap: 7px;
-  min-width: 72px;
-  padding: 10px 10px 9px;
+  gap: 5px;
+  min-width: 48px;
+  padding: 7px 7px 6px;
   border: 1px solid var(--stat-border);
-  border-radius: 16px;
+  border-radius: 11px;
   background: linear-gradient(180deg, #ffffff 0%, var(--stat-bg) 100%);
-  box-shadow: 0 8px 20px rgba(22, 32, 31, 0.08);
+  box-shadow: 0 5px 13px rgba(22, 32, 31, 0.08);
   color: var(--stat-color) !important;
   line-height: 1.1;
   white-space: nowrap;
 }
 
 .vocab-stat-label {
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 800;
 }
 
 .vocab-stat-value {
   display: grid;
   place-items: center;
-  min-width: 48px;
-  min-height: 32px;
-  padding: 0 12px;
+  min-width: 32px;
+  min-height: 22px;
+  padding: 0 8px;
   border-radius: 999px;
   background: var(--stat-color);
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
   color: #fff;
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -1447,7 +1447,7 @@ async function handleImport(event) {
 }
 
 .vocab-memory-head {
-  text-align: center;
+  text-align: left;
 }
 
 .vocab-memory {
@@ -1772,20 +1772,20 @@ async function handleImport(event) {
 
   .vocab-stats-bar {
     right: 12px;
-    gap: 6px;
-    padding: 8px;
-    border-radius: 18px;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 12px;
   }
 
   .vocab-stat {
-    min-width: 60px;
-    padding: 8px;
+    min-width: 40px;
+    padding: 5px;
   }
 
   .vocab-stat-value {
-    min-width: 40px;
-    min-height: 28px;
-    font-size: 20px;
+    min-width: 28px;
+    min-height: 18px;
+    font-size: 14px;
   }
 
   .vocab-list {
