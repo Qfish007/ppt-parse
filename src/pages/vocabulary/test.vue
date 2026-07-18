@@ -61,7 +61,7 @@
             </button>
           </div>
           <div v-if="testMode === 'meaning'" class="question-prompt">
-            {{ currentWord.meaning || '暂无释义' }}
+            {{ cleanMeaning(currentWord.meaning) || '暂无释义' }}
           </div>
           <div v-else class="sound-prompt">
             <button class="sound-button" @click="playCurrentWord">
@@ -290,6 +290,16 @@ async function restartSameTest() {
 
 function playCurrentWord() {
   if (currentWord.value?.word) speak(currentWord.value.word, 'en-US')
+}
+
+function cleanMeaning(meaning) {
+  if (!meaning) return ''
+  return meaning.replace(/\([^)]*[a-zA-Z][^)]*\)/g, '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[a-zA-Z][a-zA-Z0-9_.-]*\s*[a-zA-Z]*/g, '')
+    .replace(/\s+/g, '')
+    .replace(/；+/g, '；')
+    .replace(/；$/, '')
 }
 
 function playWord(word) {
