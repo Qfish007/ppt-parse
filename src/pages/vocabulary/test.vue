@@ -103,7 +103,7 @@
           <div class="result-block">
             <h4>正确列表</h4>
             <div v-if="!correctResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in correctResults" :key="`ok-${item.word}-${index}`"
+            <div v-for="(item, index) in correctResults.slice().reverse()" :key="`ok-${item.word}-${index}`"
               class="result-row is-correct">
               <div class="result-word-line">
                 <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
@@ -121,7 +121,7 @@
           <div class="result-block">
             <h4>错误列表</h4>
             <div v-if="!wrongResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in wrongResults" :key="`wrong-${item.word}-${index}`" class="result-row is-wrong">
+            <div v-for="(item, index) in wrongResults.slice().reverse()" :key="`wrong-${item.word}-${index}`" class="result-row is-wrong">
               <div class="result-word-line">
                 <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
                 <button class="result-sound-btn" @click="playWord(item.word)">
