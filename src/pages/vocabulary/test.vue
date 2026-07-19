@@ -165,7 +165,7 @@
               <h4>错误列表</h4>
               <div v-if="wrongResults.length" class="result-actions">
                 <el-button size="small" @click="exportWrongWords">导出</el-button>
-                <el-button size="small" @click="printWrongWords">打印</el-button>
+                <el-button size="small" :loading="exportingWrongPdf" :disabled="exportingWrongPdf" @click="printWrongWords">导出PDF</el-button>
               </div>
             </div>
             <div v-if="!wrongResults.length" class="result-empty">暂无</div>
@@ -221,6 +221,20 @@ const errorDialogVisible = ref(false)
 const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
 const showCorrectToast = ref(false)
 const showSoundButton = ref(true)
+const exportingWrongPdf = ref(false)
+
+const A4_WIDTH_PX = 794
+const A4_HEIGHT_PX = 1123
+const PDF_PAGE_WIDTH_PT = 595.28
+const PDF_PAGE_HEIGHT_PT = 841.89
+const WRONG_PAGE_PADDING_X = 37
+const WRONG_PAGE_PADDING_Y = 32
+const WRONG_PAGE_HEADER_HEIGHT = 44
+const WRONG_PAGE_GAP = 14
+const WRONG_WORD_FONT = '800 20px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_META_FONT = '600 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_ANSWER_FONT = '500 13px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_MEANING_FONT = '500 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
 
 const defaultBook = computed(() => vocabularyStore.getDefaultBook())
 const defaultWords = computed(() => defaultBook.value?.words || [])
@@ -389,35 +403,258 @@ function exportWrongWords() {
 
 function printWrongWords() {
   if (!wrongResults.value.length) return
-  const printContent = wrongResults.value.map(item => `
-    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
-      <div style="font-size: 20px; font-weight: bold; color: #e5484d;">${item.word}</div>
-      <div style="font-size: 14px; color: #666; margin-top: 4px;">${item.phonetic || ''}</div>
-      <div style="font-size: 14px; color: #333; margin-top: 4px;">${cleanMeaning(item.meaning) || '暂无释义'}</div>
-      <div style="font-size: 12px; color: #999; margin-top: 4px;">你的答案: ${item.answer || '-'}</div>
-    </div>
-  `).join('')
+  exportingWrongPdf.value = true
+  try {
+    const items = wrongResults.value.slice().reverse()
+    const pages = paginateWrongWordPages(items)
+    const jpegPages = pages.map((page, index) => renderWrongWordPageToJpeg(page, index, pages.length))
+    const pdfBlob = buildImagePdf(jpegPages)
+    downloadBlob(pdfBlob, `错误单词_${new Date().toISOString().slice(0, 10)}.pdf`)
+    ElMessage.success(`已导出 ${pages.length} 页 PDF`)
+  } catch (error) {
+    ElMessage.error('导出 PDF 失败：' + (error.message || error))
+  } finally {
+    exportingWrongPdf.value = false
+  }
+}
 
-  const printWindow = window.open('', '_blank')
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8">
-      <title>错误单词打印</title>
-      <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; }
-        h1 { text-align: center; color: #333; margin-bottom: 30px; }
-      </style>
-    </head>
-    <body>
-      <h1>错误单词列表</h1>
-      <div>${printContent}</div>
-    </body>
-    </html>
-  `)
-  printWindow.document.close()
-  printWindow.print()
+function paginateWrongWordPages(items) {
+  const measureCanvas = document.createElement('canvas')
+  const ctx = measureCanvas.getContext('2d')
+  const contentWidth = A4_WIDTH_PX - WRONG_PAGE_PADDING_X * 2
+  const bodyTop = WRONG_PAGE_PADDING_Y + WRONG_PAGE_HEADER_HEIGHT
+  const bodyBottom = WRONG_PAGE_PADDING_Y
+  const availableHeight = A4_HEIGHT_PX - bodyTop - bodyBottom
+  const pages = []
+  let currentPage = []
+  let usedHeight = 0
+
+  for (const item of items) {
+    const itemHeight = estimateWrongItemHeight(item, contentWidth, ctx)
+    if (currentPage.length && usedHeight + itemHeight > availableHeight) {
+      pages.push(currentPage)
+      currentPage = []
+      usedHeight = 0
+    }
+    currentPage.push(item)
+    usedHeight += itemHeight + WRONG_PAGE_GAP
+  }
+
+  if (currentPage.length) pages.push(currentPage)
+  return pages
+}
+
+function estimateWrongItemHeight(item, contentWidth, ctx) {
+  ctx.font = WRONG_WORD_FONT
+  const wordHeight = 24
+  const statWidth = 58
+  const wordWidth = contentWidth - statWidth - 12
+  const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1).length || 1
+  ctx.font = WRONG_META_FONT
+  const phoneticHeight = (item.phonetic ? 18 : 0)
+  ctx.font = WRONG_ANSWER_FONT
+  const answerHeight = 18
+  ctx.font = WRONG_MEANING_FONT
+  const meaning = cleanMeaning(item.meaning) || '暂无释义'
+  const meaningLines = wrapLines(meaning, contentWidth, ctx, 4).length || 1
+  const meaningHeight = meaningLines * 18
+  return Math.max(wordHeight * wordLines, 24) + phoneticHeight + answerHeight + meaningHeight + 20
+}
+
+function renderWrongWordPageToJpeg(pageItems, pageIndex, totalPages) {
+  const scale = Math.max(2, window.devicePixelRatio || 1)
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(A4_WIDTH_PX * scale)
+  canvas.height = Math.round(A4_HEIGHT_PX * scale)
+  const ctx = canvas.getContext('2d')
+  ctx.scale(scale, scale)
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, A4_WIDTH_PX, A4_HEIGHT_PX)
+
+  const contentWidth = A4_WIDTH_PX - WRONG_PAGE_PADDING_X * 2
+  const bodyTop = WRONG_PAGE_PADDING_Y + WRONG_PAGE_HEADER_HEIGHT
+  let y = bodyTop
+
+  ctx.textBaseline = 'top'
+  ctx.fillStyle = '#111827'
+  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.fillText('错误单词列表', WRONG_PAGE_PADDING_X, WRONG_PAGE_PADDING_Y)
+  ctx.fillStyle = '#6b7280'
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  const pageNo = `第 ${pageIndex + 1} / ${totalPages} 页`
+  ctx.fillText(pageNo, WRONG_PAGE_PADDING_X + contentWidth - ctx.measureText(pageNo).width, WRONG_PAGE_PADDING_Y + 1)
+  ctx.strokeStyle = '#e5e7eb'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(WRONG_PAGE_PADDING_X, bodyTop - 12)
+  ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, bodyTop - 12)
+  ctx.stroke()
+
+  pageItems.forEach((item) => {
+    const statWidth = 58
+    const gap = 12
+    const wordWidth = contentWidth - statWidth - gap
+    const meaning = cleanMeaning(item.meaning) || '暂无释义'
+
+    ctx.fillStyle = '#ef4444'
+    ctx.font = WRONG_WORD_FONT
+    const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1)
+    drawLines(ctx, wordLines, WRONG_PAGE_PADDING_X, y, 24)
+
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    const statText = `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
+    ctx.fillText(statText, WRONG_PAGE_PADDING_X + contentWidth - ctx.measureText(statText).width, y + 6)
+
+    let lineY = y + 28
+    if (item.phonetic) {
+      ctx.fillStyle = '#6b7280'
+      ctx.font = WRONG_META_FONT
+      drawLines(ctx, [item.phonetic], WRONG_PAGE_PADDING_X, lineY, 18)
+      lineY += 20
+    }
+
+    ctx.fillStyle = '#dc2626'
+    ctx.font = WRONG_ANSWER_FONT
+    drawLines(ctx, [`你的答案：${item.answer || '-'}`], WRONG_PAGE_PADDING_X, lineY, 17)
+    lineY += 20
+
+    ctx.fillStyle = '#333'
+    ctx.font = WRONG_MEANING_FONT
+    const meaningLines = wrapLines(meaning, contentWidth, ctx, 4)
+    drawLines(ctx, meaningLines.length ? meaningLines : ['暂无释义'], WRONG_PAGE_PADDING_X, lineY, 18)
+    lineY += Math.max(meaningLines.length, 1) * 18 + 10
+
+    ctx.strokeStyle = '#e5e7eb'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(WRONG_PAGE_PADDING_X, lineY)
+    ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, lineY)
+    ctx.stroke()
+
+    y = lineY + 12
+  })
+
+  return {
+    width: canvas.width,
+    height: canvas.height,
+    bytes: base64ToBytes(canvas.toDataURL('image/jpeg', 0.96).split(',')[1])
+  }
+}
+
+function wrapLines(text, maxWidth, ctx, maxLines = 1) {
+  const source = String(text || '')
+  if (!source) return []
+  const lines = []
+  let current = ''
+  for (const char of source) {
+    const next = current + char
+    if (ctx.measureText(next).width <= maxWidth || !current) {
+      current = next
+      continue
+    }
+    lines.push(current)
+    current = char
+    if (lines.length >= maxLines) break
+  }
+  if (lines.length < maxLines && current) lines.push(current)
+  if (lines.length > maxLines) lines.length = maxLines
+  const joined = lines.join('')
+  if (lines.length && source.length > joined.length) {
+    lines[lines.length - 1] = ellipsizeLine(lines[lines.length - 1], maxWidth, ctx)
+  }
+  return lines
+}
+
+function ellipsizeLine(text, maxWidth, ctx) {
+  let line = String(text || '')
+  while (line && ctx.measureText(`${line}…`).width > maxWidth) {
+    line = line.slice(0, -1)
+  }
+  return `${line}…`
+}
+
+function drawLines(ctx, lines, x, y, lineHeight) {
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight)
+  })
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function buildImagePdf(images) {
+  const encoder = new TextEncoder()
+  const parts = []
+  const offsets = [0]
+  let length = 0
+  const addText = (text) => {
+    const bytes = encoder.encode(text)
+    parts.push(bytes)
+    length += bytes.length
+  }
+  const addBytes = (bytes) => {
+    parts.push(bytes)
+    length += bytes.length
+  }
+  const addObject = (id, writer) => {
+    offsets[id] = length
+    addText(`${id} 0 obj\n`)
+    writer()
+    addText('\nendobj\n')
+  }
+
+  addBytes(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]))
+  addObject(1, () => addText('<< /Type /Catalog /Pages 2 0 R >>'))
+  addObject(2, () => {
+    const kids = images.map((_, index) => `${3 + index * 3} 0 R`).join(' ')
+    addText(`<< /Type /Pages /Kids [${kids}] /Count ${images.length} >>`)
+  })
+
+  images.forEach((image, index) => {
+    const pageObjectId = 3 + index * 3
+    const contentObjectId = pageObjectId + 1
+    const imageObjectId = pageObjectId + 2
+    const imageName = `Im${index + 1}`
+    const content = `q\n${PDF_PAGE_WIDTH_PT} 0 0 ${PDF_PAGE_HEIGHT_PT} 0 0 cm\n/${imageName} Do\nQ`
+
+    addObject(pageObjectId, () => {
+      addText(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_PAGE_WIDTH_PT} ${PDF_PAGE_HEIGHT_PT}] /Resources << /ProcSet [/PDF /ImageC] /XObject << /${imageName} ${imageObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`)
+    })
+    addObject(contentObjectId, () => {
+      addText(`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream`)
+    })
+    addObject(imageObjectId, () => {
+      addText(`<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`)
+      addBytes(image.bytes)
+      addText('\nendstream')
+    })
+  })
+
+  const xrefStart = length
+  addText(`xref\n0 ${offsets.length}\n`)
+  addText('0000000000 65535 f \n')
+  for (let i = 1; i < offsets.length; i += 1) {
+    addText(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`)
+  }
+  addText(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
+
+  return new Blob(parts, { type: 'application/pdf' })
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 async function goNextQuestion() {
