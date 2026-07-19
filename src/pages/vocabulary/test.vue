@@ -31,6 +31,10 @@
         </el-select>
         <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
           controls-position="right" />
+        <div class="sound-toggle">
+          <span class="sound-toggle-label">发音</span>
+          <el-switch v-model="showSoundButton" />
+        </div>
         <el-button type="primary" :disabled="!availableWords.length" @click="startTest">
           开始测试
         </el-button>
@@ -53,7 +57,7 @@
           <div class="question-label">
             {{ testMode === 'meaning' ? '根据中文意思输入英文单词' : '根据发音输入英文单词' }}
           </div>
-          <div v-if="testMode === 'meaning'" class="sound-prompt-center">
+          <div v-if="testMode === 'meaning' && showSoundButton" class="sound-prompt-center">
             <button class="sound-button" @click="playCurrentWord">
               <svg viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"></path>
@@ -122,18 +126,14 @@
 
       <section v-if="testQueue.length" class="test-card result-card">
         <div class="result-head">
-          <div>
-            <div class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</div>
+          <div class="result-head-left">
+            <span class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</span>
             <div class="result-main-row">
-              <span>总计{{ testQueue.length }}个</span>
-              <span class="result-divider">|</span>
-              <span>当前第{{ currentIndex + 1 }}个</span>
-              <span class="result-divider">|</span>
-              <span>正确{{ correctResults.length }}个</span>
-              <span class="result-divider">|</span>
-              <span>错误{{ wrongResults.length }}个</span>
-              <span class="result-divider">|</span>
-              <span class="result-accuracy" :class="accuracyColorClass">正确率 {{ accuracyRate }}%</span>
+              <span class="result-item result-item-total">总计{{ testQueue.length }}个</span>
+              <span class="result-item result-item-current">当前第{{ currentIndex + 1 }}个</span>
+              <span class="result-item result-item-correct">正确{{ correctResults.length }}个</span>
+              <span class="result-item result-item-wrong">错误{{ wrongResults.length }}个</span>
+              <span class="result-item result-item-accuracy" :class="accuracyColorClass">正确率 {{ accuracyRate }}%</span>
             </div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
@@ -220,6 +220,7 @@ const answerInputRef = ref(null)
 const errorDialogVisible = ref(false)
 const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
 const showCorrectToast = ref(false)
+const showSoundButton = ref(true)
 
 const defaultBook = computed(() => vocabularyStore.getDefaultBook())
 const defaultWords = computed(() => defaultBook.value?.words || [])
@@ -574,6 +575,18 @@ onMounted(() => {
   width: 130px;
 }
 
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sound-toggle-label {
+  color: #63706d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .test-meta {
   margin-top: 10px;
   color: #63706d;
@@ -730,35 +743,77 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 
+.result-head-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
 .result-label {
   color: #63706d;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 800;
 }
 
 .result-main-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 8px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.result-main-row span {
-  color: #16201f;
+.result-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 8px;
   font-size: 16px;
   font-weight: 700;
 }
 
-.result-divider {
-  color: #d7dfdc;
-  font-size: 14px;
-  font-weight: 400;
+.result-item-total {
+  background: #eef4f1;
+  color: #16201f;
 }
 
-.result-accuracy {
-  font-size: 16px;
+.result-item-current {
+  background: #eef1f8;
+  color: #2f6feb;
+}
+
+.result-item-correct {
+  background: #effaf5;
+  color: #19a974;
+}
+
+.result-item-wrong {
+  background: #fff1f1;
+  color: #e5484d;
+}
+
+.result-item-accuracy {
   font-weight: 800;
+}
+
+.result-item-accuracy.accuracy-excellent {
+  background: #effaf5;
+  color: #2d8a4e;
+}
+
+.result-item-accuracy.accuracy-good {
+  background: #eef1f8;
+  color: #2f6feb;
+}
+
+.result-item-accuracy.accuracy-warning {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.result-item-accuracy.accuracy-danger {
+  background: #fff1f1;
+  color: #dc2626;
 }
 
 .accuracy-excellent {
