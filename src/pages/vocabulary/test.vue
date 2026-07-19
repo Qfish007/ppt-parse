@@ -79,6 +79,10 @@
               <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
             </div>
           </div>
+          <div v-if="showCorrectToast" class="correct-toast">
+            <div class="correct-toast-icon">✓</div>
+            <div class="correct-toast-text">回答正确</div>
+          </div>
         </div>
       </section>
 
@@ -86,14 +90,50 @@
         请设置筛选条件后开始测试。
       </section>
 
+      <el-dialog v-model="errorDialogVisible" width="560px" :show-close="true" :close-on-click-modal="false"
+        custom-class="error-dialog">
+        <template #header>
+          <span class="error-dialog-title">回答错误</span>
+        </template>
+        <div class="error-content">
+          <div class="error-answer">
+            <span class="error-label">你的答案：</span>
+            <span class="error-text">{{ errorInfo.answer }}</span>
+          </div>
+          <div class="correct-info">
+            <div class="correct-word-row">
+              <span class="correct-word">{{ errorInfo.word }}</span>
+              <button class="error-sound-btn" @click="playWord(errorInfo.word)">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"></path>
+                </svg>
+              </button>
+            </div>
+            <span v-if="errorInfo.phonetic" class="correct-phonetic">{{ errorInfo.phonetic }}</span>
+            <span class="correct-meaning">{{ errorInfo.meaning }}</span>
+          </div>
+        </div>
+        <template #footer>
+          <div class="error-footer">
+            <el-button type="primary" size="large" @click="handleErrorNext">下一个</el-button>
+          </div>
+        </template>
+      </el-dialog>
+
       <section v-if="testQueue.length" class="test-card result-card">
         <div class="result-head">
           <div>
             <div class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</div>
             <div class="result-main-row">
-              <span class="result-count">{{ correctResults.length }} / {{ testQueue.length }}</span>
+              <span>总计{{ testQueue.length }}个</span>
               <span class="result-divider">|</span>
-              <span class="result-accuracy" :class="accuracyColorClass">正确率：{{ accuracyRate }}%</span>
+              <span>当前第{{ currentIndex + 1 }}个</span>
+              <span class="result-divider">|</span>
+              <span>正确{{ correctResults.length }}个</span>
+              <span class="result-divider">|</span>
+              <span>错误{{ wrongResults.length }}个</span>
+              <span class="result-divider">|</span>
+              <span class="result-accuracy" :class="accuracyColorClass">正确率 {{ accuracyRate }}%</span>
             </div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
@@ -106,12 +146,14 @@
             <div v-for="(item, index) in correctResults.slice().reverse()" :key="`ok-${item.word}-${index}`"
               class="result-row is-correct">
               <div class="result-word-line">
-                <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                <button class="result-sound-btn" @click="playWord(item.word)">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"></path>
-                  </svg>
-                </button>
+                <div class="result-word-group">
+                  <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                  <button class="result-sound-btn" @click="playWord(item.word)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
               </div>
               <span>{{ item.phonetic || '' }}</span>
@@ -119,16 +161,25 @@
             </div>
           </div>
           <div class="result-block">
-            <h4>错误列表</h4>
+            <div class="result-block-header">
+              <h4>错误列表</h4>
+              <div v-if="wrongResults.length" class="result-actions">
+                <el-button size="small" @click="exportWrongWords">导出</el-button>
+                <el-button size="small" @click="printWrongWords">打印</el-button>
+              </div>
+            </div>
             <div v-if="!wrongResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in wrongResults.slice().reverse()" :key="`wrong-${item.word}-${index}`" class="result-row is-wrong">
+            <div v-for="(item, index) in wrongResults.slice().reverse()" :key="`wrong-${item.word}-${index}`"
+              class="result-row is-wrong">
               <div class="result-word-line">
-                <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                <button class="result-sound-btn" @click="playWord(item.word)">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"></path>
-                  </svg>
-                </button>
+                <div class="result-word-group">
+                  <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                  <button class="result-sound-btn" @click="playWord(item.word)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
               </div>
               <span>{{ item.phonetic || '' }}</span>
@@ -145,7 +196,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElDialog } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
@@ -166,6 +217,9 @@ const correctResults = ref([])
 const wrongResults = ref([])
 const isFinished = ref(false)
 const answerInputRef = ref(null)
+const errorDialogVisible = ref(false)
+const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
+const showCorrectToast = ref(false)
 
 const defaultBook = computed(() => vocabularyStore.getDefaultBook())
 const defaultWords = computed(() => defaultBook.value?.words || [])
@@ -310,6 +364,57 @@ function resultStatText(item) {
   return `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
 }
 
+function exportWrongWords() {
+  if (!wrongResults.value.length) return
+  const content = wrongResults.value.map(item => {
+    const cleanMean = cleanMeaning(item.meaning) || '暂无释义'
+    return `${item.word} : ${cleanMean}`
+  }).join('\n')
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `错误单词_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.txt`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  ElMessage.success('导出成功')
+}
+
+function printWrongWords() {
+  if (!wrongResults.value.length) return
+  const printContent = wrongResults.value.map(item => `
+    <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
+      <div style="font-size: 20px; font-weight: bold; color: #e5484d;">${item.word}</div>
+      <div style="font-size: 14px; color: #666; margin-top: 4px;">${item.phonetic || ''}</div>
+      <div style="font-size: 14px; color: #333; margin-top: 4px;">${item.meaning || '暂无释义'}</div>
+      <div style="font-size: 12px; color: #999; margin-top: 4px;">你的答案: ${item.answer || '-'}</div>
+    </div>
+  `).join('')
+
+  const printWindow = window.open('', '_blank')
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>错误单词打印</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; }
+        h1 { text-align: center; color: #333; margin-bottom: 30px; }
+      </style>
+    </head>
+    <body>
+      <h1>错误单词列表</h1>
+      <div>${printContent}</div>
+    </body>
+    </html>
+  `)
+  printWindow.document.close()
+  printWindow.print()
+}
+
 async function goNextQuestion() {
   answerText.value = ''
   currentIndex.value += 1
@@ -321,6 +426,16 @@ async function goNextQuestion() {
   saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
+}
+
+async function handleErrorNext() {
+  errorDialogVisible.value = false
+  await goNextQuestion()
+}
+
+async function handleErrorClose() {
+  errorDialogVisible.value = false
+  await goNextQuestion()
 }
 
 async function skipWord() {
@@ -359,10 +474,21 @@ async function submitAnswer() {
   }
   if (isCorrect) {
     correctResults.value.push(result)
+    showCorrectToast.value = true
+    setTimeout(() => {
+      showCorrectToast.value = false
+      goNextQuestion()
+    }, 1200)
   } else {
     wrongResults.value.push(result)
+    errorInfo.value = {
+      word: entry.word,
+      phonetic: entry.phonetic || '',
+      meaning: cleanMeaning(entry.meaning) || '暂无释义',
+      answer: answer
+    }
+    errorDialogVisible.value = true
   }
-  goNextQuestion()
 }
 
 onMounted(() => {
@@ -485,7 +611,7 @@ onMounted(() => {
 .question-body {
   display: grid;
   gap: 22px;
-  max-width: 680px;
+  max-width: 90%;
   margin: 40px auto 0;
   text-align: center;
 }
@@ -552,9 +678,9 @@ onMounted(() => {
 /* ---------------- 红框 answer-row: 字体 30px（用户需求） ---------------- */
 /* 30px 字号同步把 wrapper 高度/内边距调大，避免字母上沿下沿被裁切 */
 .answer-input :deep(.el-input__wrapper) {
-  font-size: 30px;
-  padding: 10px 16px;
-  min-height: 56px;
+  font-size: 34px;
+  padding: 14px 16px;
+  min-height: 64px;
   box-shadow: var(--el-input-border-color, #dcdfe6) 0 0 0 1px inset;
   border-radius: 8px;
   transition: box-shadow 0.3s ease;
@@ -565,15 +691,15 @@ onMounted(() => {
 }
 
 .answer-input :deep(.el-input__inner) {
-  font-size: 30px;
-  line-height: 36px;
-  height: 36px;
+  font-size: 34px;
+  line-height: 40px;
+  height: 40px;
   /* ---------------- 用户需求：输入框内输入的文字水平居中 ---------------- */
   text-align: center;
 }
 
 .answer-input :deep(.el-input__inner::placeholder) {
-  font-size: 30px;
+  font-size: 34px;
   color: #a8b1ad;
   /* ---------------- 用户需求：placeholder 文字也水平居中 ---------------- */
   text-align: center;
@@ -612,25 +738,26 @@ onMounted(() => {
 
 .result-main-row {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-top: 4px;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  flex-wrap: wrap;
 }
 
-.result-count {
+.result-main-row span {
   color: #16201f;
-  font-size: 34px;
-  font-weight: 800;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 .result-divider {
   color: #d7dfdc;
-  font-size: 24px;
+  font-size: 14px;
   font-weight: 400;
 }
 
 .result-accuracy {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 800;
 }
 
@@ -697,8 +824,17 @@ onMounted(() => {
 .result-word-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.result-word-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.result-stat {
+  margin-left: auto;
 }
 
 .result-sound-btn {
@@ -759,6 +895,180 @@ onMounted(() => {
 .result-empty {
   color: #8c9996;
   font-size: 13px;
+}
+
+.result-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+:global(.correct-notification) {
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(25, 169, 116, 0.3);
+}
+
+:global(.correct-notification .el-notification__title) {
+  color: #19a974;
+  font-weight: 800;
+}
+
+:global(.error-dialog) {
+  border-radius: 12px;
+}
+
+:global(.error-dialog .el-dialog__header) {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.error-dialog-title {
+  color: #dc2626;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+:global(.error-dialog .el-dialog__body) {
+  padding: 24px 24px 16px;
+}
+
+:global(.error-dialog .el-dialog__footer) {
+  padding: 16px 24px 24px;
+  border-top: 0;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.error-answer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff5f5;
+  border-radius: 8px;
+}
+
+.error-label {
+  color: #999;
+  font-size: 14px;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.correct-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.correct-word-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.correct-word {
+  color: #19a974;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.error-sound-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #b8d6cb;
+  border-radius: 50%;
+  background: #eef7f4;
+  color: #0c514b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-sound-btn:hover {
+  background: #19a974;
+}
+
+.error-sound-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.error-sound-btn:hover svg {
+  fill: #fff;
+}
+
+.correct-phonetic {
+  color: #666;
+  font-size: 16px;
+}
+
+.correct-meaning {
+  color: #333;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.error-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.correct-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 48px;
+  background: rgba(25, 169, 116, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(25, 169, 116, 0.4);
+  animation: toastFadeIn 0.2s ease-out;
+  z-index: 1000;
+}
+
+.correct-toast-icon {
+  font-size: 48px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.correct-toast-text {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 @media (max-width: 720px) {
