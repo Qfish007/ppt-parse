@@ -44,11 +44,11 @@
           controls-position="right" />
         <span class="print-count-tip">共 {{ Math.min(printCount, availableWords.length) }} 词 · 每页 {{ wordsPerPage }} · {{
           printPages.length }} 页</span>
-        <el-button type="primary" :disabled="!printWords.length" @click="doPrint">
+        <el-button type="primary" :disabled="!printWords.length || exportingPdf" :loading="exportingPdf" @click="doPrint">
           <el-icon>
             <Printer />
           </el-icon>
-          打印 / 导出PDF
+          导出PDF
         </el-button>
       </div>
       <div class="print-sliders">
@@ -102,10 +102,10 @@
           </div>
           <div class="a4-body">
             <div v-for="(entry, i) in page" :key="i" class="word-row" :class="{ 'word-row-double': showEnglish && showChinese }">
-              <div v-if="showEnglish && !showChinese" class="meaning-text">{{ entry.word }}</div>
-              <div v-else-if="showChinese && !showEnglish" class="meaning-text">{{ trimMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
-              <div v-else-if="showEnglish && showChinese" class="meaning-text">{{ entry.word }}</div>
-              <div v-if="showEnglish && showChinese" class="meaning-text meaning-text-bottom">{{ trimMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
+              <div v-if="showEnglish && !showChinese" class="meaning-text meaning-text-en">{{ entry.word }}</div>
+              <div v-else-if="showChinese && !showEnglish" class="meaning-text meaning-text-zh">{{ trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
+              <div v-else-if="showEnglish && showChinese" class="meaning-text meaning-text-en">{{ entry.word }}</div>
+              <div v-if="showEnglish && showChinese" class="meaning-text meaning-text-zh meaning-text-bottom">{{ trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
               <div class="meaning-line"></div>
             </div>
           </div>
@@ -138,24 +138,31 @@ const fontSize = ref(20) // 默认20px
 const showChinese = ref(true)
 const showEnglish = ref(false)
 const printWords = ref([])
+const exportingPdf = ref(false)
+
+const A4_WIDTH_PX = 794
+const A4_HEIGHT_PX = 1123
+const PAGE_PADDING_Y = 32
+const HEADER_FONT_SIZE = 15
+const HEADER_LINE_HEIGHT = Math.ceil(HEADER_FONT_SIZE * 1.35)
+const HEADER_PADDING_BOTTOM = 10
+const HEADER_BORDER_HEIGHT = 2
+const BODY_ROW_GAP = 20
+const PDF_PAGE_WIDTH_PT = 595.28
+const PDF_PAGE_HEIGHT_PT = 841.89
+
 // 根据当前字体大小和间距动态计算每页能放多少行
 const rowsPerPage = computed(() => {
   const fs = Number(fontSize.value) || 16
   const rg = Number(rowGap.value) || 20
   const hg = Number(headerGap.value) || 40
-  let textHeight
-  if (showEnglish.value && showChinese.value) {
-    textHeight = fs * 1.35 + 2 + fs * 1.35
-  } else {
-    textHeight = fs * 1.35 + rg + fs * 1.35
-  }
+  const lineHeight = fs * 1.35
+  const textBlockHeight = showEnglish.value && showChinese.value ? lineHeight * 3 + 2 : showChinese.value ? lineHeight * 2 : lineHeight
   const underlineHeight = fs * 1.2 + 4
-  const rowHeight = textHeight + underlineHeight + 20
-  const a4HeightPx = 1123
-  const topMargin = 12 * 25.4 / 96 * 96
-  const bottomMargin = 12 * 25.4 / 96 * 96
-  const contentHeight = a4HeightPx - topMargin - bottomMargin - hg - 30
-  return Math.max(8, Math.floor(contentHeight / rowHeight))
+  const rowContentHeight = textBlockHeight + (showEnglish.value && showChinese.value ? 2 : rg) + underlineHeight
+  const headerHeight = HEADER_LINE_HEIGHT + HEADER_PADDING_BOTTOM + HEADER_BORDER_HEIGHT + hg
+  const bodyHeight = A4_HEIGHT_PX - PAGE_PADDING_Y * 2 - headerHeight
+  return Math.max(1, Math.floor((bodyHeight + BODY_ROW_GAP) / (rowContentHeight + BODY_ROW_GAP)))
 })
 const wordsPerPage = computed(() => rowsPerPage.value * Math.max(1, Number(printCols.value) || 1))
 
@@ -217,6 +224,27 @@ function trimMeaning(meaning, maxLen = 28) {
   return text || '（暂无释义）'
 }
 
+function trimChineseMeaning(meaning, maxLen = 28) {
+  if (!meaning) return '（暂无释义）'
+  let text = String(meaning)
+  text = text.replace(/<[^>]*>/g, ' ')
+  text = text.replace(/\([^()]*[A-Za-z][^()]*\)/g, ' ')
+  text = text.replace(/\[[^\]]*[A-Za-z][^\]]*\]/g, ' ')
+  text = text.replace(/\b(?:adj|adv|n|v|vt|vi|pron|prep|conj|aux|int|num|art|pl|abbr|phr|sb|sth)\.?\b/gi, ' ')
+  text = text.replace(/\b[a-z]+(?:['-][a-z]+)*\.?\b/gi, ' ')
+  text = text.replace(/(?:[A-Za-z]\.){2,}/g, ' ')
+  text = text.replace(/[A-Za-z]+/g, ' ')
+  text = text.replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ')
+  text = text.replace(/\s*([,;：:，。！？、])\s*/g, '$1')
+  text = text.replace(/^[\s·•\.·\-—_:：,，;；、。！？]+/, '')
+  text = text.replace(/\(\s*\)|（\s*）/g, ' ')
+  text = text.replace(/^[,;：:，。！？、\s]+|[,;：:，。！？、\s]+$/g, '')
+  if (text.length > maxLen) {
+    text = text.slice(0, maxLen) + '…'
+  }
+  return text || '（暂无释义）'
+}
+
 // 任一项变化 → 重新抽取单词（列数变化不重抽，仅改变分页；分页由 computed 自动重排）
 watch([levelFilter, tagFilter, printCount, printOrder], () => {
   resamplePrintWords()
@@ -242,103 +270,222 @@ async function doPrint() {
     return
   }
 
-  const cols = Math.max(1, Number(printCols.value) || 1)
-  const headerGapMm = (Number(headerGap.value) || 32) * 25.4 / 96
-  const rowGapMm = (Number(rowGap.value) || 22) * 25.4 / 96
-  const colGapMm = (Number(colGap.value) || 22) * 25.4 / 96
-  const meaningFontSize = Number(fontSize.value) || 16
-  const lineHeight = Math.max(18, Math.round(meaningFontSize * 1.2 + 4))
-  const meaningMinHeight = Math.max(meaningFontSize * 1.35 * 2, 16)
+  const pages = printPages.value
+  if (!pages.length) {
+    ElMessage.error('没有可导出的页面')
+    return
+  }
 
-  const iframe = document.createElement('iframe')
-  iframe.style.position = 'fixed'
-  iframe.style.right = '-9999px'
-  iframe.style.bottom = '0'
-  iframe.style.width = '0'
-  iframe.style.height = '0'
-  iframe.style.border = '0'
-  document.body.appendChild(iframe)
-
-  const iDoc = iframe.contentWindow.document
-  iDoc.open()
-  iDoc.write(`<!doctype html><html><head><meta charset="utf-8"><title>单词默写练习</title>
-<style>
-  @page { size: A4 portrait; margin: 0; }
-  * { box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; color: #1f2328; background: #fff; }
-  .print-pages { display: flex; flex-direction: column; gap: 0; }
-  .a4-page {
-    width: 210mm;
-    min-height: 297mm;
-    page-break-after: always;
-    break-after: page;
-    padding: 12mm 14mm;
-    box-sizing: border-box;
-  }
-  .a4-page:last-child { page-break-after: auto; break-after: auto; }
-  .a4-page-header {
-    display: flex; justify-content: space-between; align-items: center;
-    font-size: 14px; font-weight: 700; color: #333;
-    padding-bottom: 10px; margin-bottom: ${headerGapMm.toFixed(2)}mm;
-    border-bottom: 2px solid #2f6feb;
-  }
-  .a4-page-no { font-weight: 600; color: #666; font-size: 12px; }
-  .a4-body {
-    display: grid;
-    grid-template-columns: repeat(${cols}, minmax(0, 1fr));
-    row-gap: ${(20 * 25.4 / 96).toFixed(2)}mm;
-    column-gap: ${colGapMm.toFixed(2)}mm;
-  }
-  .word-row {
-    display: flex;
-    flex-direction: column;
-    gap: ${rowGapMm.toFixed(2)}mm;
-    min-width: 0;
-  }
-  .word-row-double {
-    gap: ${(2 * 25.4 / 96).toFixed(2)}mm;
-  }
-  .word-row-double .meaning-text {
-    height: auto;
-    min-height: ${(meaningFontSize * 1.35).toFixed(1)}px;
-  }
-  .meaning-text {
-    font-size: ${meaningFontSize}px;
-    font-weight: 600;
-    line-height: 1.35;
-    color: #111827;
-    height: ${meaningMinHeight.toFixed(1)}px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    word-break: break-word;
-  }
-  .meaning-text-bottom {
-    height: ${(meaningFontSize * 1.35).toFixed(1)}px;
-    -webkit-line-clamp: 1;
-  }
-  .meaning-line {
-    border-bottom: 1px solid #333;
-    height: ${lineHeight}px;
-    width: 100%;
-  }
-</style>
-</head><body><div class="print-pages">${target.innerHTML}</div></body></html>`)
-  iDoc.close()
-
-  iframe.contentWindow.focus()
-  setTimeout(() => {
-    try {
-      iframe.contentWindow.print()
-    } catch (e) {
-      ElMessage.error('打印触发失败：' + (e.message || e))
+  exportingPdf.value = true
+  try {
+    const jpegPages = []
+    for (let i = 0; i < pages.length; i += 1) {
+      jpegPages.push(renderVocabPageToJpeg(pages[i], i, pages.length))
     }
-    setTimeout(() => {
-      if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe)
-    }, 800)
-  }, 500)
+    const pdfBlob = buildImagePdf(jpegPages)
+    downloadBlob(pdfBlob, `单词默写练习-${new Date().toISOString().slice(0, 10)}.pdf`)
+    ElMessage.success(`已导出 ${pages.length} 页 PDF`)
+  } catch (error) {
+    ElMessage.error('导出 PDF 失败：' + (error.message || error))
+  } finally {
+    exportingPdf.value = false
+  }
+}
+
+function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
+  const scale = Math.max(2, window.devicePixelRatio || 1)
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(A4_WIDTH_PX * scale)
+  canvas.height = Math.round(A4_HEIGHT_PX * scale)
+  const ctx = canvas.getContext('2d')
+  ctx.scale(scale, scale)
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, A4_WIDTH_PX, A4_HEIGHT_PX)
+
+  const pagePaddingX = 37
+  const pagePaddingY = PAGE_PADDING_Y
+  const contentWidth = A4_WIDTH_PX - pagePaddingX * 2
+  const fs = Number(fontSize.value) || 16
+  const rg = Number(rowGap.value) || 20
+  const hg = Number(headerGap.value) || 40
+  const cg = Number(colGap.value) || 20
+  const cols = Math.max(1, Number(printCols.value) || 1)
+  const cellWidth = (contentWidth - cg * (cols - 1)) / cols
+  const textLineHeight = fs * 1.35
+  const textBlockHeight = showEnglish.value && showChinese.value ? textLineHeight * 3 + 2 : showChinese.value ? textLineHeight * 2 : textLineHeight
+  const lineHeight = fs * 1.2 + 4
+  const rowContentHeight = textBlockHeight + (showEnglish.value && showChinese.value ? 2 : rg) + lineHeight
+  const rowHeight = rowContentHeight + BODY_ROW_GAP
+
+  ctx.textBaseline = 'top'
+  ctx.fillStyle = '#111827'
+  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.fillText('单词默写练习', pagePaddingX, pagePaddingY)
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.fillStyle = '#6b7280'
+  const pageNo = `第 ${pageIndex + 1} / ${totalPages} 页`
+  ctx.fillText(pageNo, pagePaddingX + contentWidth - ctx.measureText(pageNo).width, pagePaddingY + 1)
+
+  const headerLineY = pagePaddingY + HEADER_LINE_HEIGHT + HEADER_PADDING_BOTTOM
+  ctx.strokeStyle = '#2f6feb'
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.moveTo(pagePaddingX, headerLineY + 1)
+  ctx.lineTo(pagePaddingX + contentWidth, headerLineY + 1)
+  ctx.stroke()
+
+  const bodyTop = headerLineY + HEADER_BORDER_HEIGHT + hg
+  ctx.font = `600 ${fs}px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif`
+  ctx.fillStyle = '#111827'
+  ctx.strokeStyle = '#333'
+  ctx.lineWidth = 1
+
+  pageEntries.forEach((entry, index) => {
+    const col = index % cols
+    const row = Math.floor(index / cols)
+    const x = pagePaddingX + col * (cellWidth + cg)
+    const y = bodyTop + row * rowHeight
+    const textLines = getEntryLines(entry, cellWidth, ctx, fs)
+    drawTextLines(ctx, textLines, x, y, textLineHeight)
+    const lineY = y + textBlockHeight + (showEnglish.value && showChinese.value ? 2 : rg) + lineHeight - 1
+    ctx.beginPath()
+    ctx.moveTo(x, lineY)
+    ctx.lineTo(x + cellWidth, lineY)
+    ctx.stroke()
+  })
+
+  return {
+    width: canvas.width,
+    height: canvas.height,
+    bytes: base64ToBytes(canvas.toDataURL('image/jpeg', 0.96).split(',')[1])
+  }
+}
+
+function getEntryLines(entry, maxWidth, ctx, fs) {
+  if (showEnglish.value && !showChinese.value) return fitTextLines(entry.word || '', 1, maxWidth, ctx)
+  if (showChinese.value && !showEnglish.value) {
+    return fitTextLines(trimChineseMeaning(entry.meaning, fs > 26 ? 20 : printCols.value >= 3 ? 22 : 28), 2, maxWidth, ctx)
+  }
+  if (showEnglish.value && showChinese.value) {
+    const wordLine = fitTextLines(entry.word || '', 1, maxWidth, ctx)[0] || ''
+    const meaningLines = fitTextLines(trimChineseMeaning(entry.meaning, fs > 26 ? 20 : printCols.value >= 3 ? 22 : 28), 2, maxWidth, ctx)
+    return [wordLine, ...meaningLines]
+  }
+  return []
+}
+
+function fitTextLines(text, maxLines, maxWidth, ctx) {
+  const source = String(text || '')
+  const lines = []
+  let current = ''
+  for (const char of source) {
+    const next = current + char
+    if (ctx.measureText(next).width <= maxWidth || !current) {
+      current = next
+      continue
+    }
+    lines.push(current)
+    current = char
+    if (lines.length >= maxLines) break
+  }
+  if (lines.length < maxLines && current) lines.push(current)
+  if (lines.length > maxLines) lines.length = maxLines
+  const lastIndex = lines.length - 1
+  if (lastIndex >= 0 && source.length > lines.join('').length) {
+    lines[lastIndex] = ellipsizeLine(lines[lastIndex], maxWidth, ctx)
+  }
+  return lines
+}
+
+function ellipsizeLine(text, maxWidth, ctx) {
+  let line = String(text || '')
+  while (line && ctx.measureText(`${line}…`).width > maxWidth) {
+    line = line.slice(0, -1)
+  }
+  return `${line}…`
+}
+
+function drawTextLines(ctx, lines, x, y, lineHeight) {
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight)
+  })
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function buildImagePdf(images) {
+  const encoder = new TextEncoder()
+  const parts = []
+  const offsets = [0]
+  let length = 0
+  const addText = (text) => {
+    const bytes = encoder.encode(text)
+    parts.push(bytes)
+    length += bytes.length
+  }
+  const addBytes = (bytes) => {
+    parts.push(bytes)
+    length += bytes.length
+  }
+  const addObject = (id, writer) => {
+    offsets[id] = length
+    addText(`${id} 0 obj\n`)
+    writer()
+    addText('\nendobj\n')
+  }
+
+  addBytes(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]))
+  addObject(1, () => addText('<< /Type /Catalog /Pages 2 0 R >>'))
+  addObject(2, () => {
+    const kids = images.map((_, index) => `${3 + index * 3} 0 R`).join(' ')
+    addText(`<< /Type /Pages /Kids [${kids}] /Count ${images.length} >>`)
+  })
+
+  images.forEach((image, index) => {
+    const pageObjectId = 3 + index * 3
+    const contentObjectId = pageObjectId + 1
+    const imageObjectId = pageObjectId + 2
+    const imageName = `Im${index + 1}`
+    const content = `q\n${PDF_PAGE_WIDTH_PT} 0 0 ${PDF_PAGE_HEIGHT_PT} 0 0 cm\n/${imageName} Do\nQ`
+
+    addObject(pageObjectId, () => {
+      addText(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_PAGE_WIDTH_PT} ${PDF_PAGE_HEIGHT_PT}] /Resources << /ProcSet [/PDF /ImageC] /XObject << /${imageName} ${imageObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`)
+    })
+    addObject(contentObjectId, () => {
+      addText(`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream`)
+    })
+    addObject(imageObjectId, () => {
+      addText(`<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`)
+      addBytes(image.bytes)
+      addText('\nendstream')
+    })
+  })
+
+  const xrefStart = length
+  addText(`xref\n0 ${offsets.length}\n`)
+  addText('0000000000 65535 f \n')
+  for (let i = 1; i < offsets.length; i += 1) {
+    addText(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`)
+  }
+  addText(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
+
+  return new Blob(parts, { type: 'application/pdf' })
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 onMounted(() => {
@@ -503,11 +650,13 @@ onMounted(() => {
 
 .a4-page {
   width: 794px;
+  height: 1123px;
   min-height: 1123px;
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
   padding: 32px 37px;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .a4-page-header {
@@ -546,9 +695,33 @@ onMounted(() => {
   gap: 2px;
 }
 
-.word-row-double .meaning-text {
+.meaning-text-en {
+  min-height: calc(var(--font-size, 16px) * 1.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: normal;
+}
+
+.meaning-text-zh {
+  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.word-row-double .meaning-text-en {
   height: auto;
   min-height: calc(var(--font-size, 16px) * 1.35);
+}
+
+.word-row-double .meaning-text-zh {
+  height: auto;
+  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
 }
 
 .meaning-text {
@@ -556,19 +729,12 @@ onMounted(() => {
   font-weight: 600;
   line-height: 1.35;
   color: #111827;
-  height: calc(var(--font-size, 16px) * 1.35 * 2);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  word-break: break-word;
+  min-width: 0;
 }
 
 .meaning-text-bottom {
   height: auto;
-  min-height: calc(var(--font-size, 16px) * 1.35);
-  -webkit-line-clamp: 1;
+  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
 }
 
 .meaning-line {

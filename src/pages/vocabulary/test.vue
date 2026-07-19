@@ -350,9 +350,13 @@ function playCurrentWord() {
 function cleanMeaning(meaning) {
   if (!meaning) return ''
   return meaning.replace(/\([^)]*[a-zA-Z][^)]*\)/g, '')
+    .replace(/（[^（）]*[a-zA-Z][^（）]*）/g, '')
     .replace(/\([^)]*\)/g, '')
+    .replace(/（[^（）]*）/g, '')
     .replace(/[a-zA-Z][a-zA-Z0-9_.-]*\s*[a-zA-Z]*/g, '')
     .replace(/\s+/g, '')
+    .replace(/\(\s*\)|（\s*）/g, '')
+    .replace(/^[\s·•\.·\-—_:：,，;；、。！？]+/, '')
     .replace(/；+/g, '；')
     .replace(/；$/, '')
 }
@@ -389,7 +393,7 @@ function printWrongWords() {
     <div style="margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee;">
       <div style="font-size: 20px; font-weight: bold; color: #e5484d;">${item.word}</div>
       <div style="font-size: 14px; color: #666; margin-top: 4px;">${item.phonetic || ''}</div>
-      <div style="font-size: 14px; color: #333; margin-top: 4px;">${item.meaning || '暂无释义'}</div>
+      <div style="font-size: 14px; color: #333; margin-top: 4px;">${cleanMeaning(item.meaning) || '暂无释义'}</div>
       <div style="font-size: 12px; color: #999; margin-top: 4px;">你的答案: ${item.answer || '-'}</div>
     </div>
   `).join('')
