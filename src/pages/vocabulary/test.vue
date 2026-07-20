@@ -57,30 +57,23 @@
           <div class="question-label">
             {{ testMode === 'meaning' ? '根据中文意思输入英文单词' : '根据发音输入英文单词' }}
           </div>
-          <div v-if="testMode === 'meaning' && showSoundButton" class="sound-prompt-center">
-            <button class="sound-button" @click="playCurrentWord">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"></path>
-              </svg>
-            </button>
-          </div>
           <div v-if="testMode === 'meaning'" class="question-prompt">
             {{ cleanMeaning(currentWord.meaning) || '暂无释义' }}
           </div>
-          <div v-else class="sound-prompt">
-            <button class="sound-button" @click="playCurrentWord">
+          <div v-else class="question-prompt">
+            <span>{{ currentWord.phonetic || '点击播放发音' }}</span>
+          </div>
+          <div class="answer-row">
+            <button v-if="showSoundButton" class="sound-button" @click="playCurrentWord">
               <svg viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"></path>
               </svg>
             </button>
-            <span>{{ currentWord.phonetic || '点击播放发音' }}</span>
-          </div>
-          <div class="answer-row">
             <el-input ref="answerInputRef" v-model="answerText" size="large" class="answer-input" placeholder="输入单词"
               @keyup.enter="submitAnswer" />
             <div class="answer-buttons">
-              <el-button size="large" class="answer-skip" @click="skipWord">跳过</el-button>
               <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
+              <el-button size="large" class="answer-skip" @click="skipWord">跳过</el-button>
             </div>
           </div>
           <div v-if="showCorrectToast" class="correct-toast">
@@ -142,22 +135,24 @@
         <div class="result-grid">
           <div class="result-block">
             <h4>正确列表</h4>
-            <div v-if="!correctResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in correctResults.slice().reverse()" :key="`ok-${item.word}-${index}`"
-              class="result-row is-correct">
-              <div class="result-word-line">
-                <div class="result-word-group">
-                  <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                  <button class="result-sound-btn" @click="playWord(item.word)">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"></path>
-                    </svg>
-                  </button>
+            <div class="result-scroll-area">
+              <div v-if="!correctResults.length" class="result-empty">暂无</div>
+              <div v-for="(item, index) in correctResults.slice().reverse()" :key="`ok-${item.word}-${index}`"
+                class="result-row is-correct">
+                <div class="result-word-line">
+                  <div class="result-word-group">
+                    <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                    <button class="result-sound-btn" @click="playWord(item.word)">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <span class="result-stat">{{ resultStatText(item) }}</span>
                 </div>
-                <span class="result-stat">{{ resultStatText(item) }}</span>
+                <span>{{ item.phonetic || '' }}</span>
+                <span>{{ item.meaning || '暂无释义' }}</span>
               </div>
-              <span>{{ item.phonetic || '' }}</span>
-              <span>{{ item.meaning || '暂无释义' }}</span>
             </div>
           </div>
           <div class="result-block">
@@ -165,26 +160,29 @@
               <h4>错误列表</h4>
               <div v-if="wrongResults.length" class="result-actions">
                 <el-button size="small" @click="exportWrongWords">导出</el-button>
-                <el-button size="small" :loading="exportingWrongPdf" :disabled="exportingWrongPdf" @click="printWrongWords">导出PDF</el-button>
+                <el-button size="small" :loading="exportingWrongPdf" :disabled="exportingWrongPdf"
+                  @click="printWrongWords">导出PDF</el-button>
               </div>
             </div>
-            <div v-if="!wrongResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in wrongResults.slice().reverse()" :key="`wrong-${item.word}-${index}`"
-              class="result-row is-wrong">
-              <div class="result-word-line">
-                <div class="result-word-group">
-                  <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                  <button class="result-sound-btn" @click="playWord(item.word)">
-                    <svg viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"></path>
-                    </svg>
-                  </button>
+            <div class="result-scroll-area">
+              <div v-if="!wrongResults.length" class="result-empty">暂无</div>
+              <div v-for="(item, index) in wrongResults.slice().reverse()" :key="`wrong-${item.word}-${index}`"
+                class="result-row is-wrong">
+                <div class="result-word-line">
+                  <div class="result-word-group">
+                    <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                    <button class="result-sound-btn" @click="playWord(item.word)">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"></path>
+                      </svg>
+                    </button>
+                  </div>
+                  <span class="result-stat">{{ resultStatText(item) }}</span>
                 </div>
-                <span class="result-stat">{{ resultStatText(item) }}</span>
+                <span>{{ item.phonetic || '' }}</span>
+                <span>你的答案：{{ item.answer || '-' }}</span>
+                <span>{{ item.meaning || '暂无释义' }}</span>
               </div>
-              <span>{{ item.phonetic || '' }}</span>
-              <span>你的答案：{{ item.answer || '-' }}</span>
-              <span>{{ item.meaning || '暂无释义' }}</span>
             </div>
           </div>
         </div>
@@ -901,10 +899,10 @@ onMounted(() => {
 .sound-button {
   display: grid;
   place-items: center;
-  width: 54px;
-  height: 54px;
+  width: 78px;
+  height: 78px;
   border: 1px solid #b8d6cb;
-  border-radius: 999px;
+  border-radius: 50%;
   background: #eef7f4;
   color: #0c514b;
   cursor: pointer;
@@ -917,16 +915,19 @@ onMounted(() => {
 }
 
 .answer-row {
-  display: grid;
-  grid-template-columns: 1fr;
-  row-gap: 18px;
-  column-gap: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.answer-input {
+  flex: 1;
 }
 
 .answer-buttons {
   display: flex;
-  justify-content: center;
   gap: 14px;
+  flex-shrink: 0;
 }
 
 /* ---------------- 红框 answer-row: 字体 30px（用户需求） ---------------- */
@@ -934,7 +935,8 @@ onMounted(() => {
 .answer-input :deep(.el-input__wrapper) {
   font-size: 34px;
   padding: 14px 16px;
-  min-height: 64px;
+  height: 78px;
+  box-sizing: border-box;
   box-shadow: var(--el-input-border-color, #dcdfe6) 0 0 0 1px inset;
   border-radius: 8px;
   transition: box-shadow 0.3s ease;
@@ -946,8 +948,9 @@ onMounted(() => {
 
 .answer-input :deep(.el-input__inner) {
   font-size: 34px;
-  line-height: 40px;
-  height: 40px;
+  line-height: 1;
+  height: auto;
+  padding: 0;
   /* ---------------- 用户需求：输入框内输入的文字水平居中 ---------------- */
   text-align: center;
 }
@@ -959,21 +962,42 @@ onMounted(() => {
   text-align: center;
 }
 
-/* 提交按钮字号 30px，同步把高度和内边距调高与 input 对齐（~56px）
- * 注意：answer-submit 类直接绑在 ElButton 的根 button 上（见 DOM classList=el-button..answer-submit）
- *       Vue scoped 的 ".answer-submit :deep(.el-button)" 写的是"子元素匹配"，自己不会是自己的子元素 → 失效
- *       因此这里用 :global(.answer-submit.el-button) 命中根元素自身 */
 :global(.answer-skip.el-button),
 :global(.answer-submit.el-button) {
   font-size: 30px;
   font-weight: 800;
-  padding: 10px 36px;
-  min-height: 56px;
-  line-height: 36px;
-  border-radius: 8px;
-  /* ---------------- 用户需求：按钮另起一行，该行内水平居中 ---------------- */
-  /* answer-row 是 grid，用 justify-self 把按钮子项在自己的格子里水平居中（input 仍满行，互不影响） */
-  justify-self: center;
+  padding: 0 36px;
+  height: 78px;
+  line-height: 78px;
+  border: none;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+:global(.answer-skip.el-button):hover,
+:global(.answer-skip.el-button):focus,
+:global(.answer-submit.el-button):hover,
+:global(.answer-submit.el-button):focus {
+  border: none;
+  border-radius: 0;
+}
+
+:global(.answer-submit.el-button) {
+  background: #2f6feb;
+  color: #fff;
+}
+
+:global(.answer-submit.el-button):hover {
+  background: #2563eb;
+}
+
+:global(.answer-skip.el-button) {
+  background: #f0f0f0;
+  color: #333;
+}
+
+:global(.answer-skip.el-button):hover {
+  background: #e0e0e0;
 }
 
 .result-head {
@@ -1193,6 +1217,11 @@ onMounted(() => {
   font-size: 13px;
 }
 
+.result-scroll-area {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
 .result-block-header {
   display: flex;
   align-items: center;
@@ -1380,7 +1409,10 @@ onMounted(() => {
     width: 100%;
   }
 
-  .answer-row,
+  .answer-row {
+    flex-direction: column;
+  }
+
   .result-grid {
     grid-template-columns: 1fr;
   }
