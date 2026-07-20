@@ -702,7 +702,8 @@ async function submitAnswer() {
     ElMessage.warning('请输入单词')
     return
   }
-  const isCorrect = answer === entry.word
+  const normalizedWord = entry.word.toLowerCase().replace(/\s*\([^)]+\)/g, '')
+  const isCorrect = answer === entry.word.toLowerCase() || answer === normalizedWord
   const updatedEntry = await vocabularyStore.recordTestResult(entry.word, isCorrect, 'default') || entry
   const result = {
     word: updatedEntry.word,
