@@ -390,11 +390,11 @@ async function runWithListLoading(fn) {
 }
 
 // —— 筛选 / 排序状态：必须在 watcher 与 filteredWords 之前声明，避免 TDZ ——
-const searchText = ref('')
-const searchMode = ref('word')
-const levelFilter = ref([])
-const tagFilter = ref([])
-const sortMode = ref('alphabet')
+const searchText = ref(router.currentRoute.value.query.searchText || '')
+const searchMode = ref(router.currentRoute.value.query.searchMode || 'word')
+const levelFilter = ref((router.currentRoute.value.query.levelFilter || '').split(',').filter(Boolean))
+const tagFilter = ref((router.currentRoute.value.query.tagFilter || '').split(',').filter(Boolean))
+const sortMode = ref(router.currentRoute.value.query.sortMode || 'alphabet')
 
 // —— 批量选择状态 ——
 const selectedWords = ref([])
@@ -472,7 +472,12 @@ function updateRouteQuery() {
     query: {
       ...router.currentRoute.value.query,
       page: page.value,
-      pageSize: pageSize.value
+      pageSize: pageSize.value,
+      searchText: searchText.value,
+      searchMode: searchMode.value,
+      levelFilter: levelFilter.value.join(','),
+      tagFilter: tagFilter.value.join(','),
+      sortMode: sortMode.value
     }
   })
 }

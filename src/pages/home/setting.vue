@@ -67,7 +67,11 @@ const formatTooltip = (val) => {
 }
 
 const goBack = () => {
-  router.push('/home')
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/home')
+  }
 }
 
 watch(speechRate, (newVal) => {

@@ -345,6 +345,13 @@ export function useVocabularyStore(options) {
       const entry = book.words.find(item => item.word === key);
       if (!entry || !VOCABULARY_LEVELS.some(item => item.value === level)) return;
       entry.level = level;
+      if (level === 'unknown') {
+        entry.testCorrectCount = 0;
+        entry.testTotalCount = 0;
+      } else if (level === 'familiar') {
+        entry.testCorrectCount = 3;
+        entry.testTotalCount = 3;
+      }
       entry.updatedAt = Date.now();
       book.updatedAt = Date.now();
       this.syncActiveBook();
@@ -359,7 +366,21 @@ export function useVocabularyStore(options) {
       if (!entry) return null;
       entry.testTotalCount = Math.max(0, Number(entry.testTotalCount) || 0) + 1;
       entry.testCorrectCount = Math.max(0, Number(entry.testCorrectCount) || 0) + (isCorrect ? 1 : 0);
-      entry.level = isCorrect ? 'mastered' : 'unknown';
+      
+      const total = entry.testTotalCount;
+      const correct = entry.testCorrectCount;
+      const accuracy = total > 0 ? (correct / total) * 100 : 0;
+      
+      if (total >= 3 && accuracy === 100) {
+        entry.level = 'familiar';
+      } else if (total >= 3 && accuracy >= 70 && accuracy < 100) {
+        entry.level = 'mastered';
+      } else if (accuracy >= 50 && accuracy < 70) {
+        entry.level = 'learning';
+      } else if (accuracy < 50) {
+        entry.level = 'unknown';
+      }
+      
       entry.updatedAt = Date.now();
       book.updatedAt = Date.now();
       this.syncActiveBook();

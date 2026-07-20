@@ -31,6 +31,10 @@
         </el-select>
         <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
           controls-position="right" />
+        <div class="sound-toggle">
+          <span class="sound-toggle-label">发音</span>
+          <el-switch v-model="showSoundButton" />
+        </div>
         <el-button type="primary" :disabled="!availableWords.length" @click="startTest">
           开始测试
         </el-button>
@@ -53,8 +57,15 @@
           <div class="question-label">
             {{ testMode === 'meaning' ? '根据中文意思输入英文单词' : '根据发音输入英文单词' }}
           </div>
+          <div v-if="testMode === 'meaning' && showSoundButton" class="sound-prompt-center">
+            <button class="sound-button" @click="playCurrentWord">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
+            </button>
+          </div>
           <div v-if="testMode === 'meaning'" class="question-prompt">
-            {{ currentWord.meaning || '暂无释义' }}
+            {{ cleanMeaning(currentWord.meaning) || '暂无释义' }}
           </div>
           <div v-else class="sound-prompt">
             <button class="sound-button" @click="playCurrentWord">
@@ -67,7 +78,14 @@
           <div class="answer-row">
             <el-input ref="answerInputRef" v-model="answerText" size="large" class="answer-input" placeholder="输入单词"
               @keyup.enter="submitAnswer" />
-            <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
+            <div class="answer-buttons">
+              <el-button size="large" class="answer-skip" @click="skipWord">跳过</el-button>
+              <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
+            </div>
+          </div>
+          <div v-if="showCorrectToast" class="correct-toast">
+            <div class="correct-toast-icon">✓</div>
+            <div class="correct-toast-text">回答正确</div>
           </div>
         </div>
       </section>
@@ -76,11 +94,47 @@
         请设置筛选条件后开始测试。
       </section>
 
+      <el-dialog v-model="errorDialogVisible" width="560px" :show-close="true" :close-on-click-modal="false"
+        custom-class="error-dialog">
+        <template #header>
+          <span class="error-dialog-title">回答错误</span>
+        </template>
+        <div class="error-content">
+          <div class="error-answer">
+            <span class="error-label">你的答案：</span>
+            <span class="error-text">{{ errorInfo.answer }}</span>
+          </div>
+          <div class="correct-info">
+            <div class="correct-word-row">
+              <span class="correct-word">{{ errorInfo.word }}</span>
+              <button class="error-sound-btn" @click="playWord(errorInfo.word)">
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z"></path>
+                </svg>
+              </button>
+            </div>
+            <span v-if="errorInfo.phonetic" class="correct-phonetic">{{ errorInfo.phonetic }}</span>
+            <span class="correct-meaning">{{ errorInfo.meaning }}</span>
+          </div>
+        </div>
+        <template #footer>
+          <div class="error-footer">
+            <el-button type="primary" size="large" @click="handleErrorNext">下一个</el-button>
+          </div>
+        </template>
+      </el-dialog>
+
       <section v-if="testQueue.length" class="test-card result-card">
         <div class="result-head">
-          <div>
-            <div class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</div>
-            <h3>{{ correctResults.length }} / {{ testQueue.length }}</h3>
+          <div class="result-head-left">
+            <span class="result-label">{{ isFinished ? '测试完成' : '实时结果' }}</span>
+            <div class="result-main-row">
+              <span class="result-item result-item-total">总计{{ testQueue.length }}个</span>
+              <span class="result-item result-item-current">当前第{{ currentIndex + 1 }}个</span>
+              <span class="result-item result-item-correct">正确{{ correctResults.length }}个</span>
+              <span class="result-item result-item-wrong">错误{{ wrongResults.length }}个</span>
+              <span class="result-item result-item-accuracy" :class="accuracyColorClass">正确率 {{ accuracyRate }}%</span>
+            </div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
         </div>
@@ -89,23 +143,46 @@
           <div class="result-block">
             <h4>正确列表</h4>
             <div v-if="!correctResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in correctResults" :key="`ok-${item.word}-${index}`"
+            <div v-for="(item, index) in correctResults.slice().reverse()" :key="`ok-${item.word}-${index}`"
               class="result-row is-correct">
               <div class="result-word-line">
-                <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                <div class="result-word-group">
+                  <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                  <button class="result-sound-btn" @click="playWord(item.word)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
               </div>
+              <span>{{ item.phonetic || '' }}</span>
               <span>{{ item.meaning || '暂无释义' }}</span>
             </div>
           </div>
           <div class="result-block">
-            <h4>错误列表</h4>
+            <div class="result-block-header">
+              <h4>错误列表</h4>
+              <div v-if="wrongResults.length" class="result-actions">
+                <el-button size="small" @click="exportWrongWords">导出</el-button>
+                <el-button size="small" :loading="exportingWrongPdf" :disabled="exportingWrongPdf" @click="printWrongWords">导出PDF</el-button>
+              </div>
+            </div>
             <div v-if="!wrongResults.length" class="result-empty">暂无</div>
-            <div v-for="(item, index) in wrongResults" :key="`wrong-${item.word}-${index}`" class="result-row is-wrong">
+            <div v-for="(item, index) in wrongResults.slice().reverse()" :key="`wrong-${item.word}-${index}`"
+              class="result-row is-wrong">
               <div class="result-word-line">
-                <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                <div class="result-word-group">
+                  <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
+                  <button class="result-sound-btn" @click="playWord(item.word)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
                 <span class="result-stat">{{ resultStatText(item) }}</span>
               </div>
+              <span>{{ item.phonetic || '' }}</span>
               <span>你的答案：{{ item.answer || '-' }}</span>
               <span>{{ item.meaning || '暂无释义' }}</span>
             </div>
@@ -119,7 +196,7 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElDialog } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
@@ -140,6 +217,24 @@ const correctResults = ref([])
 const wrongResults = ref([])
 const isFinished = ref(false)
 const answerInputRef = ref(null)
+const errorDialogVisible = ref(false)
+const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
+const showCorrectToast = ref(false)
+const showSoundButton = ref(true)
+const exportingWrongPdf = ref(false)
+
+const A4_WIDTH_PX = 794
+const A4_HEIGHT_PX = 1123
+const PDF_PAGE_WIDTH_PT = 595.28
+const PDF_PAGE_HEIGHT_PT = 841.89
+const WRONG_PAGE_PADDING_X = 37
+const WRONG_PAGE_PADDING_Y = 32
+const WRONG_PAGE_HEADER_HEIGHT = 44
+const WRONG_PAGE_GAP = 14
+const WRONG_WORD_FONT = '800 20px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_META_FONT = '600 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_ANSWER_FONT = '500 13px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_MEANING_FONT = '500 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
 
 const defaultBook = computed(() => vocabularyStore.getDefaultBook())
 const defaultWords = computed(() => defaultBook.value?.words || [])
@@ -155,6 +250,19 @@ const availableWords = computed(() => {
 })
 const normalizedTestCount = computed(() => Math.min(Math.max(Number(testCount.value) || 1, 1), Math.max(availableWords.value.length, 1)))
 const currentWord = computed(() => testQueue.value[currentIndex.value] || null)
+const accuracyRate = computed(() => {
+  const total = correctResults.value.length + wrongResults.value.length
+  if (total === 0) return 0
+  return Math.round((correctResults.value.length / total) * 100)
+})
+
+const accuracyColorClass = computed(() => {
+  const rate = accuracyRate.value
+  if (rate >= 90) return 'accuracy-excellent'
+  if (rate >= 80) return 'accuracy-good'
+  if (rate >= 60) return 'accuracy-warning'
+  return 'accuracy-danger'
+})
 
 function goBack() {
   if (window.history.length > 1) {
@@ -253,8 +361,300 @@ function playCurrentWord() {
   if (currentWord.value?.word) speak(currentWord.value.word, 'en-US')
 }
 
+function cleanMeaning(meaning) {
+  if (!meaning) return ''
+  return meaning.replace(/\([^)]*[a-zA-Z][^)]*\)/g, '')
+    .replace(/（[^（）]*[a-zA-Z][^（）]*）/g, '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/（[^（）]*）/g, '')
+    .replace(/[a-zA-Z][a-zA-Z0-9_.-]*\s*[a-zA-Z]*/g, '')
+    .replace(/\s+/g, '')
+    .replace(/\(\s*\)|（\s*）/g, '')
+    .replace(/^[\s·•\.·\-—_:：,，;；、。！？]+/, '')
+    .replace(/；+/g, '；')
+    .replace(/；$/, '')
+}
+
+function playWord(word) {
+  if (word) speak(word, 'en-US')
+}
+
 function resultStatText(item) {
   return `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
+}
+
+function exportWrongWords() {
+  if (!wrongResults.value.length) return
+  const content = wrongResults.value.map(item => {
+    const cleanMean = cleanMeaning(item.meaning) || '暂无释义'
+    return `${item.word} : ${cleanMean}`
+  }).join('\n')
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `错误单词_${new Date().toLocaleDateString('zh-CN').replace(/\//g, '-')}.txt`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  ElMessage.success('导出成功')
+}
+
+function printWrongWords() {
+  if (!wrongResults.value.length) return
+  exportingWrongPdf.value = true
+  try {
+    const items = wrongResults.value.slice().reverse()
+    const pages = paginateWrongWordPages(items)
+    const jpegPages = pages.map((page, index) => renderWrongWordPageToJpeg(page, index, pages.length))
+    const pdfBlob = buildImagePdf(jpegPages)
+    downloadBlob(pdfBlob, `错误单词_${new Date().toISOString().slice(0, 10)}.pdf`)
+    ElMessage.success(`已导出 ${pages.length} 页 PDF`)
+  } catch (error) {
+    ElMessage.error('导出 PDF 失败：' + (error.message || error))
+  } finally {
+    exportingWrongPdf.value = false
+  }
+}
+
+function paginateWrongWordPages(items) {
+  const measureCanvas = document.createElement('canvas')
+  const ctx = measureCanvas.getContext('2d')
+  const contentWidth = A4_WIDTH_PX - WRONG_PAGE_PADDING_X * 2
+  const bodyTop = WRONG_PAGE_PADDING_Y + WRONG_PAGE_HEADER_HEIGHT
+  const bodyBottom = WRONG_PAGE_PADDING_Y
+  const availableHeight = A4_HEIGHT_PX - bodyTop - bodyBottom
+  const pages = []
+  let currentPage = []
+  let usedHeight = 0
+
+  for (const item of items) {
+    const itemHeight = estimateWrongItemHeight(item, contentWidth, ctx)
+    if (currentPage.length && usedHeight + itemHeight > availableHeight) {
+      pages.push(currentPage)
+      currentPage = []
+      usedHeight = 0
+    }
+    currentPage.push(item)
+    usedHeight += itemHeight + WRONG_PAGE_GAP
+  }
+
+  if (currentPage.length) pages.push(currentPage)
+  return pages
+}
+
+function estimateWrongItemHeight(item, contentWidth, ctx) {
+  ctx.font = WRONG_WORD_FONT
+  const wordHeight = 24
+  const statWidth = 58
+  const wordWidth = contentWidth - statWidth - 12
+  const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1).length || 1
+  ctx.font = WRONG_META_FONT
+  const phoneticHeight = (item.phonetic ? 18 : 0)
+  ctx.font = WRONG_ANSWER_FONT
+  const answerHeight = 18
+  ctx.font = WRONG_MEANING_FONT
+  const meaning = cleanMeaning(item.meaning) || '暂无释义'
+  const meaningLines = wrapLines(meaning, contentWidth, ctx, 4).length || 1
+  const meaningHeight = meaningLines * 18
+  return Math.max(wordHeight * wordLines, 24) + phoneticHeight + answerHeight + meaningHeight + 20
+}
+
+function renderWrongWordPageToJpeg(pageItems, pageIndex, totalPages) {
+  const scale = Math.max(2, window.devicePixelRatio || 1)
+  const canvas = document.createElement('canvas')
+  canvas.width = Math.round(A4_WIDTH_PX * scale)
+  canvas.height = Math.round(A4_HEIGHT_PX * scale)
+  const ctx = canvas.getContext('2d')
+  ctx.scale(scale, scale)
+  ctx.fillStyle = '#fff'
+  ctx.fillRect(0, 0, A4_WIDTH_PX, A4_HEIGHT_PX)
+
+  const contentWidth = A4_WIDTH_PX - WRONG_PAGE_PADDING_X * 2
+  const bodyTop = WRONG_PAGE_PADDING_Y + WRONG_PAGE_HEADER_HEIGHT
+  let y = bodyTop
+
+  ctx.textBaseline = 'top'
+  ctx.fillStyle = '#111827'
+  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.fillText('错误单词列表', WRONG_PAGE_PADDING_X, WRONG_PAGE_PADDING_Y)
+  ctx.fillStyle = '#6b7280'
+  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  const pageNo = `第 ${pageIndex + 1} / ${totalPages} 页`
+  ctx.fillText(pageNo, WRONG_PAGE_PADDING_X + contentWidth - ctx.measureText(pageNo).width, WRONG_PAGE_PADDING_Y + 1)
+  ctx.strokeStyle = '#e5e7eb'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(WRONG_PAGE_PADDING_X, bodyTop - 12)
+  ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, bodyTop - 12)
+  ctx.stroke()
+
+  pageItems.forEach((item) => {
+    const statWidth = 58
+    const gap = 12
+    const wordWidth = contentWidth - statWidth - gap
+    const meaning = cleanMeaning(item.meaning) || '暂无释义'
+
+    ctx.fillStyle = '#ef4444'
+    ctx.font = WRONG_WORD_FONT
+    const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1)
+    drawLines(ctx, wordLines, WRONG_PAGE_PADDING_X, y, 24)
+
+    ctx.fillStyle = '#9ca3af'
+    ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+    const statText = `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
+    ctx.fillText(statText, WRONG_PAGE_PADDING_X + contentWidth - ctx.measureText(statText).width, y + 6)
+
+    let lineY = y + 28
+    if (item.phonetic) {
+      ctx.fillStyle = '#6b7280'
+      ctx.font = WRONG_META_FONT
+      drawLines(ctx, [item.phonetic], WRONG_PAGE_PADDING_X, lineY, 18)
+      lineY += 20
+    }
+
+    ctx.fillStyle = '#dc2626'
+    ctx.font = WRONG_ANSWER_FONT
+    drawLines(ctx, [`你的答案：${item.answer || '-'}`], WRONG_PAGE_PADDING_X, lineY, 17)
+    lineY += 20
+
+    ctx.fillStyle = '#333'
+    ctx.font = WRONG_MEANING_FONT
+    const meaningLines = wrapLines(meaning, contentWidth, ctx, 4)
+    drawLines(ctx, meaningLines.length ? meaningLines : ['暂无释义'], WRONG_PAGE_PADDING_X, lineY, 18)
+    lineY += Math.max(meaningLines.length, 1) * 18 + 10
+
+    ctx.strokeStyle = '#e5e7eb'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(WRONG_PAGE_PADDING_X, lineY)
+    ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, lineY)
+    ctx.stroke()
+
+    y = lineY + 12
+  })
+
+  return {
+    width: canvas.width,
+    height: canvas.height,
+    bytes: base64ToBytes(canvas.toDataURL('image/jpeg', 0.96).split(',')[1])
+  }
+}
+
+function wrapLines(text, maxWidth, ctx, maxLines = 1) {
+  const source = String(text || '')
+  if (!source) return []
+  const lines = []
+  let current = ''
+  for (const char of source) {
+    const next = current + char
+    if (ctx.measureText(next).width <= maxWidth || !current) {
+      current = next
+      continue
+    }
+    lines.push(current)
+    current = char
+    if (lines.length >= maxLines) break
+  }
+  if (lines.length < maxLines && current) lines.push(current)
+  if (lines.length > maxLines) lines.length = maxLines
+  const joined = lines.join('')
+  if (lines.length && source.length > joined.length) {
+    lines[lines.length - 1] = ellipsizeLine(lines[lines.length - 1], maxWidth, ctx)
+  }
+  return lines
+}
+
+function ellipsizeLine(text, maxWidth, ctx) {
+  let line = String(text || '')
+  while (line && ctx.measureText(`${line}…`).width > maxWidth) {
+    line = line.slice(0, -1)
+  }
+  return `${line}…`
+}
+
+function drawLines(ctx, lines, x, y, lineHeight) {
+  lines.forEach((line, index) => {
+    ctx.fillText(line, x, y + index * lineHeight)
+  })
+}
+
+function base64ToBytes(base64) {
+  const binary = atob(base64)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+function buildImagePdf(images) {
+  const encoder = new TextEncoder()
+  const parts = []
+  const offsets = [0]
+  let length = 0
+  const addText = (text) => {
+    const bytes = encoder.encode(text)
+    parts.push(bytes)
+    length += bytes.length
+  }
+  const addBytes = (bytes) => {
+    parts.push(bytes)
+    length += bytes.length
+  }
+  const addObject = (id, writer) => {
+    offsets[id] = length
+    addText(`${id} 0 obj\n`)
+    writer()
+    addText('\nendobj\n')
+  }
+
+  addBytes(new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34, 0x0a, 0x25, 0xe2, 0xe3, 0xcf, 0xd3, 0x0a]))
+  addObject(1, () => addText('<< /Type /Catalog /Pages 2 0 R >>'))
+  addObject(2, () => {
+    const kids = images.map((_, index) => `${3 + index * 3} 0 R`).join(' ')
+    addText(`<< /Type /Pages /Kids [${kids}] /Count ${images.length} >>`)
+  })
+
+  images.forEach((image, index) => {
+    const pageObjectId = 3 + index * 3
+    const contentObjectId = pageObjectId + 1
+    const imageObjectId = pageObjectId + 2
+    const imageName = `Im${index + 1}`
+    const content = `q\n${PDF_PAGE_WIDTH_PT} 0 0 ${PDF_PAGE_HEIGHT_PT} 0 0 cm\n/${imageName} Do\nQ`
+
+    addObject(pageObjectId, () => {
+      addText(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${PDF_PAGE_WIDTH_PT} ${PDF_PAGE_HEIGHT_PT}] /Resources << /ProcSet [/PDF /ImageC] /XObject << /${imageName} ${imageObjectId} 0 R >> >> /Contents ${contentObjectId} 0 R >>`)
+    })
+    addObject(contentObjectId, () => {
+      addText(`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream`)
+    })
+    addObject(imageObjectId, () => {
+      addText(`<< /Type /XObject /Subtype /Image /Width ${image.width} /Height ${image.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${image.bytes.length} >>\nstream\n`)
+      addBytes(image.bytes)
+      addText('\nendstream')
+    })
+  })
+
+  const xrefStart = length
+  addText(`xref\n0 ${offsets.length}\n`)
+  addText('0000000000 65535 f \n')
+  for (let i = 1; i < offsets.length; i += 1) {
+    addText(`${String(offsets[i]).padStart(10, '0')} 00000 n \n`)
+  }
+  addText(`trailer\n<< /Size ${offsets.length} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`)
+
+  return new Blob(parts, { type: 'application/pdf' })
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
 async function goNextQuestion() {
@@ -268,6 +668,32 @@ async function goNextQuestion() {
   saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
+}
+
+async function handleErrorNext() {
+  errorDialogVisible.value = false
+  await goNextQuestion()
+}
+
+async function handleErrorClose() {
+  errorDialogVisible.value = false
+  await goNextQuestion()
+}
+
+async function skipWord() {
+  const entry = currentWord.value
+  if (!entry) return
+  const updatedEntry = await vocabularyStore.recordTestResult(entry.word, false, 'default') || entry
+  const result = {
+    word: updatedEntry.word,
+    meaning: updatedEntry.meaning,
+    phonetic: updatedEntry.phonetic,
+    testTotalCount: updatedEntry.testTotalCount,
+    testCorrectCount: updatedEntry.testCorrectCount,
+    answer: '跳过'
+  }
+  wrongResults.value.push(result)
+  goNextQuestion()
 }
 
 async function submitAnswer() {
@@ -290,10 +716,21 @@ async function submitAnswer() {
   }
   if (isCorrect) {
     correctResults.value.push(result)
+    showCorrectToast.value = true
+    setTimeout(() => {
+      showCorrectToast.value = false
+      goNextQuestion()
+    }, 1200)
   } else {
     wrongResults.value.push(result)
+    errorInfo.value = {
+      word: entry.word,
+      phonetic: entry.phonetic || '',
+      meaning: cleanMeaning(entry.meaning) || '暂无释义',
+      answer: answer
+    }
+    errorDialogVisible.value = true
   }
-  goNextQuestion()
 }
 
 onMounted(() => {
@@ -379,6 +816,18 @@ onMounted(() => {
   width: 130px;
 }
 
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sound-toggle-label {
+  color: #63706d;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .test-meta {
   margin-top: 10px;
   color: #63706d;
@@ -416,7 +865,7 @@ onMounted(() => {
 .question-body {
   display: grid;
   gap: 22px;
-  max-width: 680px;
+  max-width: 90%;
   margin: 40px auto 0;
   text-align: center;
 }
@@ -432,6 +881,11 @@ onMounted(() => {
   font-size: 26px;
   font-weight: 800;
   line-height: 1.5;
+}
+
+.sound-prompt-center {
+  display: flex;
+  justify-content: center;
 }
 
 .sound-prompt {
@@ -463,35 +917,43 @@ onMounted(() => {
 }
 
 .answer-row {
-  /* ---------------- 用户需求：按钮另起一行（单列）+ 水平居中 ---------------- */
   display: grid;
   grid-template-columns: 1fr;
   row-gap: 18px;
   column-gap: 0;
-  /* 不对所有项用 justify-items:center，否则 input 宽度会塌陷（撑不满行）。
-   * 改由：input 占满整列（默认行为），按钮单独 justify-self:center。*/
+}
+
+.answer-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
 }
 
 /* ---------------- 红框 answer-row: 字体 30px（用户需求） ---------------- */
 /* 30px 字号同步把 wrapper 高度/内边距调大，避免字母上沿下沿被裁切 */
 .answer-input :deep(.el-input__wrapper) {
-  font-size: 30px;
-  padding: 10px 16px;
-  min-height: 56px;
+  font-size: 34px;
+  padding: 14px 16px;
+  min-height: 64px;
   box-shadow: var(--el-input-border-color, #dcdfe6) 0 0 0 1px inset;
   border-radius: 8px;
+  transition: box-shadow 0.3s ease;
+}
+
+.answer-input :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #2f6feb, 0 0 20px rgba(47, 111, 235, 0.35), inset 0 0 0 1px #2f6feb;
 }
 
 .answer-input :deep(.el-input__inner) {
-  font-size: 30px;
-  line-height: 36px;
-  height: 36px;
+  font-size: 34px;
+  line-height: 40px;
+  height: 40px;
   /* ---------------- 用户需求：输入框内输入的文字水平居中 ---------------- */
   text-align: center;
 }
 
 .answer-input :deep(.el-input__inner::placeholder) {
-  font-size: 30px;
+  font-size: 34px;
   color: #a8b1ad;
   /* ---------------- 用户需求：placeholder 文字也水平居中 ---------------- */
   text-align: center;
@@ -501,6 +963,7 @@ onMounted(() => {
  * 注意：answer-submit 类直接绑在 ElButton 的根 button 上（见 DOM classList=el-button..answer-submit）
  *       Vue scoped 的 ".answer-submit :deep(.el-button)" 写的是"子元素匹配"，自己不会是自己的子元素 → 失效
  *       因此这里用 :global(.answer-submit.el-button) 命中根元素自身 */
+:global(.answer-skip.el-button),
 :global(.answer-submit.el-button) {
   font-size: 30px;
   font-weight: 800;
@@ -521,16 +984,93 @@ onMounted(() => {
   margin-bottom: 18px;
 }
 
+.result-head-left {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+}
+
 .result-label {
   color: #63706d;
-  font-size: 13px;
+  font-size: 18px;
   font-weight: 800;
 }
 
-.result-head h3 {
-  margin: 4px 0 0;
+.result-main-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.result-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.result-item-total {
+  background: #eef4f1;
   color: #16201f;
-  font-size: 34px;
+}
+
+.result-item-current {
+  background: #eef1f8;
+  color: #2f6feb;
+}
+
+.result-item-correct {
+  background: #effaf5;
+  color: #19a974;
+}
+
+.result-item-wrong {
+  background: #fff1f1;
+  color: #e5484d;
+}
+
+.result-item-accuracy {
+  font-weight: 800;
+}
+
+.result-item-accuracy.accuracy-excellent {
+  background: #effaf5;
+  color: #2d8a4e;
+}
+
+.result-item-accuracy.accuracy-good {
+  background: #eef1f8;
+  color: #2f6feb;
+}
+
+.result-item-accuracy.accuracy-warning {
+  background: #fffbeb;
+  color: #d97706;
+}
+
+.result-item-accuracy.accuracy-danger {
+  background: #fff1f1;
+  color: #dc2626;
+}
+
+.accuracy-excellent {
+  color: #2d8a4e;
+}
+
+.accuracy-good {
+  color: #2f6feb;
+}
+
+.accuracy-warning {
+  color: #d97706;
+}
+
+.accuracy-danger {
+  color: #dc2626;
 }
 
 .result-grid {
@@ -580,8 +1120,44 @@ onMounted(() => {
 .result-word-line {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
+}
+
+.result-word-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.result-stat {
+  margin-left: auto;
+}
+
+.result-sound-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #f0f0f0;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.result-sound-btn:hover {
+  background: #2f6feb;
+}
+
+.result-sound-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: #666;
+}
+
+.result-sound-btn:hover svg {
+  fill: #fff;
 }
 
 .result-stat {
@@ -615,6 +1191,180 @@ onMounted(() => {
 .result-empty {
   color: #8c9996;
   font-size: 13px;
+}
+
+.result-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+:global(.correct-notification) {
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(25, 169, 116, 0.3);
+}
+
+:global(.correct-notification .el-notification__title) {
+  color: #19a974;
+  font-weight: 800;
+}
+
+:global(.error-dialog) {
+  border-radius: 12px;
+}
+
+:global(.error-dialog .el-dialog__header) {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.error-dialog-title {
+  color: #dc2626;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+:global(.error-dialog .el-dialog__body) {
+  padding: 24px 24px 16px;
+}
+
+:global(.error-dialog .el-dialog__footer) {
+  padding: 16px 24px 24px;
+  border-top: 0;
+}
+
+.error-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.error-answer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fff5f5;
+  border-radius: 8px;
+}
+
+.error-label {
+  color: #999;
+  font-size: 14px;
+}
+
+.error-text {
+  color: #dc2626;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.correct-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.correct-word-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.correct-word {
+  color: #19a974;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.error-sound-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #b8d6cb;
+  border-radius: 50%;
+  background: #eef7f4;
+  color: #0c514b;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.error-sound-btn:hover {
+  background: #19a974;
+}
+
+.error-sound-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.error-sound-btn:hover svg {
+  fill: #fff;
+}
+
+.correct-phonetic {
+  color: #666;
+  font-size: 16px;
+}
+
+.correct-meaning {
+  color: #333;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.error-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.correct-toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 48px;
+  background: rgba(25, 169, 116, 0.95);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(25, 169, 116, 0.4);
+  animation: toastFadeIn 0.2s ease-out;
+  z-index: 1000;
+}
+
+.correct-toast-icon {
+  font-size: 48px;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.correct-toast-text {
+  font-size: 24px;
+  font-weight: 800;
+  color: #fff;
+}
+
+@keyframes toastFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
 }
 
 @media (max-width: 720px) {
