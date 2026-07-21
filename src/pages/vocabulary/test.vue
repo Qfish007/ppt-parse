@@ -130,6 +130,7 @@
             </div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
+          <el-button v-if="isFinished && wrongResults.length" type="success" @click="restartWrongTest">重测错题</el-button>
         </div>
 
         <div class="result-grid">
@@ -345,6 +346,28 @@ async function restartSameTest() {
     await startTest()
     return
   }
+  currentIndex.value = 0
+  answerText.value = ''
+  correctResults.value = []
+  wrongResults.value = []
+  isFinished.value = false
+  saveTestSession()
+  await focusAnswer()
+  if (testMode.value === 'sound') playCurrentWord()
+}
+
+async function restartWrongTest() {
+  if (!wrongResults.value.length) {
+    ElMessage.warning('没有错题可测试')
+    return
+  }
+  const wrongWords = wrongResults.value.map(item => item.word)
+  const candidates = availableWords.value.filter(w => wrongWords.includes(w.word))
+  if (!candidates.length) {
+    ElMessage.warning('错题单词已不存在于当前词库中')
+    return
+  }
+  testQueue.value = shuffleWords(candidates)
   currentIndex.value = 0
   answerText.value = ''
   correctResults.value = []
