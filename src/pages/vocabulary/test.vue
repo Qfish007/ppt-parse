@@ -13,6 +13,7 @@
           <p class="test-subtitle">默认词本：{{ defaultBook?.name || '默认生词本' }}</p>
         </div>
       </div>
+      <el-button type="info" @click="showHistory">历史记录</el-button>
     </header>
 
     <section class="test-panel">
@@ -165,7 +166,6 @@
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
           <el-button v-if="isFinished && wrongResults.length" type="success" @click="restartWrongTest">重测错题</el-button>
-          <el-button v-if="isFinished" type="info" @click="showHistory">历史记录</el-button>
         </div>
 
         <div class="result-grid">
@@ -895,7 +895,9 @@ onMounted(() => {
 .test-header {
   margin-bottom: 18px;
   padding: 0 !important;
-  /* header 无外框卡片：返回按钮贴 header 外盒边，使按钮边缘 == panel/card 的外卡边缘 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .test-title-wrap {
