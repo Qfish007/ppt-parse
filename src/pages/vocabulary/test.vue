@@ -117,6 +117,40 @@
         </template>
       </el-dialog>
 
+      <el-dialog v-model="historyVisible" width="800px" :show-close="true" custom-class="history-dialog">
+        <template #header>
+          <span class="history-dialog-title">历史测试记录</span>
+        </template>
+        <div class="history-content" style="max-height: 680px; overflow-y: auto;">
+          <div v-if="!historyRecords.length" class="history-empty">暂无历史测试记录</div>
+          <div v-for="record in historyRecords" :key="record.id" class="history-record">
+            <div class="history-record-header">
+              <span class="history-record-time">{{ record.timestamp }}</span>
+              <span class="history-record-stats">总计{{ record.total }}题 · 正确{{ record.correct }}题 · 错误{{ record.wrong }}题
+                ·
+                正确率{{ record.accuracy }}%</span>
+            </div>
+            <div v-if="record.wrongResults.length" class="history-wrong-list">
+              <div v-for="(item, index) in record.wrongResults" :key="`h-${record.id}-${index}`"
+                class="history-wrong-item">
+                <span class="history-wrong-word">{{ item.word }}</span>
+                <button class="history-sound-btn" @click="playWord(item.word)">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"></path>
+                  </svg>
+                </button>
+                <span v-if="item.phonetic" class="history-wrong-phonetic">{{ item.phonetic }}</span>
+                <span class="history-wrong-answer">你的答案：{{ item.answer || '-' }}</span>
+                <span class="history-wrong-meaning">{{ item.meaning || '暂无释义' }}</span>
+              </div>
+            </div>
+            <div v-if="record.wrongResults.length" class="history-record-footer">
+              <el-button size="small" type="success" @click="restartHistoryTest(record)">重测这些错题</el-button>
+            </div>
+          </div>
+        </div>
+      </el-dialog>
+
       <section v-if="testQueue.length" class="test-card result-card">
         <div class="result-head">
           <div class="result-head-left">
@@ -131,6 +165,7 @@
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
           <el-button v-if="isFinished && wrongResults.length" type="success" @click="restartWrongTest">重测错题</el-button>
+          <el-button v-if="isFinished" type="info" @click="showHistory">历史记录</el-button>
         </div>
 
         <div class="result-grid">
@@ -204,6 +239,7 @@ import { VOCABULARY_LEVELS } from '../../types/index.js'
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
 const TEST_SESSION_STORAGE_KEY = 'bilingual-reader-vocabulary-test-session'
+const TEST_HISTORY_STORAGE_KEY = 'bilingual-reader-vocabulary-test-history'
 
 const levelFilter = ref([])
 const tagFilter = ref([])
@@ -221,6 +257,8 @@ const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
 const showCorrectToast = ref(false)
 const showSoundButton = ref(true)
 const exportingWrongPdf = ref(false)
+const historyVisible = ref(false)
+const historyRecords = ref([])
 
 const A4_WIDTH_PX = 794
 const A4_HEIGHT_PX = 1123
@@ -684,8 +722,78 @@ async function goNextQuestion() {
   if (currentIndex.value >= testQueue.value.length) {
     isFinished.value = true
     saveTestSession()
+    saveTestHistory()
     return
   }
+  saveTestSession()
+  await focusAnswer()
+  if (testMode.value === 'sound') playCurrentWord()
+}
+
+function saveTestHistory() {
+  if (!wrongResults.value.length && !correctResults.value.length) return
+  const record = {
+    id: Date.now().toString(),
+    timestamp: new Date().toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(/\//g, '-'),
+    total: testQueue.value.length,
+    correct: correctResults.value.length,
+    wrong: wrongResults.value.length,
+    accuracy: accuracyRate.value,
+    wrongResults: wrongResults.value.map(item => ({
+      word: item.word,
+      phonetic: item.phonetic || '',
+      meaning: item.meaning || '',
+      answer: item.answer || ''
+    }))
+  }
+  try {
+    const history = JSON.parse(localStorage.getItem(TEST_HISTORY_STORAGE_KEY) || '[]')
+    history.unshift(record)
+    if (history.length > 50) history.pop()
+    localStorage.setItem(TEST_HISTORY_STORAGE_KEY, JSON.stringify(history))
+  } catch (e) {
+    console.error('保存测试历史失败:', e)
+  }
+}
+
+function loadTestHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem(TEST_HISTORY_STORAGE_KEY) || '[]')
+    historyRecords.value = Array.isArray(history) ? history : []
+  } catch (e) {
+    console.error('加载测试历史失败:', e)
+    historyRecords.value = []
+  }
+}
+
+function showHistory() {
+  loadTestHistory()
+  historyVisible.value = true
+}
+
+async function restartHistoryTest(record) {
+  if (!record.wrongResults.length) return
+  const wrongWords = record.wrongResults.map(item => item.word)
+  const candidates = availableWords.value.filter(w => wrongWords.includes(w.word))
+  if (!candidates.length) {
+    ElMessage.warning('错题单词已不存在于当前词库中')
+    return
+  }
+  historyVisible.value = false
+  testQueue.value = shuffleWords(candidates)
+  currentIndex.value = 0
+  answerText.value = ''
+  correctResults.value = []
+  wrongResults.value = []
+  isFinished.value = false
   saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
@@ -1281,6 +1389,132 @@ onMounted(() => {
   color: #dc2626;
   font-size: 24px;
   font-weight: 800;
+}
+
+:global(.history-dialog) {
+  border-radius: 12px;
+  max-height: 800px;
+}
+
+:global(.history-dialog .el-dialog__header) {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.history-dialog-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+:global(.history-dialog .el-dialog__body) {
+  padding: 16px 24px;
+  margin: 0;
+}
+
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-empty {
+  text-align: center;
+  color: #999;
+  padding: 40px 0;
+}
+
+.history-record {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.history-record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.history-record-time {
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+}
+
+.history-record-stats {
+  font-size: 14px;
+  color: #999;
+}
+
+.history-wrong-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-wrong-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 6px;
+  border-left: 3px solid #dc2626;
+}
+
+.history-wrong-word {
+  font-size: 16px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.history-wrong-phonetic {
+  font-size: 14px;
+  color: #999;
+}
+
+.history-wrong-answer {
+  font-size: 14px;
+  color: #666;
+}
+
+.history-wrong-meaning {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+}
+
+.history-sound-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #eef7f4;
+  color: #0c514b;
+  cursor: pointer;
+  padding: 0;
+}
+
+.history-sound-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.history-sound-btn:hover {
+  background: #d4e8e1;
+}
+
+.history-record-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 :global(.error-dialog .el-dialog__body) {
