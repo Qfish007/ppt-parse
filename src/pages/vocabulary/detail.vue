@@ -40,7 +40,7 @@
             <span v-else class="memory-empty">-</span>
           </div>
         </div>
-        <div class="detail-item detail-meaning-item">
+        <div class="detail-item">
           <div class="detail-label-row">
             <span class="detail-label">中文意思</span>
             <button v-if="entry" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
@@ -57,11 +57,11 @@
             <div class="detail-row-right">
               <button v-if="entry" class="detail-refresh-btn" @click.stop="loadWordDetail" :disabled="loadingDetail">
                 <span v-if="loadingDetail" class="btn-loading"></span>
-                {{ loadingDetail ? '查询中...' : '查看短语' }}
+                {{ loadingDetail ? '查询中...' : '刷新' }}
               </button>
               <button v-if="wordDetail.phrases?.length" class="detail-collapse-btn">
                 <svg :class="{ 'collapsed': collapsedPhrases }" viewBox="0 0 24 24">
-                  <path d="M7 10l5 5 5-5z"></path>
+                  <path d="M6 9l6 6 6-6" />
                 </svg>
               </button>
             </div>
@@ -99,11 +99,11 @@
             <div class="detail-row-right">
               <button v-if="entry" class="detail-refresh-btn" @click.stop="loadWordDetail" :disabled="loadingDetail">
                 <span v-if="loadingDetail" class="btn-loading"></span>
-                {{ loadingDetail ? '查询中...' : '查看例句' }}
+                {{ loadingDetail ? '查询中...' : '刷新' }}
               </button>
               <button v-if="wordDetail.sentences?.length" class="detail-collapse-btn">
                 <svg :class="{ 'collapsed': collapsedSentences }" viewBox="0 0 24 24">
-                  <path d="M7 10l5 5 5-5z"></path>
+                  <path d="M6 9l6 6 6-6" />
                 </svg>
               </button>
             </div>
@@ -148,7 +148,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
@@ -268,6 +268,12 @@ function toggleSentences() {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside, true)
   if (entry.value?.word) {
+    loadWordDetail()
+  }
+})
+
+watch(entry, (newEntry) => {
+  if (newEntry?.word) {
     loadWordDetail()
   }
 })
@@ -475,7 +481,7 @@ function parseEnglishText(text) {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0;
 }
 
@@ -484,13 +490,7 @@ function parseEnglishText(text) {
   border-bottom: 1px solid #edf1ef;
 }
 
-.detail-item:nth-child(odd) {
-  border-right: 1px solid #edf1ef;
-}
-
-.detail-meaning-item {
-  grid-column: 1 / -1;
-  border-right: 0 !important;
+.detail-item:last-child {
   border-bottom: 0;
 }
 
@@ -541,29 +541,36 @@ function parseEnglishText(text) {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  background: transparent;
-  color: #8c9996;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d7dfdc;
+  border-radius: 6px;
+  background: #f8fdfb;
+  color: #63706d;
   cursor: pointer;
   padding: 0;
   transition: all 0.2s;
 }
 
 .detail-collapse-btn:hover {
+  border-color: #126b62;
+  background: #eef7f4;
   color: #126b62;
 }
 
 .detail-collapse-btn svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
   transition: transform 0.2s;
 }
 
 .detail-collapse-btn svg.collapsed {
-  transform: rotate(-180deg);
+  transform: rotate(-90deg);
 }
 
 .btn-loading {
