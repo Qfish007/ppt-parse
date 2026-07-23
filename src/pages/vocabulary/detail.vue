@@ -24,22 +24,37 @@
             </template>
             <span v-else class="memory-empty">-</span>
           </div>
+          <div v-if="entry.tagIds?.length" class="word-hero-tags">
+            <span v-for="tag in entryTags" :key="tag.id" class="word-tag">{{ tag.name }}</span>
+          </div>
         </div>
-        <button class="detail-sound" @click="playWord">
-          <svg viewBox="0 0 24 24">
-            <path d="M8 5v14l11-7z"></path>
-          </svg>
-        </button>
+        <div class="word-hero-right">
+          <div class="word-hero-actions">
+            <button class="detail-action-btn" @click="loadAllDetail" :disabled="refreshing" title="刷新">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+              </svg>
+            </button>
+            <button class="detail-action-btn" @click="openEditDialog" title="编辑">
+              <svg viewBox="0 0 24 24">
+                <path
+                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+              </svg>
+            </button>
+          </div>
+          <button class="detail-sound" @click="playWord" title="播放">
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"></path>
+            </svg>
+          </button>
+        </div>
       </div>
 
       <div class="detail-grid">
         <div class="detail-item">
           <div class="detail-label-row">
             <span class="detail-label">中文意思</span>
-            <button v-if="entry" class="detail-refresh-btn" @click="loadAllDetail" :disabled="refreshing">
-              <span v-if="refreshing" class="btn-loading"></span>
-              {{ refreshing ? '查询中...' : '刷新' }}
-            </button>
           </div>
           <div class="detail-meaning">{{ entry.meaning || '暂无释义' }}</div>
         </div>
@@ -127,6 +142,8 @@
     <WordPopup :visible="wordPopup.visible" :word="wordPopup.word" :phonetic="wordPopup.phonetic"
       :meaning="wordPopup.meaning" :translating="wordPopup.translating" :style="wordPopup.style" @close="closePopup"
       @speak="(word) => speak(word, 'en-US')" @translate="translatePopupWord" @add="addPopupWordToVocabulary" />
+
+    <WordEditDialog :visible="editDialogVisible" :word="entry?.word" @close="closeEditDialog" @saved="onWordSaved" />
   </div>
 </template>
 
@@ -138,6 +155,7 @@ import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 import WordPopup from '../../components/WordPopup.vue'
+import WordEditDialog from '../../components/WordEditDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -270,6 +288,29 @@ const memoryParts = computed(() => {
   return autoMemoryParts(entry.value?.word || word.value)
 })
 
+const entryTags = computed(() => {
+  if (!entry.value?.tagIds?.length) return []
+  return vocabularyStore.tags.filter(tag => entry.value.tagIds.includes(tag.id))
+})
+
+const editDialogVisible = ref(false)
+
+function openEditDialog() {
+  editDialogVisible.value = true
+}
+
+function closeEditDialog() {
+  editDialogVisible.value = false
+}
+
+function onWordSaved() {
+  const currentEntry = vocabularyStore.words.find(w => w.word === word.value)
+  if (currentEntry) {
+    entry.value = currentEntry
+  }
+  closeEditDialog()
+}
+
 function goBack() {
   // 优先返回上一级；首次直接打开 detail 页时 fallback 到来源对应页
   if (window.history.length > 1) {
@@ -326,9 +367,7 @@ async function playWord() {
 
 async function refreshMeaning() {
   const currentEntry = entry.value
-  if (!currentEntry?.word || refreshing.value) return
-
-  refreshing.value = true
+  if (!currentEntry?.word) return
   try {
     const result = await bookStore.translateWordToChinese(currentEntry.word)
     const meaning = typeof result === 'object' ? result?.meaning : result
@@ -340,8 +379,6 @@ async function refreshMeaning() {
     }
   } catch {
     // 查询失败不做处理
-  } finally {
-    refreshing.value = false
   }
 }
 
@@ -474,6 +511,34 @@ function parseEnglishText(text) {
   font-size: 15px;
 }
 
+.word-hero-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.word-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.word-hero-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+}
+
+.word-hero-actions {
+  display: flex;
+  gap: 12px;
+}
+
 .detail-sound {
   display: grid;
   place-items: center;
@@ -484,6 +549,35 @@ function parseEnglishText(text) {
   background: #eef7f4;
   color: #0c514b;
   cursor: pointer;
+}
+
+.detail-action-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: white;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.detail-action-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.detail-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.detail-action-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
 }
 
 .detail-sound svg {
@@ -526,30 +620,6 @@ function parseEnglishText(text) {
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.5px;
-}
-
-.detail-refresh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border: 1px solid #126b62;
-  border-radius: 4px;
-  background: transparent;
-  color: #126b62;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.detail-refresh-btn:hover:not(:disabled) {
-  background: #eef7f4;
-}
-
-.detail-refresh-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .detail-collapse-btn {
