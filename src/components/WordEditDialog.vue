@@ -22,7 +22,7 @@
           <div class="word-edit-field">
             <div class="word-edit-label">掌握水平</div>
             <el-select v-model="formData.level" :class="['word-edit-control', levelClass(formData.level)]"
-              popper-class="word-edit-level-popper" :teleported="false">
+              popper-class="word-edit-level-popper" :teleported="false" clearable placeholder="选择掌握水平">
               <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
@@ -75,18 +75,16 @@ const emit = defineEmits(['close', 'saved'])
 const vocabularyStore = useVocabularyStore()
 
 const VOCABULARY_LEVELS = [
-  { value: 0, label: '未学习' },
-  { value: 1, label: '已学习' },
-  { value: 2, label: '已掌握' },
-  { value: 3, label: '已熟悉' },
-  { value: 4, label: '已遗忘' }
+  { value: 'learning', label: '已了解' },
+  { value: 'mastered', label: '已掌握' },
+  { value: 'familiar', label: '已熟记' }
 ]
 
 const formData = ref({
   word: '',
   meaning: '',
   phonetic: '',
-  level: 0,
+  level: null,
   memoryText: '',
   tagIds: [],
   note: ''
@@ -114,7 +112,7 @@ function loadWordData() {
       word: entry.word,
       meaning: entry.meaning || '',
       phonetic: entry.phonetic || '',
-      level: entry.level || 0,
+      level: entry.level && entry.level !== 'unknown' ? entry.level : null,
       memoryText: entry.memoryText || '',
       tagIds: entry.tagIds || [],
       note: entry.note || ''
@@ -123,8 +121,13 @@ function loadWordData() {
 }
 
 function levelClass(level) {
-  const classes = ['level-unknown', 'level-new', 'level-learned', 'level-mastered', 'level-familiar', 'level-forgot']
-  return classes[level + 1] || classes[0]
+  if (level === null || level === undefined || level === '') return ''
+  const classMap = {
+    learning: 'level-learned',
+    mastered: 'level-mastered',
+    familiar: 'level-familiar'
+  }
+  return classMap[level] || ''
 }
 
 function close() {
@@ -136,7 +139,7 @@ function save() {
     word: formData.value.word,
     meaning: formData.value.meaning,
     phonetic: formData.value.phonetic,
-    level: formData.value.level,
+    level: formData.value.level ?? '',
     memoryText: formData.value.memoryText,
     tagIds: formData.value.tagIds,
     note: formData.value.note

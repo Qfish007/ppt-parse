@@ -60,9 +60,8 @@ function normalizeMemoryParts(parts) {
 function normalizeEntry(entry) {
   const word = normalizeWord(entry?.word);
   if (!word) return null;
-  const level = VOCABULARY_LEVELS.some(item => item.value === entry?.level)
-    ? entry.level
-    : 'unknown';
+  const isValidLevel = VOCABULARY_LEVELS.some(item => item.value === entry?.level);
+  const level = isValidLevel ? entry.level : '';
   const now = Date.now();
   return {
     word,
@@ -343,9 +342,9 @@ export function useVocabularyStore(options) {
       if (!book) return;
       const key = normalizeWord(word);
       const entry = book.words.find(item => item.word === key);
-      if (!entry || !VOCABULARY_LEVELS.some(item => item.value === level)) return;
+      if (!entry || (!VOCABULARY_LEVELS.some(item => item.value === level) && level !== '')) return;
       entry.level = level;
-      if (level === 'unknown') {
+      if (level === '') {
         entry.testCorrectCount = 0;
         entry.testTotalCount = 0;
       } else if (level === 'familiar') {
@@ -366,11 +365,11 @@ export function useVocabularyStore(options) {
       if (!entry) return null;
       entry.testTotalCount = Math.max(0, Number(entry.testTotalCount) || 0) + 1;
       entry.testCorrectCount = Math.max(0, Number(entry.testCorrectCount) || 0) + (isCorrect ? 1 : 0);
-      
+
       const total = entry.testTotalCount;
       const correct = entry.testCorrectCount;
       const accuracy = total > 0 ? (correct / total) * 100 : 0;
-      
+
       if (total >= 3 && accuracy === 100) {
         entry.level = 'familiar';
       } else if (total >= 3 && accuracy >= 70 && accuracy < 100) {
@@ -380,7 +379,7 @@ export function useVocabularyStore(options) {
       } else if (accuracy < 50) {
         entry.level = 'unknown';
       }
-      
+
       entry.updatedAt = Date.now();
       book.updatedAt = Date.now();
       this.syncActiveBook();
@@ -397,7 +396,7 @@ export function useVocabularyStore(options) {
       if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
       if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
       if (typeof updates.note === 'string') entry.note = updates.note.trim();
-      if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;
+      if (VOCABULARY_LEVELS.some(item => item.value === updates.level) || updates.level === '') entry.level = updates.level;
       if (Array.isArray(updates.tagIds)) {
         const allowed = new Set(book.tags.map(tag => tag.id));
         entry.tagIds = normalizeTagIds(updates.tagIds).filter(id => allowed.has(id));
@@ -467,7 +466,7 @@ export function useVocabularyStore(options) {
         if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
         if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
         if (typeof updates.note === 'string') entry.note = updates.note.trim();
-        if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;
+        if (VOCABULARY_LEVELS.some(item => item.value === updates.level) || updates.level === '') entry.level = updates.level;
         if (Array.isArray(updates.tagIds)) {
           entry.tagIds = normalizeTagIds(updates.tagIds).filter(id => allowedTags.has(id));
         }

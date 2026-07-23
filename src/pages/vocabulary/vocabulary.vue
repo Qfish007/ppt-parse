@@ -871,11 +871,13 @@ function openWordDetail(word) {
 }
 
 function levelLabel(level) {
-  return VOCABULARY_LEVELS.find(item => item.value === level)?.label || '不认识'
+  if (!level) return ''
+  return VOCABULARY_LEVELS.find(item => item.value === level)?.label || ''
 }
 
 function levelClass(level) {
-  return `level-${VOCABULARY_LEVELS.some(item => item.value === level) ? level : 'unknown'}`
+  if (!level) return ''
+  return `level-${VOCABULARY_LEVELS.some(item => item.value === level) ? level : ''}`
 }
 
 function updateLevel(word, level) {
