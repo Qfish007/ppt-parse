@@ -182,60 +182,8 @@
         @current-change="onPageChange" />
     </section>
 
-    <Teleport to="body">
-      <div v-if="tagDialog.visible" class="tag-dialog-overlay" @click.self="tagDialog.visible = false">
-        <div class="tag-dialog">
-          <div class="tag-dialog-header">
-            <div>
-              <h3>设置单词</h3>
-              <p>调整掌握水平、标签和移除操作。</p>
-            </div>
-            <button class="tag-dialog-close" @click="tagDialog.visible = false">&times;</button>
-          </div>
-          <div class="tag-dialog-body">
-            <div class="tag-dialog-field">
-              <div class="tag-dialog-label">单词名称</div>
-              <el-input v-model="tagDialog.word" class="tag-dialog-control" placeholder="输入单词或短语" />
-            </div>
-            <div class="tag-dialog-field">
-              <div class="tag-dialog-label">掌握水平</div>
-              <el-select v-model="tagDialog.level" :class="['tag-dialog-control', levelClass(tagDialog.level)]"
-                popper-class="vocab-level-popper" :teleported="false">
-                <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
-                  :label="level.label" :value="level.value" />
-              </el-select>
-            </div>
-            <div class="tag-dialog-field">
-              <div class="tag-dialog-label">辅助记忆</div>
-              <el-input v-model="tagDialog.memoryText" class="tag-dialog-control" placeholder="例如：fa.mous" clearable />
-            </div>
-            <div class="tag-dialog-field">
-              <div class="tag-dialog-label">单词标签</div>
-              <div class="tag-dialog-control-wrap">
-                <el-select v-model="tagDialog.tagIds" multiple clearable placeholder="选择标签" class="tag-dialog-control"
-                  :teleported="false">
-                  <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
-                </el-select>
-                <div v-if="!vocabularyStore.tags.length" class="tag-dialog-empty">
-                  还没有标签，请先到设置里添加。
-                </div>
-              </div>
-            </div>
-            <div class="tag-dialog-field">
-              <div class="tag-dialog-label">备注</div>
-              <el-input v-model="tagDialog.note" type="textarea" :rows="3" class="tag-dialog-control"
-                placeholder="添加备注信息" />
-            </div>
-          </div>
-          <div class="tag-dialog-footer">
-            <el-button type="danger" plain @click="removeWordFromDialog">移除单词</el-button>
-            <span class="tag-dialog-spacer"></span>
-            <el-button @click="tagDialog.visible = false">取消</el-button>
-            <el-button type="primary" @click="saveWordTags">保存</el-button>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <WordEditDialog :visible="editDialog.visible" :word="editDialog.word" :editable-word="true"
+      @close="editDialog.visible = false" @saved="onEditSaved" />
 
     <el-dialog v-model="manualDialog.visible" title="手动录入" width="460px" class="manual-word-dialog"
       :close-on-click-modal="!manualDialog.loading" :close-on-press-escape="!manualDialog.loading">
@@ -364,6 +312,7 @@ import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
 import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
 import { clampPage, slicePage, totalPagesOf } from '../../utils/pagination.js'
+import WordEditDialog from '../../components/WordEditDialog.vue'
 
 const router = useRouter()
 const projectsStore = useProjectsStore()
@@ -539,14 +488,9 @@ const manualDialog = ref({
   loading: false,
   tagIds: []
 })
-const tagDialog = ref({
+const editDialog = ref({
   visible: false,
-  word: '',
-  originalWord: '',
-  level: 'unknown',
-  memoryText: '',
-  tagIds: [],
-  note: ''
+  word: ''
 })
 const formatDialog = ref({
   visible: false,
@@ -877,7 +821,7 @@ function levelLabel(level) {
 
 function levelClass(level) {
   if (!level) return ''
-  return `level-${VOCABULARY_LEVELS.some(item => item.value === level) ? level : ''}`
+  return `level-${level}`
 }
 
 function updateLevel(word, level) {
@@ -922,39 +866,13 @@ function memoryPartsForEntry(entry) {
 }
 
 function openTagDialog(entry) {
-  tagDialog.value = {
+  editDialog.value = {
     visible: true,
-    word: entry.word,
-    originalWord: entry.word,
-    level: entry.level || 'unknown',
-    memoryText: (entry.memoryParts?.length ? entry.memoryParts : autoMemoryParts(entry.word)).join('.'),
-    tagIds: [...(entry.tagIds || [])],
-    note: entry.note || ''
+    word: entry.word
   }
 }
 
-async function saveWordTags() {
-  const newWord = tagDialog.value.word.trim()
-  const originalWord = tagDialog.value.originalWord
-
-  if (!newWord) {
-    ElMessage.warning('单词名称不能为空')
-    return
-  }
-
-  if (newWord !== originalWord) {
-    await vocabularyStore.removeWord(originalWord)
-  }
-
-  await vocabularyStore.addWord({
-    word: newWord,
-    level: tagDialog.value.level,
-    memoryParts: splitMemoryText(tagDialog.value.memoryText),
-    tagIds: tagDialog.value.tagIds,
-    note: tagDialog.value.note
-  })
-
-  tagDialog.value.visible = false
+function onEditSaved() {
   ElMessage.success('已保存设置')
 }
 
@@ -992,12 +910,7 @@ async function removeWord(word) {
   }
 }
 
-async function removeWordFromDialog() {
-  const word = tagDialog.value.word
-  tagDialog.value.visible = false
-  await nextTick()
-  const removed = await removeWord(word)
-}
+
 
 function openFormatDialog(mode) {
   const defaultId = mode === 'import' ? lastImportFormatId.value : 'default'
@@ -1602,23 +1515,19 @@ async function handleImport(event) {
   color: #19a974 !important;
 }
 
-.vocab-level-select.level-unknown :deep(.el-select__placeholder),
-.tag-dialog-control.level-unknown :deep(.el-select__placeholder) {
+.vocab-level-select.level-unknown :deep(.el-select__placeholder) {
   color: #e5484d;
 }
 
-.vocab-level-select.level-learning :deep(.el-select__placeholder),
-.tag-dialog-control.level-learning :deep(.el-select__placeholder) {
+.vocab-level-select.level-learning :deep(.el-select__placeholder) {
   color: #1d68d8;
 }
 
-.vocab-level-select.level-mastered :deep(.el-select__placeholder),
-.tag-dialog-control.level-mastered :deep(.el-select__placeholder) {
+.vocab-level-select.level-mastered :deep(.el-select__placeholder) {
   color: #f08a24;
 }
 
-.vocab-level-select.level-familiar :deep(.el-select__placeholder),
-.tag-dialog-control.level-familiar :deep(.el-select__placeholder) {
+.vocab-level-select.level-familiar :deep(.el-select__placeholder) {
   color: #19a974;
 }
 
@@ -1652,115 +1561,7 @@ async function handleImport(event) {
   display: none;
 }
 
-.tag-dialog-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 3000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.42);
-}
 
-.tag-dialog {
-  width: 520px;
-  max-width: 92vw;
-  border-radius: 8px;
-  background: #fff;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-}
-
-.tag-dialog-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 22px 14px;
-  border-bottom: 1px solid #edf1ef;
-}
-
-.tag-dialog-header h3 {
-  margin: 0;
-  color: #16201f;
-  font-size: 18px;
-}
-
-.tag-dialog-header p {
-  margin: 6px 0 0;
-  color: #8c9996;
-  font-size: 13px;
-}
-
-.tag-dialog-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: #63706d;
-  cursor: pointer;
-  font-size: 22px;
-}
-
-.tag-dialog-close:hover {
-  background: #f0f4f3;
-  color: #16201f;
-}
-
-.tag-dialog-body {
-  padding: 18px 14px 8px;
-}
-
-.tag-dialog-field {
-  display: grid;
-  grid-template-columns: 72px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 8px 0;
-}
-
-.tag-dialog-label {
-  color: #40504c;
-  font-size: 14px;
-  font-weight: 700;
-  text-align: right;
-}
-
-.tag-dialog-word {
-  color: #101919;
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0;
-}
-
-.tag-dialog-control,
-.tag-dialog-control-wrap {
-  width: 100%;
-  min-width: 0;
-}
-
-.tag-dialog-empty {
-  margin-top: 8px;
-  color: #8c9996;
-  font-size: 13px;
-}
-
-.tag-dialog-footer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 16px 22px 20px;
-  border-top: 1px solid #edf1ef;
-}
-
-.tag-dialog-spacer {
-  flex: 1;
-}
 
 @media (max-width: 900px) {
   .vocab-header {

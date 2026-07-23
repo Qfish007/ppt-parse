@@ -9,7 +9,8 @@
         <div class="word-edit-body">
           <div class="word-edit-field">
             <div class="word-edit-label">单词名称</div>
-            <el-input v-model="formData.word" class="word-edit-control" placeholder="输入单词或短语" disabled />
+            <el-input v-model="formData.word" class="word-edit-control" placeholder="输入单词或短语"
+              :disabled="!editableWord" />
           </div>
           <div class="word-edit-field">
             <div class="word-edit-label">中文释义</div>
@@ -62,12 +63,13 @@
 
 <script setup>
 import { ref, watch } from 'vue'
-import { ElInput, ElSelect, ElOption, ElButton } from 'element-plus'
+import { ElInput, ElSelect, ElOption, ElButton, ElMessageBox, ElMessage } from 'element-plus'
 import { useVocabularyStore } from '../stores/vocabulary.js'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  word: { type: String, default: '' }
+  word: { type: String, default: '' },
+  editableWord: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -75,6 +77,7 @@ const emit = defineEmits(['close', 'saved'])
 const vocabularyStore = useVocabularyStore()
 
 const VOCABULARY_LEVELS = [
+  { value: 'unknown', label: '不认识' },
   { value: 'learning', label: '已了解' },
   { value: 'mastered', label: '已掌握' },
   { value: 'familiar', label: '已熟记' }
@@ -112,7 +115,7 @@ function loadWordData() {
       word: entry.word,
       meaning: entry.meaning || '',
       phonetic: entry.phonetic || '',
-      level: entry.level && entry.level !== 'unknown' ? entry.level : null,
+      level: entry.level || null,
       memoryText: entry.memoryText || '',
       tagIds: entry.tagIds || [],
       note: entry.note || ''
@@ -123,7 +126,8 @@ function loadWordData() {
 function levelClass(level) {
   if (level === null || level === undefined || level === '') return ''
   const classMap = {
-    learning: 'level-learned',
+    unknown: 'level-unknown',
+    learning: 'level-learning',
     mastered: 'level-mastered',
     familiar: 'level-familiar'
   }
@@ -134,24 +138,54 @@ function close() {
   emit('close')
 }
 
-function save() {
-  vocabularyStore.updateWord({
-    word: formData.value.word,
-    meaning: formData.value.meaning,
-    phonetic: formData.value.phonetic,
-    level: formData.value.level ?? '',
-    memoryText: formData.value.memoryText,
-    tagIds: formData.value.tagIds,
-    note: formData.value.note
-  })
+async function save() {
+  const newWord = formData.value.word.trim()
+  if (!newWord) {
+    return
+  }
+
+  const level = formData.value.level ?? 'unknown'
+
+  if (editableWord && newWord !== props.word) {
+    await vocabularyStore.removeWord(props.word)
+    await vocabularyStore.addWord({
+      word: newWord,
+      meaning: formData.value.meaning,
+      phonetic: formData.value.phonetic,
+      level,
+      memoryText: formData.value.memoryText,
+      tagIds: formData.value.tagIds,
+      note: formData.value.note
+    })
+  } else {
+    vocabularyStore.updateWord({
+      word: formData.value.word,
+      meaning: formData.value.meaning,
+      phonetic: formData.value.phonetic,
+      level,
+      memoryText: formData.value.memoryText,
+      tagIds: formData.value.tagIds,
+      note: formData.value.note
+    })
+  }
   emit('saved')
   close()
 }
 
-function removeWord() {
-  vocabularyStore.removeWord(formData.value.word)
-  emit('saved')
-  close()
+async function removeWord() {
+  try {
+    await ElMessageBox.confirm(`确定从生词本移除「${formData.value.word}」吗？`, '提示', {
+      confirmButtonText: '移除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    vocabularyStore.removeWord(formData.value.word)
+    ElMessage.success('已移除')
+    emit('saved')
+    close()
+  } catch {
+    // 用户取消
+  }
 }
 </script>
 
@@ -253,51 +287,39 @@ function removeWord() {
   padding: 4px 0;
 }
 
-.word-edit-control.level-unknown :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
-}
-
-.word-edit-control.level-new :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #ef4444 inset;
-}
-
-.word-edit-control.level-learned :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #3b82f6 inset;
-}
-
-.word-edit-control.level-mastered :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #22c55e inset;
-}
-
-.word-edit-control.level-familiar :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #eab308 inset;
-}
-
-.word-edit-control.level-forgot :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #f97316 inset;
-}
-
+.word-edit-control.level-unknown :deep(.el-input__wrapper),
 .word-edit-control.level-unknown :deep(.el-select__wrapper) {
-  box-shadow: 0 0 0 1px #cbd5e1 inset;
+  box-shadow: 0 0 0 1px #e5484d inset;
 }
 
-.word-edit-control.level-new :deep(.el-select__wrapper) {
-  box-shadow: 0 0 0 1px #ef4444 inset;
+.word-edit-control.level-learning :deep(.el-input__wrapper),
+.word-edit-control.level-learning :deep(.el-select__wrapper) {
+  box-shadow: 0 0 0 1px #1d68d8 inset;
 }
 
-.word-edit-control.level-learned :deep(.el-select__wrapper) {
-  box-shadow: 0 0 0 1px #3b82f6 inset;
-}
-
+.word-edit-control.level-mastered :deep(.el-input__wrapper),
 .word-edit-control.level-mastered :deep(.el-select__wrapper) {
-  box-shadow: 0 0 0 1px #22c55e inset;
+  box-shadow: 0 0 0 1px #f08a24 inset;
 }
 
+.word-edit-control.level-familiar :deep(.el-input__wrapper),
 .word-edit-control.level-familiar :deep(.el-select__wrapper) {
-  box-shadow: 0 0 0 1px #eab308 inset;
+  box-shadow: 0 0 0 1px #19a974 inset;
 }
 
-.word-edit-control.level-forgot :deep(.el-select__wrapper) {
-  box-shadow: 0 0 0 1px #f97316 inset;
+:deep(.word-edit-level-popper .level-unknown) {
+  color: #e5484d;
+}
+
+:deep(.word-edit-level-popper .level-learning) {
+  color: #1d68d8;
+}
+
+:deep(.word-edit-level-popper .level-mastered) {
+  color: #f08a24;
+}
+
+:deep(.word-edit-level-popper .level-familiar) {
+  color: #19a974;
 }
 </style>
