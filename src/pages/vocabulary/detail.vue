@@ -12,9 +12,18 @@
 
     <section v-if="entry" class="word-detail-card">
       <div class="word-hero">
-        <div>
-          <div class="detail-label">单词</div>
+        <div class="word-hero-left">
           <h1>{{ entry.word }}</h1>
+          <div class="word-hero-phonetic">{{ entry.phonetic || '-' }}</div>
+          <div class="word-hero-memory">
+            <template v-if="memoryParts.length">
+              <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
+                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+                <span v-if="index < memoryParts.length - 1" class="memory-dot">·</span>
+              </template>
+            </template>
+            <span v-else class="memory-empty">-</span>
+          </div>
         </div>
         <button class="detail-sound" @click="playWord">
           <svg viewBox="0 0 24 24">
@@ -25,30 +34,88 @@
 
       <div class="detail-grid">
         <div class="detail-item">
-          <div class="detail-label">发音</div>
-          <div class="detail-phonetic">{{ entry.phonetic || '-' }}</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">辅助记忆</div>
-          <div class="detail-memory">
-            <template v-if="memoryParts.length">
-              <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
-                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
-                <span v-if="index < memoryParts.length - 1" class="memory-dot">·</span>
-              </template>
-            </template>
-            <span v-else class="memory-empty">-</span>
-          </div>
-        </div>
-        <div class="detail-item detail-meaning-item">
           <div class="detail-label-row">
             <span class="detail-label">中文意思</span>
-            <button v-if="entry" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
+            <button v-if="entry" class="detail-refresh-btn" @click="loadAllDetail" :disabled="refreshing">
               <span v-if="refreshing" class="btn-loading"></span>
-              {{ refreshing ? '查询中...' : '完整释义' }}
+              {{ refreshing ? '查询中...' : '刷新' }}
             </button>
           </div>
           <div class="detail-meaning">{{ entry.meaning || '暂无释义' }}</div>
+        </div>
+
+        <div class="detail-item detail-phrases-item">
+          <div class="detail-label-row" @click="togglePhrases">
+            <span class="detail-label">短语</span>
+            <button v-if="wordDetail.phrases?.length" class="detail-collapse-btn">
+              <svg :class="{ 'collapsed': collapsedPhrases }" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </div>
+          <div v-if="loadingDetail" class="detail-loading">加载中...</div>
+          <div v-else-if="wordDetail.phrases?.length" class="detail-phrases-list">
+            <div v-for="(item, index) in (collapsedPhrases ? wordDetail.phrases.slice(0, 3) : wordDetail.phrases)"
+              :key="`phrase-${index}`" class="detail-phrase-item">
+              <span class="phrase-number">{{ index + 1 }}</span>
+              <div class="phrase-content">
+                <div class="phrase-row">
+                  <span class="phrase-text">
+                    <template v-for="(part, pIndex) in parseEnglishText(item.phrase)"
+                      :key="`phrase-${index}-${pIndex}`">
+                      <span v-if="part.type === 'word'" class="clickable-word"
+                        @click="onWordClick($event, part.text)">{{ part.text }}</span>
+                      <span v-else>{{ part.text }}</span>
+                    </template>
+                  </span>
+                  <button class="phrase-sound-btn" @click="playPhrase(item.phrase)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <span class="phrase-meaning">{{ item.meaning }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="loadedDetail && !wordDetail.phrases?.length" class="detail-empty">暂无短语</div>
+        </div>
+
+        <div class="detail-item detail-sentences-item">
+          <div class="detail-label-row" @click="toggleSentences">
+            <span class="detail-label">双语例句</span>
+            <button v-if="wordDetail.sentences?.length" class="detail-collapse-btn">
+              <svg :class="{ 'collapsed': collapsedSentences }" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </div>
+          <div v-if="loadingDetail" class="detail-loading">加载中...</div>
+          <div v-else-if="wordDetail.sentences?.length" class="detail-sentences-list">
+            <div v-for="(item, index) in (collapsedSentences ? wordDetail.sentences.slice(0, 3) : wordDetail.sentences)"
+              :key="`sentence-${index}`" class="detail-sentence-item">
+              <span class="sentence-number">{{ index + 1 }}</span>
+              <div class="sentence-content">
+                <div class="sentence-row">
+                  <span class="sentence-en">
+                    <template v-for="(part, pIndex) in parseEnglishText(item.english)"
+                      :key="`sentence-${index}-${pIndex}`">
+                      <span v-if="part.type === 'word'" class="clickable-word"
+                        @click="onWordClick($event, part.text)">{{ part.text }}</span>
+                      <span v-else>{{ part.text }}</span>
+                    </template>
+                  </span>
+                  <button class="sentence-sound-btn" @click="playSentence(item.english)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
+                <span class="sentence-zh">{{ item.chinese }}</span>
+              </div>
+            </div>
+          </div>
+          <div v-else-if="loadedDetail && !wordDetail.sentences?.length" class="detail-empty">暂无例句</div>
         </div>
       </div>
     </section>
@@ -56,16 +123,21 @@
     <section v-else class="word-detail-card empty-card">
       没有找到这个单词。
     </section>
+
+    <WordPopup :visible="wordPopup.visible" :word="wordPopup.word" :phonetic="wordPopup.phonetic"
+      :meaning="wordPopup.meaning" :translating="wordPopup.translating" :style="wordPopup.style" @close="closePopup"
+      @speak="(word) => speak(word, 'en-US')" @translate="translatePopupWord" @add="addPopupWordToVocabulary" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
+import WordPopup from '../../components/WordPopup.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -76,6 +148,123 @@ const word = computed(() => String(route.params.word || '').toLowerCase())
 const backLabel = computed(() => '返回')
 const entry = computed(() => vocabularyStore.words.find(item => item.word === word.value) || null)
 const refreshing = ref(false)
+const loadingDetail = ref(false)
+const loadedDetail = ref(false)
+const wordDetail = ref({ phrases: [], sentences: [] })
+const collapsedPhrases = ref(true)
+const collapsedSentences = ref(true)
+
+const wordPopup = reactive({
+  visible: false,
+  word: '',
+  phonetic: '',
+  meaning: '',
+  translating: false,
+  style: {},
+  _anchorRect: null
+})
+
+function normalizePhonetic(value) {
+  const text = String(value || '').trim()
+  if (!text) return ''
+  return text.startsWith('/') ? text : `/${text}/`
+}
+
+function onWordClick(event, word) {
+  const cleanWord = String(word || '').trim()
+  const rect = event.target.getBoundingClientRect()
+  wordPopup._anchorRect = rect
+  wordPopup.word = cleanWord
+  const entry = vocabularyStore.words.find(w => w.word === cleanWord)
+  wordPopup.phonetic = normalizePhonetic(entry?.phonetic || bookStore.lookupWordPhonetic?.(cleanWord))
+  wordPopup.meaning = entry?.meaning || bookStore.lookupWord(cleanWord) || '暂无释义'
+  wordPopup.translating = false
+  wordPopup.visible = true
+
+  requestAnimationFrame(() => {
+    const popupEl = document.querySelector('.word-popup')
+    if (!popupEl) return
+    const popupRect = popupEl.getBoundingClientRect()
+    const top = Math.min(window.innerHeight - popupRect.height - 12, rect.bottom + 10)
+    const left = Math.min(window.innerWidth - popupRect.width - 12, Math.max(12, rect.left + rect.width / 2 - popupRect.width / 2))
+    wordPopup.style = {
+      top: Math.max(12, top) + 'px',
+      left: left + 'px'
+    }
+  })
+}
+
+function closePopup() {
+  wordPopup.visible = false
+}
+
+async function translatePopupWord() {
+  const word = wordPopup.word
+  if (!word) return
+  wordPopup.translating = true
+  wordPopup.meaning = '正在查询中文释义...'
+
+  try {
+    const translated = await bookStore.translateWordToChinese(word)
+    const meaning = typeof translated === 'string' ? translated : translated?.meaning
+    const phonetic = typeof translated === 'object' ? translated?.phonetic : ''
+    if (!meaning) throw new Error('empty translation')
+    bookStore.saveWordMeaning(word, meaning, phonetic)
+    wordPopup.meaning = meaning
+    wordPopup.phonetic = normalizePhonetic(phonetic || wordPopup.phonetic)
+  } catch {
+    wordPopup.meaning = '翻译失败。请确认已通过本地服务打开页面，或稍后再试。'
+  } finally {
+    wordPopup.translating = false
+  }
+}
+
+function addPopupWordToVocabulary() {
+  const word = wordPopup.word
+  if (!word) return
+  vocabularyStore.addWord({
+    word,
+    meaning: wordPopup.meaning || '暂无释义',
+    phonetic: wordPopup.phonetic.replace(/\//g, '') || ''
+  })
+  closePopup()
+}
+
+function handleClickOutside(e) {
+  if (wordPopup.visible && !e.target.closest('.word-popup') && !e.target.closest('.clickable-word')) {
+    closePopup()
+  }
+}
+
+function togglePhrases() {
+  if (wordDetail.value.phrases?.length) {
+    collapsedPhrases.value = !collapsedPhrases.value
+  }
+}
+
+function toggleSentences() {
+  if (wordDetail.value.sentences?.length) {
+    collapsedSentences.value = !collapsedSentences.value
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside, true)
+  if (entry.value?.word) {
+    loadAllDetail()
+  }
+})
+
+watch(entry, (newEntry) => {
+  if (newEntry?.word) {
+    loadAllDetail()
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside, true)
+})
+
 const memoryParts = computed(() => {
   if (entry.value?.memoryParts?.length) return entry.value.memoryParts
   return autoMemoryParts(entry.value?.word || word.value)
@@ -155,6 +344,59 @@ async function refreshMeaning() {
     refreshing.value = false
   }
 }
+
+async function loadWordDetail() {
+  const currentEntry = entry.value
+  if (!currentEntry?.word) return
+
+  loadingDetail.value = true
+  try {
+    const response = await fetch(`/youdao/detail?word=${encodeURIComponent(currentEntry.word)}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data?.code === 1 && data.data) {
+        wordDetail.value = {
+          phrases: data.data.phrases || [],
+          sentences: data.data.sentences || []
+        }
+      }
+    }
+  } catch {
+    // 查询失败不做处理
+  } finally {
+    loadedDetail.value = true
+    loadingDetail.value = false
+  }
+}
+
+async function loadAllDetail() {
+  refreshing.value = true
+  loadingDetail.value = true
+  await refreshMeaning()
+  await loadWordDetail()
+  refreshing.value = false
+}
+
+function playPhrase(text) {
+  speak(text, 'en-US')
+}
+
+function playSentence(text) {
+  speak(text, 'en-US')
+}
+
+function parseEnglishText(text) {
+  const parts = []
+  const words = String(text || '').split(/(\b[a-zA-Z]+(?:[-'][a-zA-Z]+)?\b)/g)
+  for (const part of words) {
+    if (/^[a-zA-Z]+(?:[-'][a-zA-Z]+)?$/.test(part)) {
+      parts.push({ type: 'word', text: part })
+    } else {
+      parts.push({ type: 'text', text: part })
+    }
+  }
+  return parts
+}
 </script>
 
 <style scoped>
@@ -197,24 +439,46 @@ async function refreshMeaning() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 28px 32px;
+  gap: 24px;
+  padding: 32px;
   border-bottom: 1px solid #edf1ef;
   background: #fbfdfc;
 }
 
+.word-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .word-hero h1 {
-  margin: 4px 0 0;
+  margin: 0;
   color: #101919;
-  font-size: 42px;
-  line-height: 1.1;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.word-hero-phonetic {
+  color: #126b62;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.word-hero-memory {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #40504c;
+  font-size: 15px;
 }
 
 .detail-sound {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid #b8d6cb;
   border-radius: 999px;
   background: #eef7f4;
@@ -223,42 +487,45 @@ async function refreshMeaning() {
 }
 
 .detail-sound svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: currentColor;
 }
 
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 0;
 }
 
 .detail-item {
-  padding: 22px 32px;
+  padding: 24px 32px;
   border-bottom: 1px solid #edf1ef;
 }
 
-.detail-item:nth-child(odd) {
-  border-right: 1px solid #edf1ef;
+.detail-item:last-child {
+  border-bottom: 0;
 }
 
-.detail-meaning-item {
-  grid-column: 1 / -1;
-  border-right: 0 !important;
-  border-bottom: 0;
+.detail-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .detail-label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px;
+  cursor: pointer;
 }
 
 .detail-label {
   color: #63706d;
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .detail-refresh-btn {
@@ -283,6 +550,42 @@ async function refreshMeaning() {
 .detail-refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.detail-collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #d7dfdc;
+  border-radius: 6px;
+  background: #f8fdfb;
+  color: #63706d;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.detail-collapse-btn:hover {
+  border-color: #126b62;
+  background: #eef7f4;
+  color: #126b62;
+}
+
+.detail-collapse-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.2s;
+}
+
+.detail-collapse-btn svg.collapsed {
+  transform: rotate(-90deg);
 }
 
 .btn-loading {
@@ -341,11 +644,190 @@ async function refreshMeaning() {
 }
 
 .detail-meaning {
-  margin-top: 8px;
   color: #40504c;
   font-size: 17px;
   line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.detail-phrases-item,
+.detail-sentences-item {
+  grid-column: 1 / -1;
+  border-right: 0 !important;
+}
+
+.detail-loading {
+  margin-top: 8px;
+  color: #8c9996;
+  font-size: 14px;
+}
+
+.detail-empty {
+  margin-top: 8px;
+  color: #8c9996;
+  font-size: 14px;
+}
+
+.detail-phrases-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.detail-phrase-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f8fdfb;
+  border-radius: 6px;
+}
+
+.phrase-number {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef7f4;
+  color: #0c514b;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.phrase-content {
+  flex: 1;
+}
+
+.phrase-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phrase-text {
+  color: #1d68b3;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.phrase-sound-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #b8d6cb;
+  border-radius: 50%;
+  background: #eef7f4;
+  color: #0c514b;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.phrase-sound-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.phrase-meaning {
+  display: block;
+  color: #40504c;
+  font-size: 16px;
+  line-height: 1.6;
+  margin-top: 6px;
+}
+
+.detail-sentences-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.detail-sentence-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: #f8fdfb;
+  border-radius: 6px;
+}
+
+.sentence-number {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef7f4;
+  color: #0c514b;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.sentence-content {
+  flex: 1;
+}
+
+.sentence-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sentence-en {
+  margin: 0;
+  color: #101919;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.clickable-word {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: #126b62;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  color: #126b62;
+}
+
+.clickable-word:hover {
+  text-decoration-thickness: 2px;
+}
+
+.sentence-sound-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #b8d6cb;
+  border-radius: 50%;
+  background: #eef7f4;
+  color: #0c514b;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.sentence-sound-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.sentence-zh {
+  display: block;
+  margin: 6px 0 0;
+  color: #63706d;
+  font-size: 16px;
+  line-height: 1.6;
 }
 
 .empty-card {

@@ -339,6 +339,91 @@ async function handleYoudaoTranslate(req, res, url) {
   }
 }
 
+async function handleYoudaoWordDetail(req, res, url) {
+  if (req.method !== 'GET') {
+    sendJSON(res, { error: 'Method not allowed' }, 405);
+    return;
+  }
+
+  const word = String(url.searchParams.get('word') || '').trim();
+  if (!word) {
+    sendJSON(res, { error: 'word is required' }, 400);
+    return;
+  }
+
+  try {
+    const phrases = [];
+    const sentences = [];
+
+    const jsonUrl = new URL('https://dict.youdao.com/jsonapi');
+    jsonUrl.searchParams.set('q', word);
+    jsonUrl.searchParams.set('dicts', 'dict,ecdict');
+
+    const jsonResponse = await fetch(jsonUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        Referer: 'https://dict.youdao.com/'
+      }
+    });
+    const jsonData = await jsonResponse.json();
+
+    const phrsData = jsonData?.phrs?.phrs || [];
+    for (const item of phrsData) {
+      const phrase = item?.phr?.headword?.l?.i;
+      const meaning = item?.phr?.trs?.[0]?.tr?.l?.i;
+      if (phrase && meaning) {
+        phrases.push({
+          phrase: String(phrase).trim(),
+          meaning: String(meaning).trim()
+        });
+      }
+      if (phrases.length >= 20) break;
+    }
+
+    const ljUrl = new URL('https://www.youdao.com/result');
+    ljUrl.searchParams.set('word', `lj:${word}`);
+    ljUrl.searchParams.set('lang', 'en');
+
+    const ljResponse = await fetch(ljUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0',
+        Referer: 'https://www.youdao.com/'
+      }
+    });
+    const html = await ljResponse.text();
+
+    const engMatches = html.match(/<div class="sen-eng"[^>]*>([\s\S]*?)<\/div>/g) || [];
+    const chMatches = html.match(/<div class="sen-ch"[^>]*>([\s\S]*?)<\/div>/g) || [];
+    const count = Math.min(engMatches.length, chMatches.length, 20);
+    for (let i = 0; i < count; i++) {
+      const english = engMatches[i].replace(/<div class="sen-eng"[^>]*>/, '').replace(/<\/div>/, '').replace(/<[^>]+>/g, '').trim();
+      const chinese = chMatches[i].replace(/<div class="sen-ch"[^>]*>/, '').replace(/<\/div>/, '').replace(/<[^>]+>/g, '').trim();
+      if (english && chinese) {
+        sentences.push({ english, chinese });
+      }
+    }
+
+    if (sentences.length === 0) {
+      const sentencesData = jsonData?.blng_sents_part?.['sentence-pair'] || [];
+      for (const item of sentencesData) {
+        const english = item?.sentence;
+        const chinese = item?.['sentence-translation'];
+        if (english && chinese) {
+          sentences.push({
+            english: String(english).trim(),
+            chinese: String(chinese).trim()
+          });
+        }
+        if (sentences.length >= 10) break;
+      }
+    }
+
+    sendJSON(res, { code: 1, data: { word, phrases, sentences } });
+  } catch (error) {
+    sendJSON(res, { error: error.message }, 500);
+  }
+}
+
 /**
  * API 路由处理
  */
@@ -377,6 +462,12 @@ export async function apiMiddleware(req, res, next) {
   // ============ GET /youdao/translate ============
   if (pathname === '/youdao/translate') {
     await handleYoudaoTranslate(req, res, url);
+    return;
+  }
+
+  // ============ GET /youdao/detail ============
+  if (pathname === '/youdao/detail') {
+    await handleYoudaoWordDetail(req, res, url);
     return;
   }
 
@@ -432,7 +523,7 @@ export async function apiMiddleware(req, res, next) {
     const type = url.searchParams.get('type') || 'image';
     const typeDir = type === 'image' ? 'images' : type;
     const dir = path.join(ROOT, 'static', `demo${index}`, typeDir);
-    
+
     if (!fs.existsSync(dir)) {
       sendJSON(res, { files: [] });
       return;
@@ -454,7 +545,7 @@ export async function apiMiddleware(req, res, next) {
   if (pathname.startsWith('/parse-result/') && req.method === 'GET') {
     const index = pathname.replace('/parse-result/', '');
     const filePath = path.join(ROOT, 'parse', 'ocr', `demo${index}`, 'content.json');
-    
+
     if (!fs.existsSync(filePath)) {
       sendJSON(res, { error: 'Not found' }, 404);
       return;
@@ -469,7 +560,7 @@ export async function apiMiddleware(req, res, next) {
   if (pathname.match(/^\/project\/\d+\/content$/) && req.method === 'GET') {
     const index = pathname.match(/\/project\/(\d+)\/content/)[1];
     const filePath = path.join(ROOT, 'parse', 'ocr', `demo${index}`, 'content.json');
-    
+
     if (!fs.existsSync(filePath)) {
       sendJSON(res, { error: 'Not found' }, 404);
       return;

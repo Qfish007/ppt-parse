@@ -13,6 +13,7 @@
           <p class="test-subtitle">默认词本：{{ defaultBook?.name || '默认生词本' }}</p>
         </div>
       </div>
+      <el-button type="info" @click="showHistory">历史记录</el-button>
     </header>
 
     <section class="test-panel">
@@ -30,7 +31,7 @@
           <el-option label="根据发音" value="sound" />
         </el-select>
         <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
-          controls-position="right" />
+          controls-position="right" @change="onTestCountChange" />
         <div class="sound-toggle">
           <span class="sound-toggle-label">发音</span>
           <el-switch v-model="showSoundButton" />
@@ -117,6 +118,50 @@
         </template>
       </el-dialog>
 
+      <el-dialog v-model="historyVisible" width="800px" :show-close="true" custom-class="history-dialog">
+        <template #header>
+          <span class="history-dialog-title">历史测试记录</span>
+        </template>
+        <div class="history-content" style="max-height: 680px; overflow-y: auto;">
+          <div v-if="!historyRecords.length" class="history-empty">暂无历史测试记录</div>
+          <div v-for="record in historyRecords" :key="record.id" class="history-record">
+            <div class="history-record-header">
+              <span class="history-record-time">{{ record.timestamp }}</span>
+              <span class="history-record-stats">总计{{ record.total }}题 · 正确{{ record.correct }}题 · 错误{{ record.wrong }}题
+                ·
+                正确率{{ record.accuracy }}%</span>
+            </div>
+            <div v-if="record.wrongResults.length" class="history-wrong-list">
+              <div v-for="(item, index) in record.wrongResults" :key="`h-${record.id}-${index}`"
+                class="history-wrong-item">
+                <span class="history-wrong-word">{{ item.word }}</span>
+                <button class="history-sound-btn" @click="playWord(item.word)">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"></path>
+                  </svg>
+                </button>
+                <span v-if="item.phonetic" class="history-wrong-phonetic">{{ item.phonetic }}</span>
+                <span class="history-wrong-answer">你的答案：{{ item.answer || '-' }}</span>
+                <span class="history-wrong-meaning">{{ item.meaning || '暂无释义' }}</span>
+              </div>
+            </div>
+            <div v-if="record.wrongResults.length" class="history-record-footer">
+              <el-button size="small" type="success" @click="restartHistoryTest(record)">重测这些错题</el-button>
+            </div>
+          </div>
+        </div>
+      </el-dialog>
+
+      <section v-if="isFinished && testQueue.length" class="test-card score-card">
+        <div class="score-feedback">
+          <span class="score-emoji">{{ scoreFeedback.emoji }}</span>
+          <div class="score-info">
+            <span class="score-text" :style="{ color: scoreFeedback.color }">{{ scoreFeedback.text }}</span>
+            <span class="score-value">{{ accuracyRate }}分</span>
+          </div>
+        </div>
+      </section>
+
       <section v-if="testQueue.length" class="test-card result-card">
         <div class="result-head">
           <div class="result-head-left">
@@ -130,6 +175,7 @@
             </div>
           </div>
           <el-button v-if="isFinished" type="primary" @click="restartSameTest">再测一次</el-button>
+          <el-button v-if="isFinished && wrongResults.length" type="success" @click="restartWrongTest">重测错题</el-button>
         </div>
 
         <div class="result-grid">
@@ -192,7 +238,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElDialog } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
@@ -203,11 +249,13 @@ import { VOCABULARY_LEVELS } from '../../types/index.js'
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
 const TEST_SESSION_STORAGE_KEY = 'bilingual-reader-vocabulary-test-session'
+const TEST_HISTORY_STORAGE_KEY = 'bilingual-reader-vocabulary-test-history'
 
 const levelFilter = ref([])
 const tagFilter = ref([])
 const testMode = ref('meaning')
-const testCount = ref(10)
+const testCount = ref(null)
+const userSetCount = ref(false)
 const testQueue = ref([])
 const currentIndex = ref(0)
 const answerText = ref('')
@@ -220,6 +268,8 @@ const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
 const showCorrectToast = ref(false)
 const showSoundButton = ref(true)
 const exportingWrongPdf = ref(false)
+const historyVisible = ref(false)
+const historyRecords = ref([])
 
 const A4_WIDTH_PX = 794
 const A4_HEIGHT_PX = 1123
@@ -246,7 +296,13 @@ const availableWords = computed(() => {
     return matchLevel && matchTags
   })
 })
-const normalizedTestCount = computed(() => Math.min(Math.max(Number(testCount.value) || 1, 1), Math.max(availableWords.value.length, 1)))
+const normalizedTestCount = computed(() => {
+  const count = Number(testCount.value)
+  if (isNaN(count) || count <= 0) {
+    return Math.max(availableWords.value.length, 1)
+  }
+  return Math.min(count, Math.max(availableWords.value.length, 1))
+})
 const currentWord = computed(() => testQueue.value[currentIndex.value] || null)
 const accuracyRate = computed(() => {
   const total = correctResults.value.length + wrongResults.value.length
@@ -262,12 +318,31 @@ const accuracyColorClass = computed(() => {
   return 'accuracy-danger'
 })
 
+const scoreFeedback = computed(() => {
+  const rate = accuracyRate.value
+  if (rate === 100) {
+    return { emoji: '🏆', text: '你太优秀了！', color: '#FFD700' }
+  } else if (rate >= 90) {
+    return { emoji: '🎉', text: '你真棒！', color: '#4CAF50' }
+  } else if (rate >= 80) {
+    return { emoji: '👍', text: '做得不错！', color: '#2196F3' }
+  } else if (rate >= 60) {
+    return { emoji: '💪', text: '继续加油！', color: '#FF9800' }
+  } else {
+    return { emoji: '📚', text: '别灰心，再来一次！', color: '#F44336' }
+  }
+})
+
 function goBack() {
   if (window.history.length > 1) {
     router.back()
   } else {
     router.push('/vocabulary')
   }
+}
+
+function onTestCountChange() {
+  userSetCount.value = true
 }
 
 function openWordDetail(word) {
@@ -301,7 +376,7 @@ async function restoreTestSession() {
     levelFilter.value = Array.isArray(payload.levelFilter) ? payload.levelFilter : []
     tagFilter.value = Array.isArray(payload.tagFilter) ? payload.tagFilter : []
     testMode.value = payload.testMode === 'sound' ? 'sound' : 'meaning'
-    testCount.value = Math.max(1, Number(payload.testCount) || 10)
+    testCount.value = payload.testCount !== null && payload.testCount !== undefined ? Math.max(1, Number(payload.testCount) || 1) : null
     testQueue.value = payload.testQueue
     currentIndex.value = Math.max(0, Number(payload.currentIndex) || 0)
     answerText.value = String(payload.answerText || '')
@@ -345,6 +420,28 @@ async function restartSameTest() {
     await startTest()
     return
   }
+  currentIndex.value = 0
+  answerText.value = ''
+  correctResults.value = []
+  wrongResults.value = []
+  isFinished.value = false
+  saveTestSession()
+  await focusAnswer()
+  if (testMode.value === 'sound') playCurrentWord()
+}
+
+async function restartWrongTest() {
+  if (!wrongResults.value.length) {
+    ElMessage.warning('没有错题可测试')
+    return
+  }
+  const wrongWords = wrongResults.value.map(item => item.word)
+  const candidates = availableWords.value.filter(w => wrongWords.includes(w.word))
+  if (!candidates.length) {
+    ElMessage.warning('错题单词已不存在于当前词库中')
+    return
+  }
+  testQueue.value = shuffleWords(candidates)
   currentIndex.value = 0
   answerText.value = ''
   correctResults.value = []
@@ -661,8 +758,78 @@ async function goNextQuestion() {
   if (currentIndex.value >= testQueue.value.length) {
     isFinished.value = true
     saveTestSession()
+    saveTestHistory()
     return
   }
+  saveTestSession()
+  await focusAnswer()
+  if (testMode.value === 'sound') playCurrentWord()
+}
+
+function saveTestHistory() {
+  if (!wrongResults.value.length && !correctResults.value.length) return
+  const record = {
+    id: Date.now().toString(),
+    timestamp: new Date().toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).replace(/\//g, '-'),
+    total: testQueue.value.length,
+    correct: correctResults.value.length,
+    wrong: wrongResults.value.length,
+    accuracy: accuracyRate.value,
+    wrongResults: wrongResults.value.map(item => ({
+      word: item.word,
+      phonetic: item.phonetic || '',
+      meaning: item.meaning || '',
+      answer: item.answer || ''
+    }))
+  }
+  try {
+    const history = JSON.parse(localStorage.getItem(TEST_HISTORY_STORAGE_KEY) || '[]')
+    history.unshift(record)
+    if (history.length > 50) history.pop()
+    localStorage.setItem(TEST_HISTORY_STORAGE_KEY, JSON.stringify(history))
+  } catch (e) {
+    console.error('保存测试历史失败:', e)
+  }
+}
+
+function loadTestHistory() {
+  try {
+    const history = JSON.parse(localStorage.getItem(TEST_HISTORY_STORAGE_KEY) || '[]')
+    historyRecords.value = Array.isArray(history) ? history : []
+  } catch (e) {
+    console.error('加载测试历史失败:', e)
+    historyRecords.value = []
+  }
+}
+
+function showHistory() {
+  loadTestHistory()
+  historyVisible.value = true
+}
+
+async function restartHistoryTest(record) {
+  if (!record.wrongResults.length) return
+  const wrongWords = record.wrongResults.map(item => item.word)
+  const candidates = availableWords.value.filter(w => wrongWords.includes(w.word))
+  if (!candidates.length) {
+    ElMessage.warning('错题单词已不存在于当前词库中')
+    return
+  }
+  historyVisible.value = false
+  testQueue.value = shuffleWords(candidates)
+  currentIndex.value = 0
+  answerText.value = ''
+  correctResults.value = []
+  wrongResults.value = []
+  isFinished.value = false
   saveTestSession()
   await focusAnswer()
   if (testMode.value === 'sound') playCurrentWord()
@@ -732,6 +899,14 @@ async function submitAnswer() {
   }
 }
 
+watch(availableWords, (words) => {
+  if (!userSetCount.value) {
+    testCount.value = words.length
+  } else if (testCount.value > words.length) {
+    testCount.value = words.length
+  }
+}, { immediate: true })
+
 onMounted(() => {
   restoreTestSession()
 })
@@ -764,7 +939,9 @@ onMounted(() => {
 .test-header {
   margin-bottom: 18px;
   padding: 0 !important;
-  /* header 无外框卡片：返回按钮贴 header 外盒边，使按钮边缘 == panel/card 的外卡边缘 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .test-title-wrap {
@@ -1077,6 +1254,58 @@ onMounted(() => {
   color: #d97706;
 }
 
+.score-card {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.score-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px;
+  background: linear-gradient(135deg, #fef9c3 0%, #fde047 100%);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.3);
+}
+
+.score-emoji {
+  font-size: 80px;
+  line-height: 1;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.score-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.score-text {
+  font-size: 40px;
+  font-weight: 800;
+}
+
+.score-value {
+  font-size: 56px;
+  font-weight: 900;
+  color: #1e293b;
+}
+
 .result-item-accuracy.accuracy-danger {
   background: #fff1f1;
   color: #dc2626;
@@ -1258,6 +1487,132 @@ onMounted(() => {
   color: #dc2626;
   font-size: 24px;
   font-weight: 800;
+}
+
+:global(.history-dialog) {
+  border-radius: 12px;
+  max-height: 800px;
+}
+
+:global(.history-dialog .el-dialog__header) {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.history-dialog-title {
+  color: #333;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+:global(.history-dialog .el-dialog__body) {
+  padding: 16px 24px;
+  margin: 0;
+}
+
+.history-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.history-empty {
+  text-align: center;
+  color: #999;
+  padding: 40px 0;
+}
+
+.history-record {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.history-record-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.history-record-time {
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+}
+
+.history-record-stats {
+  font-size: 14px;
+  color: #999;
+}
+
+.history-wrong-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.history-wrong-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  border-radius: 6px;
+  border-left: 3px solid #dc2626;
+}
+
+.history-wrong-word {
+  font-size: 16px;
+  font-weight: 700;
+  color: #dc2626;
+}
+
+.history-wrong-phonetic {
+  font-size: 14px;
+  color: #999;
+}
+
+.history-wrong-answer {
+  font-size: 14px;
+  color: #666;
+}
+
+.history-wrong-meaning {
+  font-size: 14px;
+  color: #333;
+  flex: 1;
+}
+
+.history-sound-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: #eef7f4;
+  color: #0c514b;
+  cursor: pointer;
+  padding: 0;
+}
+
+.history-sound-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.history-sound-btn:hover {
+  background: #d4e8e1;
+}
+
+.history-record-footer {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 :global(.error-dialog .el-dialog__body) {
