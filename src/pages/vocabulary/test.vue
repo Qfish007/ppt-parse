@@ -31,7 +31,7 @@
           <el-option label="根据发音" value="sound" />
         </el-select>
         <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
-          controls-position="right" />
+          controls-position="right" @change="onTestCountChange" />
         <div class="sound-toggle">
           <span class="sound-toggle-label">发音</span>
           <el-switch v-model="showSoundButton" />
@@ -228,7 +228,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElDialog } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
@@ -244,7 +244,8 @@ const TEST_HISTORY_STORAGE_KEY = 'bilingual-reader-vocabulary-test-history'
 const levelFilter = ref([])
 const tagFilter = ref([])
 const testMode = ref('meaning')
-const testCount = ref(10)
+const testCount = ref(null)
+const userSetCount = ref(false)
 const testQueue = ref([])
 const currentIndex = ref(0)
 const answerText = ref('')
@@ -285,7 +286,13 @@ const availableWords = computed(() => {
     return matchLevel && matchTags
   })
 })
-const normalizedTestCount = computed(() => Math.min(Math.max(Number(testCount.value) || 1, 1), Math.max(availableWords.value.length, 1)))
+const normalizedTestCount = computed(() => {
+  const count = Number(testCount.value)
+  if (isNaN(count) || count <= 0) {
+    return Math.max(availableWords.value.length, 1)
+  }
+  return Math.min(count, Math.max(availableWords.value.length, 1))
+})
 const currentWord = computed(() => testQueue.value[currentIndex.value] || null)
 const accuracyRate = computed(() => {
   const total = correctResults.value.length + wrongResults.value.length
@@ -307,6 +314,10 @@ function goBack() {
   } else {
     router.push('/vocabulary')
   }
+}
+
+function onTestCountChange() {
+  userSetCount.value = true
 }
 
 function openWordDetail(word) {
@@ -340,7 +351,7 @@ async function restoreTestSession() {
     levelFilter.value = Array.isArray(payload.levelFilter) ? payload.levelFilter : []
     tagFilter.value = Array.isArray(payload.tagFilter) ? payload.tagFilter : []
     testMode.value = payload.testMode === 'sound' ? 'sound' : 'meaning'
-    testCount.value = Math.max(1, Number(payload.testCount) || 10)
+    testCount.value = payload.testCount !== null && payload.testCount !== undefined ? Math.max(1, Number(payload.testCount) || 1) : null
     testQueue.value = payload.testQueue
     currentIndex.value = Math.max(0, Number(payload.currentIndex) || 0)
     answerText.value = String(payload.answerText || '')
@@ -862,6 +873,14 @@ async function submitAnswer() {
     errorDialogVisible.value = true
   }
 }
+
+watch(availableWords, (words) => {
+  if (!userSetCount.value) {
+    testCount.value = words.length
+  } else if (testCount.value > words.length) {
+    testCount.value = words.length
+  }
+}, { immediate: true })
 
 onMounted(() => {
   restoreTestSession()
