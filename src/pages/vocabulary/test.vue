@@ -152,6 +152,16 @@
         </div>
       </el-dialog>
 
+      <section v-if="isFinished && testQueue.length" class="test-card score-card">
+        <div class="score-feedback">
+          <span class="score-emoji">{{ scoreFeedback.emoji }}</span>
+          <div class="score-info">
+            <span class="score-text" :style="{ color: scoreFeedback.color }">{{ scoreFeedback.text }}</span>
+            <span class="score-value">{{ accuracyRate }}分</span>
+          </div>
+        </div>
+      </section>
+
       <section v-if="testQueue.length" class="test-card result-card">
         <div class="result-head">
           <div class="result-head-left">
@@ -306,6 +316,21 @@ const accuracyColorClass = computed(() => {
   if (rate >= 80) return 'accuracy-good'
   if (rate >= 60) return 'accuracy-warning'
   return 'accuracy-danger'
+})
+
+const scoreFeedback = computed(() => {
+  const rate = accuracyRate.value
+  if (rate === 100) {
+    return { emoji: '🏆', text: '你太优秀了！', color: '#FFD700' }
+  } else if (rate >= 90) {
+    return { emoji: '🎉', text: '你真棒！', color: '#4CAF50' }
+  } else if (rate >= 80) {
+    return { emoji: '👍', text: '做得不错！', color: '#2196F3' }
+  } else if (rate >= 60) {
+    return { emoji: '💪', text: '继续加油！', color: '#FF9800' }
+  } else {
+    return { emoji: '📚', text: '别灰心，再来一次！', color: '#F44336' }
+  }
 })
 
 function goBack() {
@@ -1227,6 +1252,58 @@ onMounted(() => {
 .result-item-accuracy.accuracy-warning {
   background: #fffbeb;
   color: #d97706;
+}
+
+.score-card {
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.score-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 40px;
+  background: linear-gradient(135deg, #fef9c3 0%, #fde047 100%);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(251, 191, 36, 0.3);
+}
+
+.score-emoji {
+  font-size: 80px;
+  line-height: 1;
+  animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.score-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.score-text {
+  font-size: 40px;
+  font-weight: 800;
+}
+
+.score-value {
+  font-size: 56px;
+  font-weight: 900;
+  color: #1e293b;
 }
 
 .result-item-accuracy.accuracy-danger {
