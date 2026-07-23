@@ -12,9 +12,18 @@
 
     <section v-if="entry" class="word-detail-card">
       <div class="word-hero">
-        <div>
-          <div class="detail-label">单词</div>
+        <div class="word-hero-left">
           <h1>{{ entry.word }}</h1>
+          <div class="word-hero-phonetic">{{ entry.phonetic || '-' }}</div>
+          <div class="word-hero-memory">
+            <template v-if="memoryParts.length">
+              <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
+                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
+                <span v-if="index < memoryParts.length - 1" class="memory-dot">·</span>
+              </template>
+            </template>
+            <span v-else class="memory-empty">-</span>
+          </div>
         </div>
         <button class="detail-sound" @click="playWord">
           <svg viewBox="0 0 24 24">
@@ -25,27 +34,11 @@
 
       <div class="detail-grid">
         <div class="detail-item">
-          <div class="detail-label">发音</div>
-          <div class="detail-phonetic">{{ entry.phonetic || '-' }}</div>
-        </div>
-        <div class="detail-item">
-          <div class="detail-label">辅助记忆</div>
-          <div class="detail-memory">
-            <template v-if="memoryParts.length">
-              <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
-                <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
-                <span v-if="index < memoryParts.length - 1" class="memory-dot">·</span>
-              </template>
-            </template>
-            <span v-else class="memory-empty">-</span>
-          </div>
-        </div>
-        <div class="detail-item">
           <div class="detail-label-row">
             <span class="detail-label">中文意思</span>
-            <button v-if="entry" class="detail-refresh-btn" @click="refreshMeaning" :disabled="refreshing">
+            <button v-if="entry" class="detail-refresh-btn" @click="loadAllDetail" :disabled="refreshing">
               <span v-if="refreshing" class="btn-loading"></span>
-              {{ refreshing ? '查询中...' : '完整释义' }}
+              {{ refreshing ? '查询中...' : '刷新' }}
             </button>
           </div>
           <div class="detail-meaning">{{ entry.meaning || '暂无释义' }}</div>
@@ -54,21 +47,16 @@
         <div class="detail-item detail-phrases-item">
           <div class="detail-label-row" @click="togglePhrases">
             <span class="detail-label">短语</span>
-            <div class="detail-row-right">
-              <button v-if="entry" class="detail-refresh-btn" @click.stop="loadWordDetail" :disabled="loadingDetail">
-                <span v-if="loadingDetail" class="btn-loading"></span>
-                {{ loadingDetail ? '查询中...' : '刷新' }}
-              </button>
-              <button v-if="wordDetail.phrases?.length" class="detail-collapse-btn">
-                <svg :class="{ 'collapsed': collapsedPhrases }" viewBox="0 0 24 24">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </div>
+            <button v-if="wordDetail.phrases?.length" class="detail-collapse-btn">
+              <svg :class="{ 'collapsed': collapsedPhrases }" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
           </div>
           <div v-if="loadingDetail" class="detail-loading">加载中...</div>
-          <div v-else-if="wordDetail.phrases?.length && !collapsedPhrases" class="detail-phrases-list">
-            <div v-for="(item, index) in wordDetail.phrases" :key="`phrase-${index}`" class="detail-phrase-item">
+          <div v-else-if="wordDetail.phrases?.length" class="detail-phrases-list">
+            <div v-for="(item, index) in (collapsedPhrases ? wordDetail.phrases.slice(0, 3) : wordDetail.phrases)"
+              :key="`phrase-${index}`" class="detail-phrase-item">
               <span class="phrase-number">{{ index + 1 }}</span>
               <div class="phrase-content">
                 <div class="phrase-row">
@@ -96,21 +84,16 @@
         <div class="detail-item detail-sentences-item">
           <div class="detail-label-row" @click="toggleSentences">
             <span class="detail-label">双语例句</span>
-            <div class="detail-row-right">
-              <button v-if="entry" class="detail-refresh-btn" @click.stop="loadWordDetail" :disabled="loadingDetail">
-                <span v-if="loadingDetail" class="btn-loading"></span>
-                {{ loadingDetail ? '查询中...' : '刷新' }}
-              </button>
-              <button v-if="wordDetail.sentences?.length" class="detail-collapse-btn">
-                <svg :class="{ 'collapsed': collapsedSentences }" viewBox="0 0 24 24">
-                  <path d="M6 9l6 6 6-6" />
-                </svg>
-              </button>
-            </div>
+            <button v-if="wordDetail.sentences?.length" class="detail-collapse-btn">
+              <svg :class="{ 'collapsed': collapsedSentences }" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
           </div>
           <div v-if="loadingDetail" class="detail-loading">加载中...</div>
-          <div v-else-if="wordDetail.sentences?.length && !collapsedSentences" class="detail-sentences-list">
-            <div v-for="(item, index) in wordDetail.sentences" :key="`sentence-${index}`" class="detail-sentence-item">
+          <div v-else-if="wordDetail.sentences?.length" class="detail-sentences-list">
+            <div v-for="(item, index) in (collapsedSentences ? wordDetail.sentences.slice(0, 3) : wordDetail.sentences)"
+              :key="`sentence-${index}`" class="detail-sentence-item">
               <span class="sentence-number">{{ index + 1 }}</span>
               <div class="sentence-content">
                 <div class="sentence-row">
@@ -168,8 +151,8 @@ const refreshing = ref(false)
 const loadingDetail = ref(false)
 const loadedDetail = ref(false)
 const wordDetail = ref({ phrases: [], sentences: [] })
-const collapsedPhrases = ref(false)
-const collapsedSentences = ref(false)
+const collapsedPhrases = ref(true)
+const collapsedSentences = ref(true)
 
 const wordPopup = reactive({
   visible: false,
@@ -268,13 +251,13 @@ function toggleSentences() {
 onMounted(() => {
   document.addEventListener('click', handleClickOutside, true)
   if (entry.value?.word) {
-    loadWordDetail()
+    loadAllDetail()
   }
 })
 
 watch(entry, (newEntry) => {
   if (newEntry?.word) {
-    loadWordDetail()
+    loadAllDetail()
   }
 })
 
@@ -364,7 +347,7 @@ async function refreshMeaning() {
 
 async function loadWordDetail() {
   const currentEntry = entry.value
-  if (!currentEntry?.word || loadingDetail.value) return
+  if (!currentEntry?.word) return
 
   loadingDetail.value = true
   try {
@@ -384,6 +367,14 @@ async function loadWordDetail() {
     loadedDetail.value = true
     loadingDetail.value = false
   }
+}
+
+async function loadAllDetail() {
+  refreshing.value = true
+  loadingDetail.value = true
+  await refreshMeaning()
+  await loadWordDetail()
+  refreshing.value = false
 }
 
 function playPhrase(text) {
@@ -448,24 +439,46 @@ function parseEnglishText(text) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 28px 32px;
+  gap: 24px;
+  padding: 32px;
   border-bottom: 1px solid #edf1ef;
   background: #fbfdfc;
 }
 
+.word-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .word-hero h1 {
-  margin: 4px 0 0;
+  margin: 0;
   color: #101919;
-  font-size: 42px;
-  line-height: 1.1;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.word-hero-phonetic {
+  color: #126b62;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.word-hero-memory {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #40504c;
+  font-size: 15px;
 }
 
 .detail-sound {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   border: 1px solid #b8d6cb;
   border-radius: 999px;
   background: #eef7f4;
@@ -474,8 +487,8 @@ function parseEnglishText(text) {
 }
 
 .detail-sound svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: currentColor;
 }
 
@@ -486,7 +499,7 @@ function parseEnglishText(text) {
 }
 
 .detail-item {
-  padding: 22px 32px;
+  padding: 24px 32px;
   border-bottom: 1px solid #edf1ef;
 }
 
@@ -504,6 +517,7 @@ function parseEnglishText(text) {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-bottom: 12px;
   cursor: pointer;
 }
 
@@ -511,6 +525,7 @@ function parseEnglishText(text) {
   color: #63706d;
   font-size: 13px;
   font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .detail-refresh-btn {
@@ -629,7 +644,6 @@ function parseEnglishText(text) {
 }
 
 .detail-meaning {
-  margin-top: 8px;
   color: #40504c;
   font-size: 17px;
   line-height: 1.7;
@@ -655,10 +669,9 @@ function parseEnglishText(text) {
 }
 
 .detail-phrases-list {
-  margin-top: 12px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .detail-phrase-item {
@@ -730,10 +743,9 @@ function parseEnglishText(text) {
 }
 
 .detail-sentences-list {
-  margin-top: 12px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .detail-sentence-item {
