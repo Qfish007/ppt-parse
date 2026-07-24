@@ -60,9 +60,8 @@ function normalizeMemoryParts(parts) {
 function normalizeEntry(entry) {
   const word = normalizeWord(entry?.word);
   if (!word) return null;
-  const level = VOCABULARY_LEVELS.some(item => item.value === entry?.level)
-    ? entry.level
-    : 'unknown';
+  const isValidLevel = VOCABULARY_LEVELS.some(item => item.value === entry?.level);
+  const level = isValidLevel ? entry.level : 'unknown';
   const now = Date.now();
   return {
     word,
@@ -366,11 +365,11 @@ export function useVocabularyStore(options) {
       if (!entry) return null;
       entry.testTotalCount = Math.max(0, Number(entry.testTotalCount) || 0) + 1;
       entry.testCorrectCount = Math.max(0, Number(entry.testCorrectCount) || 0) + (isCorrect ? 1 : 0);
-      
+
       const total = entry.testTotalCount;
       const correct = entry.testCorrectCount;
       const accuracy = total > 0 ? (correct / total) * 100 : 0;
-      
+
       if (total >= 3 && accuracy === 100) {
         entry.level = 'familiar';
       } else if (total >= 3 && accuracy >= 70 && accuracy < 100) {
@@ -380,7 +379,7 @@ export function useVocabularyStore(options) {
       } else if (accuracy < 50) {
         entry.level = 'unknown';
       }
-      
+
       entry.updatedAt = Date.now();
       book.updatedAt = Date.now();
       this.syncActiveBook();
