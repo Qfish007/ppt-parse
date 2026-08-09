@@ -571,5 +571,41 @@ export async function apiMiddleware(req, res, next) {
     return;
   }
 
+  // ============ GET /api/image/search ============
+  if (pathname === '/image/search' && req.method === 'GET') {
+    const keyword = String(url.searchParams.get('keyword') || '').trim();
+    const count = Math.min(10, Math.max(1, Number(url.searchParams.get('count')) || 3));
+    if (!keyword) {
+      sendJSON(res, { error: 'keyword is required' }, 400);
+      return;
+    }
+
+    try {
+      const searchUrl = new URL('https://api.duckduckgo.com/');
+      searchUrl.searchParams.set('q', keyword);
+      searchUrl.searchParams.set('format', 'json');
+      searchUrl.searchParams.set('t', 'vocab-memory');
+      searchUrl.searchParams.set('no_html', '1');
+      searchUrl.searchParams.set('no_redirect', '1');
+
+      const upstream = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0'
+        }
+      });
+      const data = await upstream.json();
+      const images = (data?.Results || []).slice(0, count).map(item => ({
+        url: item?.Image || '',
+        title: item?.Title || '',
+        source: item?.Source || ''
+      })).filter(item => item.url);
+
+      sendJSON(res, { code: 1, data: { images } });
+    } catch (error) {
+      sendJSON(res, { error: error.message }, 500);
+    }
+    return;
+  }
+
   next();
 }

@@ -59,6 +59,10 @@
           <div class="detail-meaning">{{ entry.meaning || '暂无释义' }}</div>
         </div>
 
+        <div class="detail-item">
+          <WordMemory :word="entry.word" :meaning="entry.meaning" />
+        </div>
+
         <div class="detail-item detail-phrases-item">
           <div class="detail-label-row" @click="togglePhrases">
             <span class="detail-label">短语</span>
@@ -156,6 +160,7 @@ import { useBookStore } from '../../stores/book.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 import WordPopup from '../../components/WordPopup.vue'
 import WordEditDialog from '../../components/WordEditDialog.vue'
+import WordMemory from '../../components/WordMemory.vue'
 
 const route = useRoute()
 const router = useRouter()
