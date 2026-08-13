@@ -110,6 +110,7 @@
         <span>中文</span>
         <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
         <span v-if="vocabularyStore.visibleColumns.level" class="vocab-level-head">掌握水平</span>
+        <span v-if="vocabularyStore.visibleColumns.testStats" class="vocab-teststats-head">测试次数</span>
         <span v-if="vocabularyStore.visibleColumns.note" class="vocab-note-head">备注</span>
         <span class="vocab-action-head">操作</span>
       </div>
@@ -171,6 +172,11 @@
               <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
+          </div>
+          <div v-if="vocabularyStore.visibleColumns.testStats" class="vocab-teststats">
+            <span class="vocab-teststats-correct">正确{{ Number(entry.testCorrectCount) || 0 }}次</span>
+            <span class="vocab-teststats-wrong">错误{{ Math.max(0, (Number(entry.testTotalCount) || 0) -
+              (Number(entry.testCorrectCount) || 0)) }}次</span>
           </div>
           <div v-if="vocabularyStore.visibleColumns.note" class="vocab-note">
             {{ entry.note || '-' }}
@@ -406,6 +412,7 @@ const gridTemplateColumns = computed(() => {
   cols.push('1fr')
   if (vocabularyStore.visibleColumns.tags) cols.push('100px')
   if (vocabularyStore.visibleColumns.level) cols.push('80px')
+  if (vocabularyStore.visibleColumns.testStats) cols.push('140px')
   if (vocabularyStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
   cols.push('60px')
   return cols.join(' ')
@@ -417,8 +424,16 @@ const listMinWidth = computed(() => {
   if (vocabularyStore.visibleColumns.memory) width += 130
   if (vocabularyStore.visibleColumns.tags) width += 100
   if (vocabularyStore.visibleColumns.level) width += 80
+  if (vocabularyStore.visibleColumns.testStats) width += 140
   if (vocabularyStore.visibleColumns.note) width += 60
-  width += 12 * (8 - (!vocabularyStore.visibleColumns.pronunciation) - (!vocabularyStore.visibleColumns.memory) - (!vocabularyStore.visibleColumns.tags) - (!vocabularyStore.visibleColumns.level) - (!vocabularyStore.visibleColumns.note))
+  const colCount = 6
+    + (vocabularyStore.visibleColumns.pronunciation ? 1 : 0)
+    + (vocabularyStore.visibleColumns.memory ? 1 : 0)
+    + (vocabularyStore.visibleColumns.tags ? 1 : 0)
+    + (vocabularyStore.visibleColumns.level ? 1 : 0)
+    + (vocabularyStore.visibleColumns.testStats ? 1 : 0)
+    + (vocabularyStore.visibleColumns.note ? 1 : 0)
+  width += 12 * (colCount - 1)
   return `${width}px`
 })
 
@@ -1484,6 +1499,28 @@ async function handleImport(event) {
 
 .vocab-level-head {
   text-align: center;
+}
+
+.vocab-teststats-head {
+  text-align: center;
+  font-size: 12px;
+}
+
+.vocab-teststats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.vocab-teststats-correct {
+  color: #16a34a;
+}
+
+.vocab-teststats-wrong {
+  color: #dc2626;
 }
 
 .vocab-note-head {

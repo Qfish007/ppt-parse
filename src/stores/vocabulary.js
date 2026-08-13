@@ -120,7 +120,8 @@ export function useVocabularyStore(options) {
       memory: true,
       tags: true,
       level: true,
-      note: false
+      note: false,
+      testStats: false
     },
     _loaded: false,
 
@@ -296,7 +297,8 @@ export function useVocabularyStore(options) {
         memory: Boolean(columns?.memory) !== false,
         tags: Boolean(columns?.tags) !== false,
         level: Boolean(columns?.level) !== false,
-        note: Boolean(columns?.note) !== false
+        note: Boolean(columns?.note) !== false,
+        testStats: Boolean(columns?.testStats) === true
       };
       await this.save();
     },

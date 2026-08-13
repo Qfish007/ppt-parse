@@ -40,6 +40,11 @@
               @change="value => updateVisibleColumn('level', value)" />
           </div>
           <div class="column-setting-row">
+            <span class="column-name">测试次数</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.testStats"
+              @change="value => updateVisibleColumn('testStats', value)" />
+          </div>
+          <div class="column-setting-row">
             <span class="column-name">备注</span>
             <el-switch :model-value="vocabularyStore.visibleColumns.note"
               @change="value => updateVisibleColumn('note', value)" />

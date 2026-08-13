@@ -128,7 +128,8 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
       memory: true,
       tags: true,
       level: true,
-      note: false
+      note: false,
+      testStats: false
     };
   }
 
