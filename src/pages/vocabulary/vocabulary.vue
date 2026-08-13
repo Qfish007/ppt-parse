@@ -411,20 +411,20 @@ const gridTemplateColumns = computed(() => {
   if (vocabularyStore.visibleColumns.memory) cols.push('130px')
   cols.push('1fr')
   if (vocabularyStore.visibleColumns.tags) cols.push('100px')
-  if (vocabularyStore.visibleColumns.level) cols.push('80px')
-  if (vocabularyStore.visibleColumns.testStats) cols.push('140px')
+  if (vocabularyStore.visibleColumns.level) cols.push('56px')
+  if (vocabularyStore.visibleColumns.testStats) cols.push('90px')
   if (vocabularyStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
-  cols.push('60px')
+  cols.push('56px')
   return cols.join(' ')
 })
 
 const listMinWidth = computed(() => {
-  let width = 48 + 150 + 220 + 60
+  let width = 48 + 150 + 220 + 56
   if (vocabularyStore.visibleColumns.pronunciation) width += 150
   if (vocabularyStore.visibleColumns.memory) width += 130
   if (vocabularyStore.visibleColumns.tags) width += 100
-  if (vocabularyStore.visibleColumns.level) width += 80
-  if (vocabularyStore.visibleColumns.testStats) width += 140
+  if (vocabularyStore.visibleColumns.level) width += 56
+  if (vocabularyStore.visibleColumns.testStats) width += 90
   if (vocabularyStore.visibleColumns.note) width += 60
   const colCount = 6
     + (vocabularyStore.visibleColumns.pronunciation ? 1 : 0)
