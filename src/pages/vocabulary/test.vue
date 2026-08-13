@@ -26,6 +26,14 @@
           placeholder="按标签筛选">
           <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
+        <div class="wrong-count-filter">
+          <span class="wrong-count-label">错误次数</span>
+          <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
+            class="wrong-count-input" />
+          <span class="wrong-count-sep">~</span>
+          <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
+            class="wrong-count-input" />
+        </div>
         <el-select v-model="testMode" class="test-control" placeholder="测试方式">
           <el-option label="根据中文意思" value="meaning" />
           <el-option label="根据发音" value="sound" />
@@ -281,6 +289,8 @@ const TEST_HISTORY_STORAGE_KEY = 'bilingual-reader-vocabulary-test-history'
 
 const levelFilter = ref([])
 const tagFilter = ref([])
+const wrongCountMin = ref(null)
+const wrongCountMax = ref(null)
 const testMode = ref('meaning')
 const testCount = ref(null)
 const userSetCount = ref(false)
@@ -321,11 +331,16 @@ const defaultWords = computed(() => defaultBook.value?.words || [])
 const defaultTags = computed(() => defaultBook.value?.tags || [])
 const availableWords = computed(() => {
   const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
+  const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
+  const max = wrongCountMax.value !== null ? Number(wrongCountMax.value) : null
   return defaultWords.value.filter(entry => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
-    return matchLevel && matchTags
+    const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
+    const matchMin = min === null || wrongCount >= min
+    const matchMax = max === null || wrongCount <= max
+    return matchLevel && matchTags && matchMin && matchMax
   })
 })
 const normalizedTestCount = computed(() => {
@@ -389,6 +404,8 @@ function saveTestSession() {
   const payload = {
     levelFilter: levelFilter.value,
     tagFilter: tagFilter.value,
+    wrongCountMin: wrongCountMin.value,
+    wrongCountMax: wrongCountMax.value,
     testMode: testMode.value,
     testCount: testCount.value,
     testQueue: testQueue.value,
@@ -407,6 +424,8 @@ async function restoreTestSession() {
     if (!Array.isArray(payload.testQueue) || !payload.testQueue.length) return
     levelFilter.value = Array.isArray(payload.levelFilter) ? payload.levelFilter : []
     tagFilter.value = Array.isArray(payload.tagFilter) ? payload.tagFilter : []
+    wrongCountMin.value = payload.wrongCountMin !== undefined && payload.wrongCountMin !== null ? Number(payload.wrongCountMin) : null
+    wrongCountMax.value = payload.wrongCountMax !== undefined && payload.wrongCountMax !== null ? Number(payload.wrongCountMax) : null
     testMode.value = payload.testMode === 'sound' ? 'sound' : 'meaning'
     testCount.value = payload.testCount !== null && payload.testCount !== undefined ? Math.max(1, Number(payload.testCount) || 1) : null
     testQueue.value = payload.testQueue
@@ -1080,6 +1099,44 @@ onMounted(() => {
 
 .test-control {
   width: 190px;
+}
+
+.wrong-count-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.wrong-count-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #63706d;
+  white-space: nowrap;
+}
+
+.wrong-count-input {
+  width: 60px;
+}
+
+.wrong-count-input :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.wrong-count-input :deep(.el-input__inner) {
+  font-size: 13px;
+  text-align: center;
+}
+
+.wrong-count-sep {
+  color: #999;
+  font-size: 13px;
 }
 
 .test-count {

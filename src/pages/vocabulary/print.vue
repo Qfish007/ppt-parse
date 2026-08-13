@@ -25,6 +25,14 @@
           placeholder="按标签筛选">
           <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
+        <div class="wrong-count-filter">
+          <span class="wrong-count-label">错误次数</span>
+          <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
+            class="wrong-count-input" />
+          <span class="wrong-count-sep">~</span>
+          <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
+            class="wrong-count-input" />
+        </div>
         <el-select v-model="printCols" class="print-control" placeholder="列数">
           <el-option label="1 列" :value="1" />
           <el-option label="2 列" :value="2" />
@@ -44,7 +52,8 @@
           controls-position="right" />
         <span class="print-count-tip">共 {{ Math.min(printCount, availableWords.length) }} 词 · 每页 {{ wordsPerPage }} · {{
           printPages.length }} 页</span>
-        <el-button type="primary" :disabled="!printWords.length || exportingPdf" :loading="exportingPdf" @click="doPrint">
+        <el-button type="primary" :disabled="!printWords.length || exportingPdf" :loading="exportingPdf"
+          @click="doPrint">
           <el-icon>
             <Printer />
           </el-icon>
@@ -101,11 +110,14 @@
             <span class="a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
           </div>
           <div class="a4-body">
-            <div v-for="(entry, i) in page" :key="i" class="word-row" :class="{ 'word-row-double': showEnglish && showChinese }">
+            <div v-for="(entry, i) in page" :key="i" class="word-row"
+              :class="{ 'word-row-double': showEnglish && showChinese }">
               <div v-if="showEnglish && !showChinese" class="meaning-text meaning-text-en">{{ entry.word }}</div>
-              <div v-else-if="showChinese && !showEnglish" class="meaning-text meaning-text-zh">{{ trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
+              <div v-else-if="showChinese && !showEnglish" class="meaning-text meaning-text-zh">{{
+                trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
               <div v-else-if="showEnglish && showChinese" class="meaning-text meaning-text-en">{{ entry.word }}</div>
-              <div v-if="showEnglish && showChinese" class="meaning-text meaning-text-zh meaning-text-bottom">{{ trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
+              <div v-if="showEnglish && showChinese" class="meaning-text meaning-text-zh meaning-text-bottom">{{
+                trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
               <div class="meaning-line"></div>
             </div>
           </div>
@@ -128,6 +140,8 @@ const vocabularyStore = useVocabularyStore()
 
 const levelFilter = ref([])
 const tagFilter = ref([])
+const wrongCountMin = ref(null)
+const wrongCountMax = ref(null)
 const printCount = ref(100)
 const printCols = ref(3) // 默认3列
 const printOrder = ref(true) // true=随机, false=顺序
@@ -171,11 +185,16 @@ const defaultWords = computed(() => defaultBook.value?.words || [])
 const defaultTags = computed(() => defaultBook.value?.tags || [])
 const availableWords = computed(() => {
   const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
+  const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
+  const max = wrongCountMax.value !== null ? Number(wrongCountMax.value) : null
   return defaultWords.value.filter(entry => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
-    return matchLevel && matchTags
+    const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
+    const matchMin = min === null || wrongCount >= min
+    const matchMax = max === null || wrongCount <= max
+    return matchLevel && matchTags && matchMin && matchMax
   })
 })
 
@@ -246,7 +265,7 @@ function trimChineseMeaning(meaning, maxLen = 28) {
 }
 
 // 任一项变化 → 重新抽取单词（列数变化不重抽，仅改变分页；分页由 computed 自动重排）
-watch([levelFilter, tagFilter, printCount, printOrder], () => {
+watch([levelFilter, tagFilter, wrongCountMin, wrongCountMax, printCount, printOrder], () => {
   resamplePrintWords()
 }, { deep: true, immediate: true })
 
@@ -562,6 +581,44 @@ onMounted(() => {
   width: 170px;
 }
 
+.wrong-count-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.wrong-count-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #63706d;
+  white-space: nowrap;
+}
+
+.wrong-count-input {
+  width: 60px;
+}
+
+.wrong-count-input :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.wrong-count-input :deep(.el-input__inner) {
+  font-size: 13px;
+  text-align: center;
+}
+
+.wrong-count-sep {
+  color: #999;
+  font-size: 13px;
+}
+
 .print-count {
   width: 150px;
 }
@@ -754,5 +811,4 @@ onMounted(() => {
     width: 100%;
   }
 }
-
 </style>

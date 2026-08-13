@@ -88,6 +88,14 @@
         placeholder="按标签筛选">
         <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
       </el-select>
+      <div class="wrong-count-filter">
+        <span class="wrong-count-label">错误次数</span>
+        <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
+          class="wrong-count-input" />
+        <span class="wrong-count-sep">~</span>
+        <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
+          class="wrong-count-input" />
+      </div>
       <el-segmented v-model="sortMode" :options="sortOptions" class="vocab-sort" />
     </section>
 
@@ -343,6 +351,8 @@ const searchText = ref(router.currentRoute.value.query.searchText || '')
 const searchMode = ref(router.currentRoute.value.query.searchMode || 'word')
 const levelFilter = ref((router.currentRoute.value.query.levelFilter || '').split(',').filter(Boolean))
 const tagFilter = ref((router.currentRoute.value.query.tagFilter || '').split(',').filter(Boolean))
+const wrongCountMin = ref(null)
+const wrongCountMax = ref(null)
 const sortMode = ref(router.currentRoute.value.query.sortMode || 'alphabet')
 
 // —— 批量选择状态 ——
@@ -361,6 +371,8 @@ const batchDialog = reactive({
 // —— 筛选 + 排序结果（后续所有 computed/watch 依赖它，必须最早就绪） ——
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
+  const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
+  const max = wrongCountMax.value !== null ? Number(wrongCountMax.value) : null
   let words = vocabularyStore.words.filter(entry => {
     let matchKeyword = !keyword
     if (keyword) {
@@ -374,7 +386,10 @@ const filteredWords = computed(() => {
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
     const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
-    return matchKeyword && matchLevel && matchTags
+    const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
+    const matchMin = min === null || wrongCount >= min
+    const matchMax = max === null || wrongCount <= max
+    return matchKeyword && matchLevel && matchTags && matchMin && matchMax
   })
   if (sortMode.value === 'createdAt') {
     words = [...words].sort((a, b) => b.createdAt - a.createdAt)
@@ -442,7 +457,7 @@ function onPageSizeChange(size) {
 }
 
 // —— 筛选/排序变化 → 回到第一页 ——
-watch([searchText, levelFilter, tagFilter, sortMode], () => {
+watch([searchText, levelFilter, tagFilter, wrongCountMin, wrongCountMax, sortMode], () => {
   page.value = 1
   updateRouteQuery()
 })
@@ -1266,6 +1281,44 @@ async function handleImport(event) {
 
 .vocab-tag-filter {
   width: 190px;
+}
+
+.wrong-count-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.wrong-count-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #63706d;
+  white-space: nowrap;
+}
+
+.wrong-count-input {
+  width: 60px;
+}
+
+.wrong-count-input :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.wrong-count-input :deep(.el-input__inner) {
+  font-size: 13px;
+  text-align: center;
+}
+
+.wrong-count-sep {
+  color: #999;
+  font-size: 13px;
 }
 
 .vocab-sort {
