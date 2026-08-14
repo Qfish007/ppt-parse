@@ -35,8 +35,8 @@
                     <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="240px"
                         indicator-position="bottom" arrow="hover" autoplay>
                         <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
-                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
-                                loading="lazy" />
+                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image" loading="lazy"
+                                @click="openPreview(index)" />
                         </el-carousel-item>
                     </el-carousel>
                     <div v-else class="memory-image-empty">
@@ -79,8 +79,8 @@
                     <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="240px"
                         indicator-position="bottom" arrow="hover" autoplay>
                         <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
-                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
-                                loading="lazy" />
+                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image" loading="lazy"
+                                @click="openPreview(index)" />
                         </el-carousel-item>
                     </el-carousel>
                     <div v-else class="memory-image-empty">
@@ -91,6 +91,16 @@
             </div>
         </template>
     </div>
+
+    <el-dialog v-model="previewVisible" :show-close="true" width="80%" top="10vh" center destroy-on-close append-to-body
+        class="image-preview-dialog">
+        <el-carousel v-if="imageUrls.length" class="preview-carousel" :initial-index="previewIndex"
+            indicator-position="outside" arrow="always" height="70vh">
+            <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
+                <img :src="url" :alt="`${word} ${index + 1}`" class="preview-image" />
+            </el-carousel-item>
+        </el-carousel>
+    </el-dialog>
 </template>
 
 <script setup>
@@ -104,6 +114,13 @@ const props = defineProps({
 
 const imageUrls = ref([])
 const loadingImages = ref(false)
+const previewVisible = ref(false)
+const previewIndex = ref(0)
+
+function openPreview(index) {
+    previewIndex.value = index
+    previewVisible.value = true
+}
 
 const COMMON_WORDS = new Set([
     'pine', 'apple', 'bed', 'room', 'friend', 'end', 'sea', 'son', 'cat', 'bat', 'mat',
@@ -1851,8 +1868,10 @@ async function searchImages() {
 
     loadingImages.value = true
     try {
-        const keyword = `${word} ${props.meaning || ''}`
-        const response = await fetch(`/api/image/search?keyword=${encodeURIComponent(keyword)}&count=3`)
+        const meaning = String(props.meaning || '').trim()
+        const meaningFirst = meaning ? `${meaning} ${word}` : word
+        const keyword = `${meaningFirst} 英文单词`
+        const response = await fetch(`/api/image/search?keyword=${encodeURIComponent(keyword)}&count=5`)
         const data = await response.json()
         if (data?.code === 1 && data?.data?.images) {
             imageUrls.value = data.data.images.map(img => img.url)
@@ -2017,6 +2036,12 @@ watch(() => props.word, () => {
     width: 100%;
     height: 240px;
     object-fit: cover;
+    cursor: zoom-in;
+    transition: transform 0.2s;
+}
+
+.memory-carousel-image:hover {
+    transform: scale(1.02);
 }
 
 .memory-image-empty {
@@ -2089,6 +2114,71 @@ watch(() => props.word, () => {
 }
 
 :deep(.memory-carousel .el-carousel__indicator--active button) {
+    background-color: #fff;
+}
+
+.image-preview-dialog :deep(.el-dialog) {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.image-preview-dialog :deep(.el-dialog__body) {
+    padding: 10px 20px 30px;
+    background: #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-preview-dialog :deep(.el-carousel) {
+    width: 100%;
+    height: 70vh;
+}
+
+.image-preview-dialog :deep(.el-carousel__item) {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 70vh;
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.image-preview-dialog :deep(.el-dialog__header) {
+    background: #1a1a2e;
+    margin-right: 0;
+}
+
+.image-preview-dialog :deep(.el-dialog__title) {
+    color: #fff;
+}
+
+.image-preview-dialog :deep(.el-dialog__close) {
+    color: #fff;
+}
+
+.image-preview-dialog :deep(.el-carousel__button) {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.image-preview-dialog :deep(.el-carousel__indicators--outside) {
+    margin-top: 12px;
+}
+
+.image-preview-dialog :deep(.el-carousel__indicators--outside .el-carousel__indicator button) {
+    background-color: rgba(255, 255, 255, 0.4);
+    width: 10px;
+    height: 10px;
+}
+
+.image-preview-dialog :deep(.el-carousel__indicators--outside .el-carousel__indicator--active button) {
     background-color: #fff;
 }
 </style>
