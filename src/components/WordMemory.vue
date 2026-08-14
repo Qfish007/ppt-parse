@@ -32,7 +32,7 @@
                         <span class="memory-image-loading-icon">⏳</span>
                         <span class="memory-image-loading-text">加载中...</span>
                     </div>
-                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="160px"
+                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="240px"
                         indicator-position="bottom" arrow="hover" autoplay>
                         <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
                             <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
@@ -76,7 +76,7 @@
                         <span class="memory-image-loading-icon">⏳</span>
                         <span class="memory-image-loading-text">加载中...</span>
                     </div>
-                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="200px"
+                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="240px"
                         indicator-position="bottom" arrow="hover" autoplay>
                         <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
                             <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
@@ -1904,7 +1904,7 @@ watch(() => props.word, () => {
 }
 
 .view-images .memory-carousel-image {
-    height: 200px;
+    height: 240px;
 }
 
 .memory-left {
@@ -2015,7 +2015,7 @@ watch(() => props.word, () => {
 
 .memory-carousel-image {
     width: 100%;
-    height: 160px;
+    height: 240px;
     object-fit: cover;
 }
 
