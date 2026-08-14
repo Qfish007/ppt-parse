@@ -1,47 +1,95 @@
 <template>
-    <div class="word-memory">
-        <div class="memory-header">
-            <span class="memory-title">💡 创意记忆</span>
-        </div>
-        <div class="memory-content">
-            <div class="memory-left">
-                <div v-if="memoryMethods.length" class="memory-list">
-                    <div v-for="(method, index) in memoryMethods" :key="index" class="memory-card" :class="method.type">
-                        <div class="memory-card-header">
-                            <span class="memory-card-icon">{{ getMethodIcon(method.type) }}</span>
-                            <span class="memory-card-title">{{ getMethodName(method.type) }}</span>
-                        </div>
-                        <div class="memory-card-body">
-                            <p class="memory-card-desc">{{ method.description }}</p>
-                            <p v-if="method.tip" class="memory-card-tip">💡 {{ method.tip }}</p>
+    <div class="word-memory" :class="`view-${view}`">
+        <template v-if="view === 'both'">
+            <div class="memory-header">
+                <span class="memory-title">💡 创意记忆</span>
+            </div>
+            <div class="memory-content">
+                <div class="memory-left">
+                    <div v-if="memoryMethods.length" class="memory-list">
+                        <div v-for="(method, index) in memoryMethods" :key="index" class="memory-card"
+                            :class="method.type">
+                            <div class="memory-card-header">
+                                <span class="memory-card-icon">{{ getMethodIcon(method.type) }}</span>
+                                <span class="memory-card-title">{{ getMethodName(method.type) }}</span>
+                            </div>
+                            <div class="memory-card-body">
+                                <p class="memory-card-desc">{{ method.description }}</p>
+                                <p v-if="method.tip" class="memory-card-tip">💡 {{ method.tip }}</p>
+                            </div>
                         </div>
                     </div>
+                    <div v-else class="memory-empty">
+                        <span class="memory-empty-icon">📝</span>
+                        <span class="memory-empty-text">暂无创意记忆方案</span>
+                    </div>
                 </div>
-                <div v-else class="memory-empty">
-                    <span class="memory-empty-icon">📝</span>
-                    <span class="memory-empty-text">暂无创意记忆方案</span>
+                <div class="memory-right">
+                    <div class="memory-image-header">
+                        <span class="memory-image-title">🖼️ 图片联想</span>
+                    </div>
+                    <div v-if="loadingImages" class="memory-image-loading">
+                        <span class="memory-image-loading-icon">⏳</span>
+                        <span class="memory-image-loading-text">加载中...</span>
+                    </div>
+                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="160px"
+                        indicator-position="bottom" arrow="hover" autoplay>
+                        <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
+                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
+                                loading="lazy" />
+                        </el-carousel-item>
+                    </el-carousel>
+                    <div v-else class="memory-image-empty">
+                        <span class="memory-image-empty-icon">🖼️</span>
+                        <span class="memory-image-empty-text">暂无图片</span>
+                    </div>
                 </div>
             </div>
-            <div class="memory-right">
-                <div class="memory-image-header">
-                    <span class="memory-image-title">🖼️ 图片联想</span>
-                </div>
-                <div v-if="loadingImages" class="memory-image-loading">
-                    <span class="memory-image-loading-icon">⏳</span>
-                    <span class="memory-image-loading-text">加载中...</span>
-                </div>
-                <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="160px"
-                    indicator-position="bottom" arrow="hover" autoplay>
-                    <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
-                        <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image" loading="lazy" />
-                    </el-carousel-item>
-                </el-carousel>
-                <div v-else class="memory-image-empty">
-                    <span class="memory-image-empty-icon">🖼️</span>
-                    <span class="memory-image-empty-text">暂无图片</span>
+        </template>
+        <template v-else-if="view === 'memory'">
+            <div class="memory-content memory-content-single">
+                <div class="memory-left">
+                    <div v-if="memoryMethods.length" class="memory-list">
+                        <div v-for="(method, index) in memoryMethods" :key="index" class="memory-card"
+                            :class="method.type">
+                            <div class="memory-card-header">
+                                <span class="memory-card-icon">{{ getMethodIcon(method.type) }}</span>
+                                <span class="memory-card-title">{{ getMethodName(method.type) }}</span>
+                            </div>
+                            <div class="memory-card-body">
+                                <p class="memory-card-desc">{{ method.description }}</p>
+                                <p v-if="method.tip" class="memory-card-tip">💡 {{ method.tip }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div v-else class="memory-empty">
+                        <span class="memory-empty-icon">📝</span>
+                        <span class="memory-empty-text">暂无创意记忆方案</span>
+                    </div>
                 </div>
             </div>
-        </div>
+        </template>
+        <template v-else-if="view === 'images'">
+            <div class="memory-content memory-content-single">
+                <div class="memory-right">
+                    <div v-if="loadingImages" class="memory-image-loading">
+                        <span class="memory-image-loading-icon">⏳</span>
+                        <span class="memory-image-loading-text">加载中...</span>
+                    </div>
+                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="200px"
+                        indicator-position="bottom" arrow="hover" autoplay>
+                        <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
+                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
+                                loading="lazy" />
+                        </el-carousel-item>
+                    </el-carousel>
+                    <div v-else class="memory-image-empty">
+                        <span class="memory-image-empty-icon">🖼️</span>
+                        <span class="memory-image-empty-text">暂无图片</span>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
 </template>
 
@@ -50,7 +98,8 @@ import { computed, ref, watch } from 'vue'
 
 const props = defineProps({
     word: { type: String, default: '' },
-    meaning: { type: String, default: '' }
+    meaning: { type: String, default: '' },
+    view: { type: String, default: 'both' }
 })
 
 const imageUrls = ref([])
@@ -1843,6 +1892,19 @@ watch(() => props.word, () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+}
+
+.memory-content-single {
+    grid-template-columns: 1fr;
+}
+
+.view-memory,
+.view-images {
+    padding: 0;
+}
+
+.view-images .memory-carousel-image {
+    height: 200px;
 }
 
 .memory-left {

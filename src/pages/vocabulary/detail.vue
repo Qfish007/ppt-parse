@@ -11,11 +11,22 @@
     </header>
 
     <section v-if="entry" class="word-detail-card">
-      <div class="word-hero">
-        <div class="word-hero-left">
-          <h1>{{ entry.word }}</h1>
-          <div class="word-hero-phonetic">{{ entry.phonetic || '-' }}</div>
-          <div class="word-hero-memory">
+      <div class="detail-row detail-row-top">
+        <div class="detail-col detail-col-word">
+          <div class="word-info-header">
+            <h1 class="word-info-word">{{ entry.word }}</h1>
+            <button class="word-play-btn" @click="playWord" title="播放">
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"></path>
+              </svg>
+            </button>
+          </div>
+          <div class="word-info-phonetic">
+            <span class="word-info-label">发音：</span>
+            <span>{{ entry.phonetic || '-' }}</span>
+          </div>
+          <div class="word-info-memory">
+            <span class="word-info-label">记忆：</span>
             <template v-if="memoryParts.length">
               <template v-for="(part, index) in memoryParts" :key="`${part}-${index}`">
                 <span class="memory-part" :class="`memory-part-${index % 4}`">{{ part }}</span>
@@ -24,48 +35,54 @@
             </template>
             <span v-else class="memory-empty">-</span>
           </div>
-          <div v-if="entry.tagIds?.length" class="word-hero-tags">
+          <div v-if="entryTags.length || currentPage" class="word-info-tags">
+            <span class="word-info-label">标签：</span>
             <span v-for="tag in entryTags" :key="tag.id" class="word-tag">{{ tag.name }}</span>
+            <span v-if="currentPage" class="word-tag">{{ currentPage }}</span>
+          </div>
+          <div class="word-info-stats">
+            <span class="word-stat-correct">正确{{ correctCount }}次</span>
+            <span class="word-stat-wrong">错误{{ wrongCount }}次</span>
           </div>
         </div>
-        <div class="word-hero-right">
-          <div class="word-hero-actions">
-            <button class="detail-action-btn" @click="loadAllDetail" :disabled="refreshing" title="刷新">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
-              </svg>
-            </button>
-            <button class="detail-action-btn" @click="openEditDialog" title="编辑">
-              <svg viewBox="0 0 24 24">
-                <path
-                  d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-              </svg>
-            </button>
+
+        <div class="detail-col detail-col-meaning">
+          <div class="meaning-header">
+            <div class="detail-label">中文意思</div>
+            <div class="meaning-actions">
+              <button class="detail-action-btn" @click="loadAllDetail" :disabled="refreshing" title="刷新">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                </svg>
+              </button>
+              <button class="detail-action-btn" @click="openEditDialog" title="编辑">
+                <svg viewBox="0 0 24 24">
+                  <path
+                    d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                </svg>
+              </button>
+            </div>
           </div>
-          <button class="detail-sound" @click="playWord" title="播放">
-            <svg viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"></path>
-            </svg>
-          </button>
+          <div class="detail-meaning-text">{{ entry.meaning || '暂无释义' }}</div>
         </div>
       </div>
 
-      <div class="detail-grid">
-        <div class="detail-item">
-          <div class="detail-label-row">
-            <span class="detail-label">中文意思</span>
-          </div>
-          <div class="detail-meaning">{{ entry.meaning || '暂无释义' }}</div>
+      <div class="detail-row detail-row-middle">
+        <div class="detail-col detail-col-memory">
+          <div class="detail-section-label">创意记忆</div>
+          <WordMemory :word="entry.word" :meaning="entry.meaning" view="memory" />
         </div>
-
-        <div class="detail-item">
-          <WordMemory :word="entry.word" :meaning="entry.meaning" />
+        <div class="detail-col detail-col-images">
+          <div class="detail-section-label">图片联想</div>
+          <WordMemory :word="entry.word" :meaning="entry.meaning" view="images" />
         </div>
+      </div>
 
-        <div class="detail-item detail-phrases-item">
-          <div class="detail-label-row" @click="togglePhrases">
-            <span class="detail-label">短语</span>
+      <div class="detail-row detail-row-bottom">
+        <div class="detail-col detail-col-phrases">
+          <div class="detail-section-label-row" @click="togglePhrases">
+            <span class="detail-section-label">短语</span>
             <button v-if="wordDetail.phrases?.length" class="detail-collapse-btn">
               <svg :class="{ 'collapsed': collapsedPhrases }" viewBox="0 0 24 24">
                 <path d="M6 9l6 6 6-6" />
@@ -73,8 +90,9 @@
             </button>
           </div>
           <div v-if="loadingDetail" class="detail-loading">加载中...</div>
-          <div v-else-if="wordDetail.phrases?.length" class="detail-phrases-list">
-            <div v-for="(item, index) in (collapsedPhrases ? wordDetail.phrases.slice(0, 3) : wordDetail.phrases)"
+          <div v-else-if="wordDetail.phrases?.length" class="detail-phrases-list"
+            :class="{ 'is-expanded': !collapsedPhrases }">
+            <div v-for="(item, index) in (collapsedPhrases ? wordDetail.phrases.slice(0, 5) : wordDetail.phrases)"
               :key="`phrase-${index}`" class="detail-phrase-item">
               <span class="phrase-number">{{ index + 1 }}</span>
               <div class="phrase-content">
@@ -100,9 +118,9 @@
           <div v-else-if="loadedDetail && !wordDetail.phrases?.length" class="detail-empty">暂无短语</div>
         </div>
 
-        <div class="detail-item detail-sentences-item">
-          <div class="detail-label-row" @click="toggleSentences">
-            <span class="detail-label">双语例句</span>
+        <div class="detail-col detail-col-sentences">
+          <div class="detail-section-label-row" @click="toggleSentences">
+            <span class="detail-section-label">例句</span>
             <button v-if="wordDetail.sentences?.length" class="detail-collapse-btn">
               <svg :class="{ 'collapsed': collapsedSentences }" viewBox="0 0 24 24">
                 <path d="M6 9l6 6 6-6" />
@@ -110,8 +128,9 @@
             </button>
           </div>
           <div v-if="loadingDetail" class="detail-loading">加载中...</div>
-          <div v-else-if="wordDetail.sentences?.length" class="detail-sentences-list">
-            <div v-for="(item, index) in (collapsedSentences ? wordDetail.sentences.slice(0, 3) : wordDetail.sentences)"
+          <div v-else-if="wordDetail.sentences?.length" class="detail-sentences-list"
+            :class="{ 'is-expanded': !collapsedSentences }">
+            <div v-for="(item, index) in (collapsedSentences ? wordDetail.sentences.slice(0, 5) : wordDetail.sentences)"
               :key="`sentence-${index}`" class="detail-sentence-item">
               <span class="sentence-number">{{ index + 1 }}</span>
               <div class="sentence-content">
@@ -298,6 +317,14 @@ const entryTags = computed(() => {
   return vocabularyStore.tags.filter(tag => entry.value.tagIds.includes(tag.id))
 })
 
+const correctCount = computed(() => Number(entry.value?.testCorrectCount) || 0)
+const wrongCount = computed(() => Math.max(0, (Number(entry.value?.testTotalCount) || 0) - correctCount.value))
+const currentPage = computed(() => {
+  const p = route.query.page
+  if (p != null) return `第${p}页`
+  return ''
+})
+
 const editDialogVisible = ref(false)
 
 function openEditDialog() {
@@ -477,83 +504,169 @@ function parseEnglishText(text) {
   overflow: hidden;
 }
 
-.word-hero {
+.detail-row {
+  display: grid;
+  gap: 0;
+}
+
+.detail-row+.detail-row {
+  border-top: 1px solid #edf1ef;
+}
+
+.detail-row-top {
+  grid-template-columns: 1fr 1fr;
+}
+
+.detail-row-middle {
+  grid-template-columns: 1fr 1fr;
+}
+
+.detail-row-bottom {
+  grid-template-columns: 1fr 1fr;
+}
+
+.detail-col {
+  padding: 24px 28px;
+  position: relative;
+}
+
+.detail-col+.detail-col {
+  border-left: 1px solid #edf1ef;
+}
+
+.detail-col-word {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.word-info-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  padding: 32px;
-  border-bottom: 1px solid #edf1ef;
-  background: #fbfdfc;
-}
-
-.word-hero-left {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.word-hero h1 {
-  margin: 0;
-  color: #101919;
-  font-size: 48px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.word-hero-phonetic {
-  color: #126b62;
-  font-family: "Trebuchet MS", Arial, sans-serif;
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.word-hero-memory {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #40504c;
-  font-size: 15px;
-}
-
-.word-hero-tags {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.word-tag {
-  padding: 4px 12px;
-  border-radius: 20px;
-  background: #e0f2fe;
-  color: #0369a1;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.word-hero-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 16px;
-}
-
-.word-hero-actions {
-  display: flex;
   gap: 12px;
 }
 
-.detail-sound {
+.meaning-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.meaning-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.word-info-word {
+  margin: 0;
+  color: #101919;
+  font-size: 44px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.word-play-btn {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 1px solid #b8d6cb;
   border-radius: 999px;
   background: #eef7f4;
   color: #0c514b;
   cursor: pointer;
+  transition: all 0.2s;
+}
+
+.word-play-btn:hover {
+  background: #dcefe7;
+  border-color: #126b62;
+}
+
+.word-play-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.word-info-phonetic {
+  color: #126b62;
+  font-family: "Trebuchet MS", Arial, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.word-info-memory {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #40504c;
+  font-size: 17px;
+}
+
+.word-info-label {
+  color: #63706d;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.word-info-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.word-info-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.word-tag {
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.word-stat-correct {
+  color: #19a974;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.word-stat-wrong {
+  color: #e53935;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.detail-col-meaning {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-label {
+  color: #63706d;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.detail-meaning-text {
+  color: #40504c;
+  font-size: 16px;
+  line-height: 1.7;
+  white-space: pre-wrap;
 }
 
 .detail-action-btn {
@@ -585,34 +698,15 @@ function parseEnglishText(text) {
   fill: currentColor;
 }
 
-.detail-sound svg {
-  width: 16px;
-  height: 16px;
-  fill: currentColor;
+.detail-section-label {
+  color: #63706d;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
 }
 
-.detail-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0;
-}
-
-.detail-item {
-  padding: 24px 32px;
-  border-bottom: 1px solid #edf1ef;
-}
-
-.detail-item:last-child {
-  border-bottom: 0;
-}
-
-.detail-row-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.detail-label-row {
+.detail-section-label-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -620,19 +714,18 @@ function parseEnglishText(text) {
   cursor: pointer;
 }
 
-.detail-label {
-  color: #63706d;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
+.detail-col-phrases,
+.detail-col-sentences {
+  display: flex;
+  flex-direction: column;
 }
 
 .detail-collapse-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border: 1px solid #d7dfdc;
   border-radius: 6px;
   background: #f8fdfb;
@@ -649,8 +742,8 @@ function parseEnglishText(text) {
 }
 
 .detail-collapse-btn svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -661,39 +754,6 @@ function parseEnglishText(text) {
 
 .detail-collapse-btn svg.collapsed {
   transform: rotate(-90deg);
-}
-
-.btn-loading {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid #126b62;
-  border-top-color: transparent;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.detail-phonetic {
-  margin-top: 8px;
-  color: #126b62;
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.detail-memory {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 3px;
-  margin-top: 8px;
-  font-size: 30px;
-  font-weight: 900;
 }
 
 .memory-part-0 {
@@ -714,21 +774,8 @@ function parseEnglishText(text) {
 
 .memory-dot {
   color: #b8c2bf;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
-}
-
-.detail-meaning {
-  color: #40504c;
-  font-size: 17px;
-  line-height: 1.7;
-  white-space: pre-wrap;
-}
-
-.detail-phrases-item,
-.detail-sentences-item {
-  grid-column: 1 / -1;
-  border-right: 0 !important;
 }
 
 .detail-loading {
@@ -745,8 +792,26 @@ function parseEnglishText(text) {
 
 .detail-phrases-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.detail-phrases-list.is-expanded {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.detail-sentences-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.detail-sentences-list.is-expanded {
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .detail-phrase-item {
@@ -759,14 +824,14 @@ function parseEnglishText(text) {
 }
 
 .phrase-number {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #eef7f4;
   color: #0c514b;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   border-radius: 6px;
   flex-shrink: 0;
@@ -784,7 +849,7 @@ function parseEnglishText(text) {
 
 .phrase-text {
   color: #1d68b3;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
 }
 
@@ -792,8 +857,8 @@ function parseEnglishText(text) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border: 1px solid #b8d6cb;
   border-radius: 50%;
   background: #eef7f4;
@@ -804,43 +869,37 @@ function parseEnglishText(text) {
 }
 
 .phrase-sound-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   fill: currentColor;
 }
 
 .phrase-meaning {
   display: block;
   color: #40504c;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
-  margin-top: 6px;
-}
-
-.detail-sentences-list {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  margin-top: 4px;
 }
 
 .detail-sentence-item {
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 12px;
+  padding: 10px 12px;
   background: #f8fdfb;
   border-radius: 6px;
 }
 
 .sentence-number {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #eef7f4;
   color: #0c514b;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   border-radius: 6px;
   flex-shrink: 0;
@@ -859,7 +918,7 @@ function parseEnglishText(text) {
 .sentence-en {
   margin: 0;
   color: #101919;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.6;
 }
 
@@ -880,8 +939,8 @@ function parseEnglishText(text) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border: 1px solid #b8d6cb;
   border-radius: 50%;
   background: #eef7f4;
@@ -892,16 +951,16 @@ function parseEnglishText(text) {
 }
 
 .sentence-sound-btn svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   fill: currentColor;
 }
 
 .sentence-zh {
   display: block;
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: #63706d;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.6;
 }
 
@@ -912,12 +971,18 @@ function parseEnglishText(text) {
 }
 
 @media (max-width: 720px) {
-  .detail-grid {
+  .detail-row-top {
     grid-template-columns: 1fr;
   }
 
-  .detail-item:nth-child(odd) {
-    border-right: 0;
+  .detail-row-middle,
+  .detail-row-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-col+.detail-col {
+    border-left: none;
+    border-top: 1px solid #edf1ef;
   }
 }
 </style>
