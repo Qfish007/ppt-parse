@@ -13,6 +13,96 @@ const YOUDAO_VOICE_KEY_ID = 'voiceDictWeb';
 const YOUDAO_VOICE_PRODUCT = 'webdict';
 const YOUDAO_VOICE_SECRET = 'U3uACNRWSDWdcsKm';
 
+async function searchImagesDuckDuckGo(keyword, count) {
+  try {
+    const searchUrl = new URL('https://api.duckduckgo.com/');
+    searchUrl.searchParams.set('q', keyword);
+    searchUrl.searchParams.set('format', 'json');
+    searchUrl.searchParams.set('t', 'vocab-memory');
+    searchUrl.searchParams.set('no_html', '1');
+    searchUrl.searchParams.set('no_redirect', '1');
+
+    const upstream = await fetch(searchUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' },
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await upstream.json();
+    return (data?.Results || [])
+      .slice(0, count)
+      .map(item => ({
+        url: item?.Image || '',
+        title: item?.Title || '',
+        source: 'duckduckgo'
+      }))
+      .filter(item => item.url);
+  } catch {
+    return [];
+  }
+}
+
+async function searchImagesPixabay(keyword, count) {
+  try {
+    const url = `https://pixabay.com/images/search/${encodeURIComponent(keyword)}/`;
+    const upstream = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html',
+        'Accept-Language': 'en-US,en;q=0.9'
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+    const html = await upstream.text();
+    const urls = [];
+    const imgRegex = /(https?:\/\/[^"'\s]+?\.pixabay\.com\/[^"'\s]+)/g;
+    let match;
+    const seen = new Set();
+    while ((match = imgRegex.exec(html)) !== null && urls.length < count) {
+      const u = match[1];
+      if (!seen.has(u) && /\.(jpg|jpeg|png|webp)/i.test(u)) {
+        seen.add(u);
+        urls.push(u);
+      }
+    }
+    return urls.map(u => ({ url: u, title: keyword, source: 'pixabay' }));
+  } catch {
+    return [];
+  }
+}
+
+async function searchImagesBaidu(keyword, count) {
+  try {
+    const url = `https://image.baidu.com/search/acjson?tn=resultjson_com&word=${encodeURIComponent(keyword)}&pn=0&rn=${count}`;
+    const upstream = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'Referer': 'https://image.baidu.com/'
+      },
+      signal: AbortSignal.timeout(5000)
+    });
+    const data = await upstream.json();
+    const images = (data?.data || [])
+      .slice(0, count)
+      .map(item => ({
+        url: item?.thumbURL || item?.middleURL || item?.objURL || '',
+        title: item?.fromPageTitleEnc || keyword,
+        source: 'baidu'
+      }))
+      .filter(item => item.url);
+    return images;
+  } catch {
+    return [];
+  }
+}
+
+async function searchImagesMulti(keyword, count) {
+  const sources = [searchImagesDuckDuckGo, searchImagesPixabay, searchImagesBaidu];
+  for (const source of sources) {
+    const results = await source(keyword, count);
+    if (results.length > 0) return results;
+  }
+  return [];
+}
+
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -581,25 +671,7 @@ export async function apiMiddleware(req, res, next) {
     }
 
     try {
-      const searchUrl = new URL('https://api.duckduckgo.com/');
-      searchUrl.searchParams.set('q', keyword);
-      searchUrl.searchParams.set('format', 'json');
-      searchUrl.searchParams.set('t', 'vocab-memory');
-      searchUrl.searchParams.set('no_html', '1');
-      searchUrl.searchParams.set('no_redirect', '1');
-
-      const upstream = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0'
-        }
-      });
-      const data = await upstream.json();
-      const images = (data?.Results || []).slice(0, count).map(item => ({
-        url: item?.Image || '',
-        title: item?.Title || '',
-        source: item?.Source || ''
-      })).filter(item => item.url);
-
+      const images = await searchImagesMulti(keyword, count);
       sendJSON(res, { code: 1, data: { images } });
     } catch (error) {
       sendJSON(res, { error: error.message }, 500);
