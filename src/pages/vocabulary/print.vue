@@ -13,45 +13,10 @@
           <p class="print-subtitle">默认词本：{{ defaultBook?.name || '默认生词本' }} · 当前可打印 {{ availableWords.length }} 个单词</p>
         </div>
       </div>
-    </header>
-
-    <section class="print-panel">
-      <div class="print-controls">
-        <el-select v-model="levelFilter" class="print-control" multiple collapse-tags collapse-tags-tooltip clearable
-          placeholder="按水平筛选">
-          <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :label="level.label" :value="level.value" />
-        </el-select>
-        <el-select v-model="tagFilter" class="print-control" multiple collapse-tags collapse-tags-tooltip clearable
-          placeholder="按标签筛选">
-          <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
-        </el-select>
-        <div class="wrong-count-filter">
-          <span class="wrong-count-label">错误次数</span>
-          <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
-            class="wrong-count-input" />
-          <span class="wrong-count-sep">~</span>
-          <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
-            class="wrong-count-input" />
+      <div class="print-header-right">
+        <div class="print-summary">
+          共 {{ Math.min(printCount, availableWords.length) }} 词 · 每页 {{ wordsPerPage }} · {{ printPages.length }} 页
         </div>
-        <el-select v-model="printCols" class="print-control" placeholder="列数">
-          <el-option label="1 列" :value="1" />
-          <el-option label="2 列" :value="2" />
-          <el-option label="3 列" :value="3" />
-          <el-option label="4 列" :value="4" />
-          <el-option label="5 列" :value="5" />
-        </el-select>
-        <el-select v-model="printOrder" class="print-control" placeholder="顺序">
-          <el-option label="随机" :value="true" />
-          <el-option label="顺序" :value="false" />
-        </el-select>
-        <div class="print-labels">
-          <el-checkbox v-model="showChinese">中文</el-checkbox>
-          <el-checkbox v-model="showEnglish">英文</el-checkbox>
-        </div>
-        <el-input-number v-model="printCount" class="print-count" :min="1" :max="Math.max(1, availableWords.length)"
-          controls-position="right" />
-        <span class="print-count-tip">共 {{ Math.min(printCount, availableWords.length) }} 词 · 每页 {{ wordsPerPage }} · {{
-          printPages.length }} 页</span>
         <el-button type="primary" :disabled="!printWords.length || exportingPdf" :loading="exportingPdf"
           @click="doPrint">
           <el-icon>
@@ -60,26 +25,121 @@
           导出PDF
         </el-button>
       </div>
-      <div class="print-sliders">
-        <div class="slider-item">
-          <label class="slider-label">标题间距</label>
-          <el-slider v-model="headerGap" :min="5" :max="60" :step="1" show-stops size="small" />
-          <span class="slider-value">{{ headerGap }}px</span>
+    </header>
+
+    <section class="print-panel">
+      <div class="panel-section">
+        <h3 class="panel-section-title">筛选条件</h3>
+        <div class="filter-grid">
+          <div class="filter-item">
+            <span class="filter-label">掌握水平：</span>
+            <el-select v-model="levelFilter" multiple collapse-tags collapse-tags-tooltip clearable placeholder="按水平筛选">
+              <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :label="level.label"
+                :value="level.value" />
+            </el-select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">单词标签：</span>
+            <el-select v-model="tagFilter" multiple collapse-tags collapse-tags-tooltip clearable placeholder="按标签筛选">
+              <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
+            </el-select>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">错误次数：</span>
+            <div class="wrong-count-group">
+              <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小" />
+              <span class="wrong-sep">~</span>
+              <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大" />
+            </div>
+          </div>
+          <div class="filter-item">
+            <span class="filter-label">排序方式：</span>
+            <el-select v-model="printOrder" placeholder="排序">
+              <el-option label="顺序" :value="false" />
+              <el-option label="随机" :value="true" />
+            </el-select>
+          </div>
         </div>
-        <div class="slider-item">
-          <label class="slider-label">上下间距</label>
-          <el-slider v-model="rowGap" :min="16" :max="40" :step="1" size="small" />
-          <span class="slider-value">{{ rowGap }}px</span>
-        </div>
-        <div class="slider-item">
-          <label class="slider-label">左右间距</label>
-          <el-slider v-model="colGap" :min="0" :max="60" :step="1" size="small" />
-          <span class="slider-value">{{ colGap }}px</span>
-        </div>
-        <div class="slider-item">
-          <label class="slider-label">字体大小</label>
-          <el-slider v-model="fontSize" :min="16" :max="40" :step="1" size="small" />
-          <span class="slider-value">{{ fontSize }}px</span>
+      </div>
+
+      <div class="panel-section">
+        <h3 class="panel-section-title">布局设置</h3>
+        <div class="layout-grid">
+          <div class="layout-item span-2">
+            <span class="layout-label">单词构成：</span>
+            <div class="compose-checks">
+              <el-checkbox v-model="showChinese">中文</el-checkbox>
+              <el-checkbox v-model="showEnglish">英文</el-checkbox>
+              <el-checkbox v-model="showUnderline">下划线</el-checkbox>
+            </div>
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">单词列数：</span>
+            <el-select v-model="printCols" placeholder="列数">
+              <el-option label="1 列" :value="1" />
+              <el-option label="2 列" :value="2" />
+              <el-option label="3 列" :value="3" />
+              <el-option label="4 列" :value="4" />
+              <el-option label="5 列" :value="5" />
+            </el-select>
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">单词数量：</span>
+            <el-input-number v-model="printCount" :min="1" :max="Math.max(1, availableWords.length)"
+              controls-position="right" />
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">页面内边距：</span>
+            <div class="padding-group">
+              <el-input-number v-model="pagePaddingX" :min="0" :controls="false" />
+              <el-input-number v-model="pagePaddingY" :min="0" :controls="false" />
+            </div>
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">字体大小：</span>
+            <el-input-number v-model="fontSize" :min="12" :max="40" :controls="false" />
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">单词外间距：</span>
+            <div class="padding-group">
+              <el-input-number v-model="outerGapX" :min="0" :controls="false" />
+              <el-input-number v-model="outerGapY" :min="0" :controls="false" />
+            </div>
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">单词内边距：</span>
+            <div class="padding-group">
+              <el-input-number v-model="innerPadX" :min="0" :controls="false" />
+              <el-input-number v-model="innerPadY" :min="0" :controls="false" />
+            </div>
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">单词内间距：</span>
+            <el-input-number v-model="innerGap" :min="0" :controls="false" />
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">下划线固定：</span>
+            <el-checkbox v-model="underlineFixed" />
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">交换中英文：</span>
+            <el-checkbox v-model="swapPosition" />
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">单词背景：</span>
+            <div class="bg-group">
+              <el-checkbox v-model="showWordBackground">启用</el-checkbox>
+              <el-color-picker v-model="wordBgColor" :disabled="!showWordBackground" />
+            </div>
+          </div>
+          <div class="layout-item">
+            <span class="layout-label">固定高度：</span>
+            <div class="bg-group">
+              <el-checkbox v-model="fixedWordHeightEnabled">启用</el-checkbox>
+              <el-input-number v-model="fixedWordHeight" :min="40" :max="300" :controls="false"
+                :disabled="!fixedWordHeightEnabled" />
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -94,31 +154,18 @@
 
     <div v-else class="print-preview-wrap">
       <div id="printContent" class="print-pages">
-        <div v-for="(page, pageIdx) in printPages" :key="pageIdx" class="a4-page" :style="{
-          pageBreakAfter: pageIdx < printPages.length - 1 ? 'always' : 'auto',
-          '--print-cols': printCols,
-          '--header-gap': `${headerGap}px`,
-          '--row-gap': `${rowGap}px`,
-          '--col-gap': `${colGap}px`,
-          '--font-size': `${fontSize}px`,
-          '--header-gap-mm': `${(headerGap * 25.4 / 96).toFixed(2)}mm`,
-          '--row-gap-mm': `${(rowGap * 25.4 / 96).toFixed(2)}mm`,
-          '--col-gap-mm': `${(colGap * 25.4 / 96).toFixed(2)}mm`
-        }">
+        <div v-for="(page, pageIdx) in printPages" :key="pageIdx" class="a4-page" :style="getPageStyle(pageIdx)">
           <div class="a4-page-header">
             <span>单词默写练习</span>
             <span class="a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
           </div>
           <div class="a4-body">
-            <div v-for="(entry, i) in page" :key="i" class="word-row"
-              :class="{ 'word-row-double': showEnglish && showChinese }">
-              <div v-if="showEnglish && !showChinese" class="meaning-text meaning-text-en">{{ entry.word }}</div>
-              <div v-else-if="showChinese && !showEnglish" class="meaning-text meaning-text-zh">{{
-                trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
-              <div v-else-if="showEnglish && showChinese" class="meaning-text meaning-text-en">{{ entry.word }}</div>
-              <div v-if="showEnglish && showChinese" class="meaning-text meaning-text-zh meaning-text-bottom">{{
-                trimChineseMeaning(entry.meaning, fontSize > 26 ? 20 : printCols >= 3 ? 22 : 28) }}</div>
-              <div class="meaning-line"></div>
+            <div v-for="(entry, i) in page" :key="i" class="word-cell"
+              :class="{ 'word-cell-underline-fixed': showUnderline && underlineFixed }">
+              <div v-if="showEnglish && !swapPosition" class="word-en">{{ entry.word }}</div>
+              <div v-if="showChinese" class="word-zh">{{ getDisplayMeaning(entry) }}</div>
+              <div v-if="showEnglish && swapPosition" class="word-en">{{ entry.word }}</div>
+              <div v-if="showUnderline" class="word-underline"></div>
             </div>
           </div>
         </div>
@@ -143,46 +190,41 @@ const tagFilter = ref([])
 const wrongCountMin = ref(null)
 const wrongCountMax = ref(null)
 const printCount = ref(100)
-const printCols = ref(3) // 默认3列
-const printOrder = ref(true) // true=随机, false=顺序
-const headerGap = ref(40) // 默认40px
-const rowGap = ref(20) // 默认20px
-const colGap = ref(20) // 默认20px
-const fontSize = ref(20) // 默认20px
+const printCols = ref(3)
+const printOrder = ref(false)
+const pagePaddingX = ref(20)
+const pagePaddingY = ref(20)
+const fontSize = ref(20)
+const outerGapX = ref(10)
+const outerGapY = ref(10)
+const innerPadX = ref(10)
+const innerPadY = ref(10)
+const innerGap = ref(10)
 const showChinese = ref(true)
-const showEnglish = ref(false)
+const showEnglish = ref(true)
+const showUnderline = ref(true)
+const underlineFixed = ref(true)
+const swapPosition = ref(false)
+const showWordBackground = ref(false)
+const wordBgColor = ref('#fff8e1')
+const fixedWordHeightEnabled = ref(false)
+const fixedWordHeight = ref(100)
 const printWords = ref([])
 const exportingPdf = ref(false)
 
 const A4_WIDTH_PX = 794
 const A4_HEIGHT_PX = 1123
-const PAGE_PADDING_Y = 32
 const HEADER_FONT_SIZE = 15
 const HEADER_LINE_HEIGHT = Math.ceil(HEADER_FONT_SIZE * 1.35)
 const HEADER_PADDING_BOTTOM = 10
 const HEADER_BORDER_HEIGHT = 2
-const BODY_ROW_GAP = 20
 const PDF_PAGE_WIDTH_PT = 595.28
 const PDF_PAGE_HEIGHT_PT = 841.89
-
-// 根据当前字体大小和间距动态计算每页能放多少行
-const rowsPerPage = computed(() => {
-  const fs = Number(fontSize.value) || 16
-  const rg = Number(rowGap.value) || 20
-  const hg = Number(headerGap.value) || 40
-  const lineHeight = fs * 1.35
-  const textBlockHeight = showEnglish.value && showChinese.value ? lineHeight * 3 + 2 : showChinese.value ? lineHeight * 2 : lineHeight
-  const underlineHeight = fs * 1.2 + 4
-  const rowContentHeight = textBlockHeight + (showEnglish.value && showChinese.value ? 2 : rg) + underlineHeight
-  const headerHeight = HEADER_LINE_HEIGHT + HEADER_PADDING_BOTTOM + HEADER_BORDER_HEIGHT + hg
-  const bodyHeight = A4_HEIGHT_PX - PAGE_PADDING_Y * 2 - headerHeight
-  return Math.max(1, Math.floor((bodyHeight + BODY_ROW_GAP) / (rowContentHeight + BODY_ROW_GAP)))
-})
-const wordsPerPage = computed(() => rowsPerPage.value * Math.max(1, Number(printCols.value) || 1))
 
 const defaultBook = computed(() => vocabularyStore.getDefaultBook())
 const defaultWords = computed(() => defaultBook.value?.words || [])
 const defaultTags = computed(() => defaultBook.value?.tags || [])
+
 const availableWords = computed(() => {
   const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
   const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
@@ -198,6 +240,34 @@ const availableWords = computed(() => {
   })
 })
 
+const textLineHeight = computed(() => Number(fontSize.value) * 1.35)
+
+const wordCellHeight = computed(() => {
+  if (fixedWordHeightEnabled.value) {
+    return Number(fixedWordHeight.value) || 100
+  }
+  const fs = Number(fontSize.value) || 20
+  const gap = Number(innerGap.value) || 10
+  const padY = Number(innerPadY.value) || 10
+  let height = padY * 2
+  if (showEnglish.value) height += fs * 1.35
+  if (showChinese.value) {
+    if (showEnglish.value) height += gap
+    height += fs * 1.35 * 2
+  }
+  if (showUnderline.value) height += fs * 0.6
+  return height
+})
+
+const rowsPerPage = computed(() => {
+  const bodyTop = HEADER_LINE_HEIGHT + HEADER_PADDING_BOTTOM + HEADER_BORDER_HEIGHT + Number(pagePaddingY.value)
+  const bodyHeight = A4_HEIGHT_PX - bodyTop - Number(pagePaddingY.value)
+  const rowH = wordCellHeight.value + Number(outerGapY.value)
+  return Math.max(1, Math.floor((bodyHeight + Number(outerGapY.value)) / rowH))
+})
+
+const wordsPerPage = computed(() => rowsPerPage.value * Math.max(1, Number(printCols.value) || 1))
+
 const printPages = computed(() => {
   const list = printWords.value || []
   if (!list.length) return []
@@ -208,6 +278,35 @@ const printPages = computed(() => {
   }
   return pages
 })
+
+function getPageStyle(pageIdx) {
+  return {
+    '--print-cols': printCols.value,
+    '--page-padding-x': `${pagePaddingX.value}px`,
+    '--page-padding-y': `${pagePaddingY.value}px`,
+    '--outer-gap-x': `${outerGapX.value}px`,
+    '--outer-gap-y': `${outerGapY.value}px`,
+    '--inner-pad-x': `${innerPadX.value}px`,
+    '--inner-pad-y': `${innerPadY.value}px`,
+    '--inner-gap': `${innerGap.value}px`,
+    '--font-size': `${fontSize.value}px`,
+    '--text-line-height': `${textLineHeight.value}px`,
+    '--word-bg-color': showWordBackground.value ? wordBgColor.value : 'transparent',
+    '--word-cell-height': `${wordCellHeight.value}px`
+  }
+}
+
+function getDisplayMeaning(entry) {
+  return trimChineseMeaning(entry.meaning, getMeaningMaxLen())
+}
+
+function getMeaningMaxLen() {
+  const fs = Number(fontSize.value) || 20
+  const cols = Number(printCols.value) || 3
+  const cellWidth = (A4_WIDTH_PX - pagePaddingX.value * 2 - outerGapX.value * (cols - 1)) / cols
+  const charWidth = fs * 0.55
+  return Math.max(8, Math.floor((cellWidth - innerPadX.value * 2) / charWidth))
+}
 
 function goBack() {
   if (window.history.length > 1) {
@@ -232,17 +331,6 @@ function resamplePrintWords() {
   printWords.value = list.slice(0, total)
 }
 
-function trimMeaning(meaning, maxLen = 28) {
-  if (!meaning) return '（暂无释义）'
-  let text = String(meaning)
-  text = text.replace(/^\s+|\s+$/g, '')
-  text = text.replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ')
-  if (text.length > maxLen) {
-    text = text.slice(0, maxLen) + '…'
-  }
-  return text || '（暂无释义）'
-}
-
 function trimChineseMeaning(meaning, maxLen = 28) {
   if (!meaning) return '（暂无释义）'
   let text = String(meaning)
@@ -264,21 +352,18 @@ function trimChineseMeaning(meaning, maxLen = 28) {
   return text || '（暂无释义）'
 }
 
-// 任一项变化 → 重新抽取单词（列数变化不重抽，仅改变分页；分页由 computed 自动重排）
 watch([levelFilter, tagFilter, wrongCountMin, wrongCountMax, printCount, printOrder], () => {
   resamplePrintWords()
 }, { deep: true, immediate: true })
 
-// 词本加载后重新抽取（保证 mounted 之后单词数据就位也能渲染）
 watch(availableWords, () => {
   if (availableWords.value.length > 0 && !printWords.value.length) {
     resamplePrintWords()
   }
 })
 
-// 显示选项变化时重新计算分页
-watch([showEnglish, showChinese, fontSize, rowGap, headerGap, printCols], () => {
-  resamplePrintWords()
+watch([showEnglish, showChinese, showUnderline, fontSize, printCols, pagePaddingX, pagePaddingY, outerGapX, outerGapY, innerPadX, innerPadY, innerGap, underlineFixed, swapPosition, showWordBackground, wordBgColor, fixedWordHeightEnabled, fixedWordHeight], () => {
+  // 仅重新计算分页，不重抽单词
 })
 
 async function doPrint() {
@@ -288,13 +373,11 @@ async function doPrint() {
     ElMessage.error('打印内容未准备好')
     return
   }
-
   const pages = printPages.value
   if (!pages.length) {
     ElMessage.error('没有可导出的页面')
     return
   }
-
   exportingPdf.value = true
   try {
     const jpegPages = []
@@ -321,56 +404,77 @@ function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
   ctx.fillStyle = '#fff'
   ctx.fillRect(0, 0, A4_WIDTH_PX, A4_HEIGHT_PX)
 
-  const pagePaddingX = 37
-  const pagePaddingY = PAGE_PADDING_Y
-  const contentWidth = A4_WIDTH_PX - pagePaddingX * 2
-  const fs = Number(fontSize.value) || 16
-  const rg = Number(rowGap.value) || 20
-  const hg = Number(headerGap.value) || 40
-  const cg = Number(colGap.value) || 20
+  const fs = Number(fontSize.value) || 20
   const cols = Math.max(1, Number(printCols.value) || 1)
-  const cellWidth = (contentWidth - cg * (cols - 1)) / cols
-  const textLineHeight = fs * 1.35
-  const textBlockHeight = showEnglish.value && showChinese.value ? textLineHeight * 3 + 2 : showChinese.value ? textLineHeight * 2 : textLineHeight
-  const lineHeight = fs * 1.2 + 4
-  const rowContentHeight = textBlockHeight + (showEnglish.value && showChinese.value ? 2 : rg) + lineHeight
-  const rowHeight = rowContentHeight + BODY_ROW_GAP
+  const padX = Number(pagePaddingX.value) || 20
+  const padY = Number(pagePaddingY.value) || 20
+  const ogX = Number(outerGapX.value) || 10
+  const ogY = Number(outerGapY.value) || 10
+  const ipX = Number(innerPadX.value) || 10
+  const ipY = Number(innerPadY.value) || 10
+  const ig = Number(innerGap.value) || 10
+
+  const contentWidth = A4_WIDTH_PX - padX * 2
+  const cellWidth = (contentWidth - ogX * (cols - 1)) / cols
+  const cellInnerWidth = cellWidth - ipX * 2
+  const lh = fs * 1.35
 
   ctx.textBaseline = 'top'
   ctx.fillStyle = '#111827'
-  ctx.font = '800 15px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
-  ctx.fillText('单词默写练习', pagePaddingX, pagePaddingY)
-  ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+  ctx.font = `800 ${HEADER_FONT_SIZE}px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif`
+  ctx.fillText('单词默写练习', padX, padY)
+  ctx.font = `600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif`
   ctx.fillStyle = '#6b7280'
   const pageNo = `第 ${pageIndex + 1} / ${totalPages} 页`
-  ctx.fillText(pageNo, pagePaddingX + contentWidth - ctx.measureText(pageNo).width, pagePaddingY + 1)
+  ctx.fillText(pageNo, padX + contentWidth - ctx.measureText(pageNo).width, padY + 1)
 
-  const headerLineY = pagePaddingY + HEADER_LINE_HEIGHT + HEADER_PADDING_BOTTOM
+  const headerLineY = padY + HEADER_LINE_HEIGHT + HEADER_PADDING_BOTTOM
   ctx.strokeStyle = '#2f6feb'
   ctx.lineWidth = 2
   ctx.beginPath()
-  ctx.moveTo(pagePaddingX, headerLineY + 1)
-  ctx.lineTo(pagePaddingX + contentWidth, headerLineY + 1)
+  ctx.moveTo(padX, headerLineY + 1)
+  ctx.lineTo(padX + contentWidth, headerLineY + 1)
   ctx.stroke()
 
-  const bodyTop = headerLineY + HEADER_BORDER_HEIGHT + hg
+  const bodyTop = headerLineY + HEADER_BORDER_HEIGHT + padY
   ctx.font = `600 ${fs}px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif`
   ctx.fillStyle = '#111827'
-  ctx.strokeStyle = '#333'
-  ctx.lineWidth = 1
+
+  const wordCellH = computeWordCellHeight(fs, lh, ig, ipY)
+  const rowH = wordCellH + ogY
 
   pageEntries.forEach((entry, index) => {
     const col = index % cols
     const row = Math.floor(index / cols)
-    const x = pagePaddingX + col * (cellWidth + cg)
-    const y = bodyTop + row * rowHeight
-    const textLines = getEntryLines(entry, cellWidth, ctx, fs)
-    drawTextLines(ctx, textLines, x, y, textLineHeight)
-    const lineY = y + textBlockHeight + (showEnglish.value && showChinese.value ? 2 : rg) + lineHeight - 1
-    ctx.beginPath()
-    ctx.moveTo(x, lineY)
-    ctx.lineTo(x + cellWidth, lineY)
-    ctx.stroke()
+    const x = padX + col * (cellWidth + ogX)
+    const y = bodyTop + row * rowH
+
+    if (showWordBackground.value && wordBgColor.value) {
+      ctx.fillStyle = wordBgColor.value
+      ctx.fillRect(x, y, cellWidth, wordCellH)
+      ctx.fillStyle = '#111827'
+    }
+
+    const contentX = x + ipX
+    let curY = y + ipY
+
+    if (!swapPosition.value) {
+      drawWordContent(ctx, entry, contentX, curY, cellInnerWidth, fs, lh, ig)
+    } else {
+      drawWordContentSwapped(ctx, entry, contentX, curY, cellInnerWidth, fs, lh, ig)
+    }
+
+    if (showUnderline.value) {
+      const lineY = underlineFixed.value
+        ? y + wordCellH - 1
+        : computeUnderlineY(entry, contentX, curY, cellInnerWidth, fs, lh, ig)
+      ctx.strokeStyle = '#333'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(x + ipX, lineY)
+      ctx.lineTo(x + cellWidth - ipX, lineY)
+      ctx.stroke()
+    }
   })
 
   return {
@@ -380,17 +484,81 @@ function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
   }
 }
 
-function getEntryLines(entry, maxWidth, ctx, fs) {
-  if (showEnglish.value && !showChinese.value) return fitTextLines(entry.word || '', 1, maxWidth, ctx)
-  if (showChinese.value && !showEnglish.value) {
-    return fitTextLines(trimChineseMeaning(entry.meaning, fs > 26 ? 20 : printCols.value >= 3 ? 22 : 28), 2, maxWidth, ctx)
+function computeWordCellHeight(fs, lh, ig, ipY) {
+  let h = ipY * 2
+  if (showEnglish.value) h += lh
+  if (showChinese.value) {
+    if (showEnglish.value) h += ig
+    h += lh * 2
   }
-  if (showEnglish.value && showChinese.value) {
-    const wordLine = fitTextLines(entry.word || '', 1, maxWidth, ctx)[0] || ''
-    const meaningLines = fitTextLines(trimChineseMeaning(entry.meaning, fs > 26 ? 20 : printCols.value >= 3 ? 22 : 28), 2, maxWidth, ctx)
-    return [wordLine, ...meaningLines]
+  if (showUnderline.value) h += fs * 0.5
+  return h
+}
+
+function drawWordContent(ctx, entry, x, y, maxWidth, fs, lh, ig) {
+  let curY = y
+  if (showEnglish.value) {
+    const word = entry.word || ''
+    ctx.textAlign = 'center'
+    ctx.fillText(word, x + maxWidth / 2, curY)
+    curY += lh
   }
-  return []
+  if (showChinese.value) {
+    if (showEnglish.value) curY += ig
+    const meaning = trimChineseMeaning(entry.meaning, Math.floor(maxWidth / (fs * 0.55)))
+    const meaningLines = fitTextLines(meaning, 2, maxWidth, ctx)
+    ctx.textAlign = 'center'
+    meaningLines.forEach((line, i) => {
+      ctx.fillText(line, x + maxWidth / 2, curY + i * lh)
+    })
+    curY += meaningLines.length * lh
+  }
+  return curY
+}
+
+function drawWordContentSwapped(ctx, entry, x, y, maxWidth, fs, lh, ig) {
+  let curY = y
+  if (showChinese.value) {
+    const meaning = trimChineseMeaning(entry.meaning, Math.floor(maxWidth / (fs * 0.55)))
+    const meaningLines = fitTextLines(meaning, 2, maxWidth, ctx)
+    ctx.textAlign = 'center'
+    meaningLines.forEach((line, i) => {
+      ctx.fillText(line, x + maxWidth / 2, curY + i * lh)
+    })
+    curY += meaningLines.length * lh
+  }
+  if (showEnglish.value) {
+    if (showChinese.value) curY += ig
+    const word = entry.word || ''
+    ctx.textAlign = 'center'
+    ctx.fillText(word, x + maxWidth / 2, curY)
+    curY += lh
+  }
+  return curY
+}
+
+function computeUnderlineY(entry, x, y, maxWidth, fs, lh, ig) {
+  let curY = y
+  if (!swapPosition.value) {
+    if (showEnglish.value) curY += lh
+    if (showChinese.value) {
+      if (showEnglish.value) curY += ig
+      const meaning = trimChineseMeaning(entry.meaning, Math.floor(maxWidth / (fs * 0.55)))
+      const meaningLines = fitTextLines(meaning, 2, maxWidth, { measureText: () => ({ width: maxWidth }) })
+      curY += meaningLines.length * lh
+    }
+  } else {
+    if (showChinese.value) {
+      const meaning = trimChineseMeaning(entry.meaning, Math.floor(maxWidth / (fs * 0.55)))
+      const meaningLines = fitTextLines(meaning, 2, maxWidth, { measureText: () => ({ width: maxWidth }) })
+      curY += meaningLines.length * lh
+    }
+    if (showEnglish.value) {
+      if (showChinese.value) curY += ig
+      curY += lh
+    }
+  }
+  return curY
 }
 
 function fitTextLines(text, maxLines, maxWidth, ctx) {
@@ -422,12 +590,6 @@ function ellipsizeLine(text, maxWidth, ctx) {
     line = line.slice(0, -1)
   }
   return `${line}…`
-}
-
-function drawTextLines(ctx, lines, x, y, lineHeight) {
-  lines.forEach((line, index) => {
-    ctx.fillText(line, x, y + index * lineHeight)
-  })
 }
 
 function base64ToBytes(base64) {
@@ -508,7 +670,6 @@ function downloadBlob(blob, filename) {
 }
 
 onMounted(() => {
-  // 如果词本内容在 mounted 时已就绪，立即抽取
   if (availableWords.value.length) resamplePrintWords()
 })
 </script>
@@ -533,8 +694,17 @@ onMounted(() => {
 }
 
 .print-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 18px;
   padding: 0 !important;
+}
+
+.print-header-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .print-title-wrap {
@@ -557,126 +727,181 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.print-panel,
-.print-page {
+.print-summary {
+  color: #364844;
+  font-size: 14px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.8);
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #d7dfdc;
+}
+
+.print-panel {
+  padding: 16px;
+  margin-bottom: 14px;
   border: 1px solid #d7dfdc;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.94);
   box-shadow: 0 18px 50px rgba(22, 32, 31, 0.1);
 }
 
-.print-panel {
-  padding: 14px;
-  margin-bottom: 14px;
+.panel-section {
+  margin-bottom: 18px;
 }
 
-.print-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
+.panel-section:last-child {
+  margin-bottom: 0;
 }
 
-.print-control {
-  width: 170px;
+.panel-section-title {
+  margin: 0 0 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: #16201f;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
-.wrong-count-filter {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0 8px;
-  height: 32px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.wrong-count-label {
-  font-size: 13px;
-  font-weight: 700;
-  color: #63706d;
-  white-space: nowrap;
-}
-
-.wrong-count-input {
-  width: 60px;
-}
-
-.wrong-count-input :deep(.el-input__wrapper) {
-  box-shadow: none !important;
-  height: 26px;
-  padding: 0 6px;
-}
-
-.wrong-count-input :deep(.el-input__inner) {
-  font-size: 13px;
-  text-align: center;
-}
-
-.wrong-count-sep {
-  color: #999;
-  font-size: 13px;
-}
-
-.print-count {
-  width: 150px;
-}
-
-.print-labels {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.print-count-tip {
-  font-size: 12px;
-  color: #63706d;
-  font-weight: 700;
-}
-
-.print-sliders {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px dashed #d7dfdc;
+.filter-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px 24px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 20px;
+  align-items: center;
 }
 
-.slider-item {
+.filter-item {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 8px;
-  background: #f6f7f8;
-  border-radius: 6px;
-  padding: 8px 12px;
-  border: 1px solid #e5e7eb;
+  height: 36px;
 }
 
-.slider-label {
-  font-size: 12px;
+.filter-label {
+  font-size: 13px;
   font-weight: 700;
   color: #364844;
+  flex-shrink: 0;
   white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.slider-value {
-  color: #2f6feb;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-  min-width: 48px;
+  width: 80px;
   text-align: right;
-  font-size: 12px;
+}
+
+.filter-item :deep(.el-select) {
+  flex: 1;
+  min-width: 0;
+}
+
+.filter-item :deep(.el-select__wrapper) {
+  height: 32px !important;
+}
+
+.filter-item :deep(.el-input-number) {
+  height: 32px;
+}
+
+.filter-item :deep(.el-input-number .el-input__wrapper) {
+  height: 32px !important;
+}
+
+.filter-item :deep(.el-checkbox) {
+  height: 32px;
+  margin-right: 0;
+}
+
+.wrong-count-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.wrong-count-group :deep(.el-input-number) {
+  width: 64px;
+}
+
+.wrong-sep {
+  color: #999;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
-:deep(.el-slider) {
+.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 20px;
+  align-items: center;
+}
+
+.layout-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+}
+
+.layout-item.span-2 {
+  grid-column: span 2 / span 2;
+}
+
+.layout-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #364844;
+  flex-shrink: 0;
+  white-space: nowrap;
+  width: 80px;
+  text-align: right;
+}
+
+.layout-item :deep(.el-select__wrapper) {
+  height: 32px !important;
+}
+
+.layout-item :deep(.el-input-number) {
+  height: 32px;
+}
+
+.layout-item :deep(.el-input-number .el-input__wrapper) {
+  height: 32px !important;
+}
+
+.layout-item :deep(.el-checkbox) {
+  height: 32px;
+  margin-right: 0;
+}
+
+.compose-checks {
+  display: flex;
+  gap: 14px;
+}
+
+.bg-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.padding-group {
+  display: flex;
+  gap: 8px;
   flex: 1;
-  min-width: 60px;
-  max-width: 140px;
+}
+
+.padding-group :deep(.el-input-number) {
+  width: 64px;
+}
+
+.layout-item :deep(.el-select) {
+  flex: 1;
+  min-width: 0;
+}
+
+.layout-item :deep(.el-input-number) {
+  flex: 1;
+  min-width: 0;
 }
 
 .print-page {
@@ -686,6 +911,10 @@ onMounted(() => {
 .empty-card {
   color: #8c9996;
   text-align: center;
+  border: 1px solid #d7dfdc;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 18px 50px rgba(22, 32, 31, 0.1);
 }
 
 .print-preview-wrap {
@@ -711,7 +940,7 @@ onMounted(() => {
   min-height: 1123px;
   background: #ffffff;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
-  padding: 32px 37px;
+  padding: var(--page-padding-y) var(--page-padding-x);
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -724,7 +953,7 @@ onMounted(() => {
   font-weight: 800;
   color: #111827;
   padding-bottom: 10px;
-  margin-bottom: var(--header-gap, 32px);
+  margin-bottom: var(--page-padding-y);
   border-bottom: 2px solid #2f6feb;
 }
 
@@ -737,31 +966,46 @@ onMounted(() => {
 .a4-body {
   display: grid;
   grid-template-columns: repeat(var(--print-cols, 1), minmax(0, 1fr));
-  row-gap: 20px;
-  column-gap: var(--col-gap, 22px);
+  grid-auto-rows: var(--word-cell-height, auto);
+  gap: var(--outer-gap-y) var(--outer-gap-x);
+  align-items: stretch;
 }
 
-.word-row {
+.word-cell {
   display: flex;
   flex-direction: column;
-  gap: var(--row-gap, 22px);
+  align-items: center;
+  padding: var(--inner-pad-y) var(--inner-pad-x);
   min-width: 0;
+  background: var(--word-bg-color, transparent);
 }
 
-.word-row-double {
-  gap: 2px;
+.word-cell-underline-fixed {
+  height: 100%;
 }
 
-.meaning-text-en {
-  min-height: calc(var(--font-size, 16px) * 1.35);
+.word-cell-underline-fixed .word-underline {
+  margin-top: auto;
+}
+
+.word-en {
+  font-size: var(--font-size);
+  font-weight: 700;
+  line-height: var(--text-line-height);
+  color: #111827;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  word-break: normal;
+  max-width: 100%;
 }
 
-.meaning-text-zh {
-  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
+.word-zh {
+  font-size: var(--font-size);
+  font-weight: 600;
+  line-height: var(--text-line-height);
+  color: #111827;
+  text-align: center;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -769,46 +1013,40 @@ onMounted(() => {
   text-overflow: ellipsis;
   word-break: break-word;
   white-space: normal;
+  max-width: 100%;
 }
 
-.word-row-double .meaning-text-en {
-  height: auto;
-  min-height: calc(var(--font-size, 16px) * 1.35);
+.word-cell .word-en+.word-zh {
+  margin-top: var(--inner-gap);
 }
 
-.word-row-double .meaning-text-zh {
-  height: auto;
-  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
+.word-cell .word-zh+.word-en {
+  margin-top: var(--inner-gap);
 }
 
-.meaning-text {
-  font-size: var(--font-size, 16px);
-  font-weight: 600;
-  line-height: 1.35;
-  color: #111827;
-  min-width: 0;
-}
-
-.meaning-text-bottom {
-  height: auto;
-  min-height: calc(var(--font-size, 16px) * 1.35 * 2);
-}
-
-.meaning-line {
+.word-underline {
   width: 100%;
   border-bottom: 1px solid #333;
-  height: calc(var(--font-size, 16px) * 1.2 + 4px);
+  margin-top: var(--inner-gap);
+}
+
+.word-cell:not(.word-cell-underline-fixed):last-child .word-underline {
+  margin-top: var(--inner-gap);
 }
 
 @media (max-width: 720px) {
-  .print-title-wrap {
-    align-items: flex-start;
+  .print-header {
     flex-direction: column;
+    gap: 10px;
   }
 
-  .print-control,
-  .print-count {
-    width: 100%;
+  .filter-grid,
+  .layout-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .layout-item.span-2 {
+    grid-column: span 2 / span 2;
   }
 }
 </style>
