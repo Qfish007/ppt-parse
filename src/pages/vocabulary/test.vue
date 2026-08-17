@@ -13,7 +13,24 @@
           <p class="test-subtitle">默认词本：{{ defaultBook?.name || '默认生词本' }}</p>
         </div>
       </div>
-      <el-button type="info" @click="showHistory">历史记录</el-button>
+      <div class="test-header-actions">
+        <el-button @click="showHistory" title="历史记录">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v5h5" />
+            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+            <path d="M12 7v5l4 2" />
+          </svg>
+        </el-button>
+        <el-button @click="goTestSetting" title="测试设置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </el-button>
+      </div>
     </header>
 
     <section class="test-panel">
@@ -40,10 +57,6 @@
         </el-select>
         <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
           controls-position="right" @change="onTestCountChange" />
-        <div class="sound-toggle">
-          <span class="sound-toggle-label">发音</span>
-          <el-switch v-model="showSoundButton" />
-        </div>
         <el-button type="primary" :disabled="!availableWords.length" @click="startTest">
           开始测试
         </el-button>
@@ -110,7 +123,7 @@
           <div class="correct-info">
             <div class="correct-word-row">
               <span class="correct-word">{{ errorInfo.word }}</span>
-              <button class="error-sound-btn" @click="playWord(errorInfo.word)">
+              <button v-if="showSoundButton" class="error-sound-btn" @click="playWord(errorInfo.word)">
                 <svg viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z"></path>
                 </svg>
@@ -162,7 +175,7 @@
                 class="history-wrong-item">
                 <div class="history-wrong-left">
                   <span class="history-wrong-word">{{ item.word }}</span>
-                  <button class="history-sound-btn" @click="playWord(item.word)">
+                  <button v-if="showSoundButton" class="history-sound-btn" @click="playWord(item.word)">
                     <svg viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"></path>
                     </svg>
@@ -215,7 +228,7 @@
                 <div class="result-word-line">
                   <div class="result-word-group">
                     <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                    <button class="result-sound-btn" @click="playWord(item.word)">
+                    <button v-if="showSoundButton" class="result-sound-btn" @click="playWord(item.word)">
                       <svg viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"></path>
                       </svg>
@@ -244,14 +257,15 @@
                 <div class="result-word-line">
                   <div class="result-word-group">
                     <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                    <button class="result-sound-btn" @click="playWord(item.word)">
+                    <button v-if="showSoundButton" class="result-sound-btn" @click="playWord(item.word)">
                       <svg viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"></path>
                       </svg>
                     </button>
                   </div>
                   <div class="result-actions-inline">
-                    <button class="mark-correct-btn" @click="confirmMarkCorrect(item)">
+                    <button v-if="settingsStore.testEnableMarkCorrect" class="mark-correct-btn"
+                      @click="confirmMarkCorrect(item)">
                       <svg viewBox="0 0 24 24">
                         <path
                           d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z">
@@ -280,10 +294,12 @@ import { ElMessage, ElDialog } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
+import { useSettingsStore } from '../../stores/settings.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
 
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
+const settingsStore = useSettingsStore()
 const TEST_SESSION_STORAGE_KEY = 'bilingual-reader-vocabulary-test-session'
 const TEST_HISTORY_STORAGE_KEY = 'bilingual-reader-vocabulary-test-history'
 
@@ -304,7 +320,7 @@ const answerInputRef = ref(null)
 const errorDialogVisible = ref(false)
 const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
 const showCorrectToast = ref(false)
-const showSoundButton = ref(true)
+const showSoundButton = computed(() => settingsStore.testShowPronunciation)
 const exportingWrongPdf = ref(false)
 const historyVisible = ref(false)
 const historyRecords = ref([])
@@ -386,6 +402,10 @@ function goBack() {
   } else {
     router.push('/vocabulary')
   }
+}
+
+function goTestSetting() {
+  router.push('/vocabulary/test/setting')
 }
 
 function onTestCountChange() {
@@ -919,6 +939,7 @@ async function handleErrorClose() {
 }
 
 function confirmMarkCorrect(item) {
+  if (!settingsStore.testEnableMarkCorrect) return
   markCorrectItem.value = { ...item }
   markCorrectDialogVisible.value = true
 }
@@ -1021,6 +1042,7 @@ watch(availableWords, (words) => {
 }, { immediate: true })
 
 onMounted(() => {
+  settingsStore.ensureLoaded()
   restoreTestSession()
 })
 </script>
@@ -1061,6 +1083,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.test-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .test-title {

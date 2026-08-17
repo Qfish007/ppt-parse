@@ -11,6 +11,8 @@ export function useSettingsStore() {
     speechRate: 0.9,
     voiceProvider: 'youdao',
     bodyFontSize: 18,
+    testEnableMarkCorrect: true,
+    testShowPronunciation: true,
     _loaded: false,
 
     async load() {
@@ -19,10 +21,14 @@ export function useSettingsStore() {
       const rate = await settingsRepository.get(GLOBAL_KEYS.RATE);
       const provider = await settingsRepository.get(GLOBAL_KEYS.PROVIDER);
       const fontSize = await settingsRepository.get(GLOBAL_KEYS.BODY_FONT_SIZE);
+      const markCorrect = await settingsRepository.get(GLOBAL_KEYS.TEST_ENABLE_MARK_CORRECT);
+      const showPronunciation = await settingsRepository.get(GLOBAL_KEYS.TEST_SHOW_PRONUNCIATION);
 
       this.speechRate = Number(rate) || 0.9;
       this.voiceProvider = provider || 'youdao';
       this.bodyFontSize = normalizeBodyFontSize(fontSize);
+      this.testEnableMarkCorrect = markCorrect !== 'false';
+      this.testShowPronunciation = showPronunciation !== 'false';
       this._loaded = true;
     },
 
@@ -41,6 +47,16 @@ export function useSettingsStore() {
       const value = normalizeBodyFontSize(size);
       this.bodyFontSize = value;
       await settingsRepository.set(GLOBAL_KEYS.BODY_FONT_SIZE, String(value));
+    },
+
+    async saveTestEnableMarkCorrect(enabled) {
+      this.testEnableMarkCorrect = Boolean(enabled);
+      await settingsRepository.set(GLOBAL_KEYS.TEST_ENABLE_MARK_CORRECT, String(enabled));
+    },
+
+    async saveTestShowPronunciation(show) {
+      this.testShowPronunciation = Boolean(show);
+      await settingsRepository.set(GLOBAL_KEYS.TEST_SHOW_PRONUNCIATION, String(show));
     },
 
     ensureLoaded() {
