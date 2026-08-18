@@ -31,6 +31,7 @@ async function searchImagesDuckDuckGo(keyword, count) {
       .slice(0, count)
       .map(item => ({
         url: item?.Image || '',
+        thumbnail: item?.Image || '',
         title: item?.Title || '',
         source: 'duckduckgo'
       }))
@@ -63,7 +64,10 @@ async function searchImagesPixabay(keyword, count) {
         urls.push(u);
       }
     }
-    return urls.map(u => ({ url: u, title: keyword, source: 'pixabay' }));
+    return urls.map(u => {
+      const thumbnail = u.replace(/__(\d+)\.([a-z]+)$/i, '__180.$2');
+      return { url: u, thumbnail, title: keyword, source: 'pixabay' };
+    });
   } catch {
     return [];
   }
@@ -83,7 +87,8 @@ async function searchImagesBaidu(keyword, count) {
     const images = (data?.data || [])
       .slice(0, count)
       .map(item => ({
-        url: item?.thumbURL || item?.middleURL || item?.objURL || '',
+        url: item?.objURL || item?.middleURL || item?.thumbURL || '',
+        thumbnail: item?.thumbURL || item?.middleURL || item?.objURL || '',
         title: item?.fromPageTitleEnc || keyword,
         source: 'baidu'
       }))

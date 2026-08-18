@@ -33,9 +33,9 @@
                     </div>
                     <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="100%"
                         indicator-position="bottom" arrow="hover" autoplay>
-                        <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
+                        <el-carousel-item v-for="(thumb, index) in imageThumbnails" :key="index">
                             <div class="memory-image-wrapper">
-                                <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
+                                <img :src="thumb" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
                                     :class="{ 'is-loaded': imageLoaded[index] }" @load="onImageLoad(index)"
                                     @error="onImageError(index)" @click="openPreview(index)" />
                                 <div v-if="!imageLoaded[index]" class="memory-image-skeleton">
@@ -86,9 +86,9 @@
                     </div>
                     <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="100%"
                         indicator-position="bottom" arrow="hover" autoplay>
-                        <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
+                        <el-carousel-item v-for="(thumb, index) in imageThumbnails" :key="index">
                             <div class="memory-image-wrapper">
-                                <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
+                                <img :src="thumb" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
                                     :class="{ 'is-loaded': imageLoaded[index] }" @load="onImageLoad(index)"
                                     @error="onImageError(index)" @click="openPreview(index)" />
                                 <div v-if="!imageLoaded[index]" class="memory-image-skeleton">
@@ -109,12 +109,7 @@
 
     <el-dialog v-model="previewVisible" :show-close="true" width="80%" top="10vh" center destroy-on-close append-to-body
         class="image-preview-dialog">
-        <el-carousel v-if="imageUrls.length" class="preview-carousel" :initial-index="previewIndex"
-            indicator-position="outside" arrow="always" height="70vh">
-            <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
-                <img :src="url" :alt="`${word} ${index + 1}`" class="preview-image" />
-            </el-carousel-item>
-        </el-carousel>
+        <el-image-viewer :url-list="imageUrls" :initial-index="previewIndex" @close="previewVisible = false" />
     </el-dialog>
 </template>
 
@@ -128,14 +123,17 @@ const props = defineProps({
 })
 
 const imageUrls = ref([])
+const imageThumbnails = ref([])
 const imageLoaded = ref({})
 const loadingImages = ref(false)
 const previewVisible = ref(false)
 const previewIndex = ref(0)
+const previewLoaded = ref({})
 
 function openPreview(index) {
     previewIndex.value = index
     previewVisible.value = true
+    previewLoaded.value = {}
 }
 
 function onImageLoad(index) {
@@ -144,6 +142,14 @@ function onImageLoad(index) {
 
 function onImageError(index) {
     imageLoaded.value = { ...imageLoaded.value, [index]: false }
+}
+
+function onPreviewLoad(index) {
+    previewLoaded.value = { ...previewLoaded.value, [index]: true }
+}
+
+function onPreviewError(index) {
+    previewLoaded.value = { ...previewLoaded.value, [index]: false }
 }
 
 const COMMON_WORDS = new Set([
@@ -2555,10 +2561,25 @@ function getMethodName(type) {
     return names[type] || '创意记忆'
 }
 
+function sanitizeUrl(url) {
+    if (!url || typeof url !== 'string') return ''
+    try {
+        const u = new URL(url)
+        return u.href
+    } catch {
+        try {
+            return encodeURI(url).replace(/%25/g, '%')
+        } catch {
+            return url
+        }
+    }
+}
+
 async function searchImages() {
     const word = String(props.word || '').trim()
     if (!word) {
         imageUrls.value = []
+        imageThumbnails.value = []
         imageLoaded.value = {}
         return
     }
@@ -2571,14 +2592,20 @@ async function searchImages() {
         const response = await fetch(`/api/image/search?keyword=${encodeURIComponent(keyword)}&count=5`)
         const data = await response.json()
         if (data?.code === 1 && data?.data?.images) {
-            imageUrls.value = data.data.images.map(img => img.url)
+            const urls = data.data.images
+                .map(img => sanitizeUrl(img.thumbnail || img.url))
+                .filter(u => u)
+            imageUrls.value = urls
+            imageThumbnails.value = urls
             imageLoaded.value = {}
         } else {
             imageUrls.value = []
+            imageThumbnails.value = []
             imageLoaded.value = {}
         }
     } catch {
         imageUrls.value = []
+        imageThumbnails.value = []
         imageLoaded.value = {}
     } finally {
         loadingImages.value = false
@@ -2777,12 +2804,14 @@ watch(() => props.word, () => {
 }
 
 .memory-carousel-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
     cursor: zoom-in;
     transition: opacity 0.4s;
     opacity: 0;
+    display: block;
+    margin: 0 auto;
 }
 
 .memory-carousel-image.is-loaded {
@@ -2854,6 +2883,10 @@ watch(() => props.word, () => {
     width: 100%;
     height: 100%;
     background: #f0f7f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .memory-image-skeleton {
@@ -3002,12 +3035,40 @@ watch(() => props.word, () => {
     height: 70vh;
 }
 
+.preview-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1a1a2e;
+}
+
 .preview-image {
     max-width: 100%;
     max-height: 70vh;
     object-fit: contain;
     display: block;
     margin: 0 auto;
+    opacity: 0;
+    transition: opacity 0.4s;
+}
+
+.preview-image.is-loaded {
+    opacity: 1;
+}
+
+.preview-image-loading-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #1a1a2e;
+    color: #aaa;
 }
 
 .image-preview-dialog :deep(.el-dialog__header) {
