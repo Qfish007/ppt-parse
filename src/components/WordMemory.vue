@@ -27,18 +27,22 @@
                     </div>
                 </div>
                 <div class="memory-right">
-                    <div class="memory-image-header">
-                        <span class="memory-image-title">🖼️ 图片联想</span>
-                    </div>
-                    <div v-if="loadingImages" class="memory-image-loading">
+                    <div v-if="loadingImages && !imageUrls.length" class="memory-image-loading">
                         <span class="memory-image-loading-icon">⏳</span>
                         <span class="memory-image-loading-text">加载中...</span>
                     </div>
-                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="240px"
+                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="100%"
                         indicator-position="bottom" arrow="hover" autoplay>
                         <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
-                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image" loading="lazy"
-                                @click="openPreview(index)" />
+                            <div class="memory-image-wrapper">
+                                <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
+                                    :class="{ 'is-loaded': imageLoaded[index] }" @load="onImageLoad(index)"
+                                    @error="onImageError(index)" @click="openPreview(index)" />
+                                <div v-if="!imageLoaded[index]" class="memory-image-skeleton">
+                                    <span class="memory-image-skeleton-icon">🖼️</span>
+                                    <span class="memory-image-skeleton-text">加载中...</span>
+                                </div>
+                            </div>
                         </el-carousel-item>
                     </el-carousel>
                     <div v-else class="memory-image-empty">
@@ -76,15 +80,22 @@
         <template v-else-if="view === 'images'">
             <div class="memory-content memory-content-single">
                 <div class="memory-right">
-                    <div v-if="loadingImages" class="memory-image-loading">
+                    <div v-if="loadingImages && !imageUrls.length" class="memory-image-loading">
                         <span class="memory-image-loading-icon">⏳</span>
                         <span class="memory-image-loading-text">加载中...</span>
                     </div>
-                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="240px"
+                    <el-carousel v-else-if="imageUrls.length" class="memory-carousel" height="100%"
                         indicator-position="bottom" arrow="hover" autoplay>
                         <el-carousel-item v-for="(url, index) in imageUrls" :key="index">
-                            <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image" loading="lazy"
-                                @click="openPreview(index)" />
+                            <div class="memory-image-wrapper">
+                                <img :src="url" :alt="`${word} ${index + 1}`" class="memory-carousel-image"
+                                    :class="{ 'is-loaded': imageLoaded[index] }" @load="onImageLoad(index)"
+                                    @error="onImageError(index)" @click="openPreview(index)" />
+                                <div v-if="!imageLoaded[index]" class="memory-image-skeleton">
+                                    <span class="memory-image-skeleton-icon">🖼️</span>
+                                    <span class="memory-image-skeleton-text">加载中...</span>
+                                </div>
+                            </div>
                         </el-carousel-item>
                     </el-carousel>
                     <div v-else class="memory-image-empty">
@@ -117,6 +128,7 @@ const props = defineProps({
 })
 
 const imageUrls = ref([])
+const imageLoaded = ref({})
 const loadingImages = ref(false)
 const previewVisible = ref(false)
 const previewIndex = ref(0)
@@ -124,6 +136,14 @@ const previewIndex = ref(0)
 function openPreview(index) {
     previewIndex.value = index
     previewVisible.value = true
+}
+
+function onImageLoad(index) {
+    imageLoaded.value = { ...imageLoaded.value, [index]: true }
+}
+
+function onImageError(index) {
+    imageLoaded.value = { ...imageLoaded.value, [index]: false }
 }
 
 const COMMON_WORDS = new Set([
@@ -2539,6 +2559,7 @@ async function searchImages() {
     const word = String(props.word || '').trim()
     if (!word) {
         imageUrls.value = []
+        imageLoaded.value = {}
         return
     }
 
@@ -2551,11 +2572,14 @@ async function searchImages() {
         const data = await response.json()
         if (data?.code === 1 && data?.data?.images) {
             imageUrls.value = data.data.images.map(img => img.url)
+            imageLoaded.value = {}
         } else {
             imageUrls.value = []
+            imageLoaded.value = {}
         }
     } catch {
         imageUrls.value = []
+        imageLoaded.value = {}
     } finally {
         loadingImages.value = false
     }
@@ -2569,6 +2593,10 @@ watch(() => props.word, () => {
 <style scoped>
 .word-memory {
     padding: 16px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .memory-header {
@@ -2587,6 +2615,8 @@ watch(() => props.word, () => {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
+    flex: 1;
+    min-height: 0;
 }
 
 .memory-content-single {
@@ -2599,7 +2629,7 @@ watch(() => props.word, () => {
 }
 
 .view-images .memory-carousel-image {
-    height: 240px;
+    height: 100%;
 }
 
 .memory-left {
@@ -2721,11 +2751,14 @@ watch(() => props.word, () => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex: 1;
+    min-height: 0;
 }
 
 .memory-image-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
 }
 
 .memory-image-title {
@@ -2739,18 +2772,131 @@ watch(() => props.word, () => {
     overflow: hidden;
     border: 1px solid #e0f2f1;
     background: #f8fdfb;
+    flex: 1;
+    min-height: 280px;
 }
 
 .memory-carousel-image {
     width: 100%;
-    height: 240px;
+    height: 100%;
     object-fit: cover;
     cursor: zoom-in;
-    transition: transform 0.2s;
+    transition: opacity 0.4s;
+    opacity: 0;
 }
 
-.memory-carousel-image:hover {
-    transform: scale(1.02);
+.memory-carousel-image.is-loaded {
+    opacity: 1;
+}
+
+.memory-carousel :deep(.el-carousel__indicators) {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 14px;
+    border: 2px solid #03564f25;
+    padding: 5px 12px;
+    display: inline-flex;
+    gap: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    width: auto !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    bottom: 10px !important;
+    height: auto !important;
+    line-height: 0 !important;
+}
+
+.memory-carousel :deep(.el-carousel__indicator) {
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.memory-carousel :deep(.el-carousel__button) {
+    background-color: #222 !important;
+    opacity: 0.55;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: none;
+    box-shadow: none;
+    transition: all 0.2s;
+}
+
+.memory-carousel :deep(.el-carousel__indicator.is-active .el-carousel__button) {
+    background-color: #e53935 !important;
+    opacity: 1;
+    transform: scale(1.3);
+    box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.3);
+}
+
+.memory-carousel :deep(.el-carousel__arrow) {
+    background-color: rgba(18, 107, 98, 0.7);
+    color: #fff;
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+}
+
+.memory-carousel :deep(.el-carousel__arrow:hover) {
+    background-color: rgba(18, 107, 98, 0.95);
+}
+
+.memory-carousel :deep(.el-carousel__arrow--left) {
+    left: 8px;
+}
+
+.memory-carousel :deep(.el-carousel__arrow--right) {
+    right: 8px;
+}
+
+.memory-image-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: #f0f7f5;
+}
+
+.memory-image-skeleton {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: linear-gradient(90deg, #f0f7f5 0%, #e0f2f1 50%, #f0f7f5 100%);
+    background-size: 200% 100%;
+    animation: skeleton-wave 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-wave {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.memory-image-skeleton-icon {
+    font-size: 32px;
+    opacity: 0.5;
+}
+
+.memory-image-skeleton-text {
+    font-size: 13px;
+    color: #8c9996;
+}
+
+.memory-image-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #126b62;
+    background: #e0f2f1;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
 }
 
 .memory-image-empty {
@@ -2764,6 +2910,8 @@ watch(() => props.word, () => {
     background: #f8fdfb;
     border-radius: 8px;
     border: 1px solid #e0f2f1;
+    flex: 1;
+    min-height: 0;
 }
 
 .memory-image-empty-icon {
@@ -2785,6 +2933,8 @@ watch(() => props.word, () => {
     background: #f8fdfb;
     border-radius: 8px;
     border: 1px solid #e0f2f1;
+    flex: 1;
+    min-height: 0;
 }
 
 .memory-image-loading-icon {

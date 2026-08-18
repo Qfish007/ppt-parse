@@ -519,7 +519,8 @@ function parseEnglishText(text) {
 
 .detail-row-middle {
   grid-template-columns: 1fr 1fr;
-  min-height: 340px;
+  grid-template-rows: 1fr;
+  height: 400px;
 }
 
 .detail-row-bottom {
@@ -529,6 +530,18 @@ function parseEnglishText(text) {
 .detail-col {
   padding: 24px 28px;
   position: relative;
+  min-height: 0;
+}
+
+.detail-col-memory,
+.detail-col-images {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-col-memory>.word-memory,
+.detail-col-images>.word-memory {
+  flex: 1;
 }
 
 .detail-col+.detail-col {
@@ -539,6 +552,15 @@ function parseEnglishText(text) {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.detail-col-images {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-col-images>.word-memory {
+  flex: 1;
 }
 
 .word-info-header {
