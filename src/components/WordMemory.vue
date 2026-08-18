@@ -12,6 +12,8 @@
                             <div class="memory-card-header">
                                 <span class="memory-card-icon">{{ getMethodIcon(method.type) }}</span>
                                 <span class="memory-card-title">{{ getMethodName(method.type) }}</span>
+                                <span v-if="method.quality" class="memory-card-quality"
+                                    :class="'q-' + Math.round(method.quality)">★{{ Math.round(method.quality) }}</span>
                             </div>
                             <div class="memory-card-body">
                                 <p class="memory-card-desc">{{ method.description }}</p>
@@ -55,6 +57,8 @@
                             <div class="memory-card-header">
                                 <span class="memory-card-icon">{{ getMethodIcon(method.type) }}</span>
                                 <span class="memory-card-title">{{ getMethodName(method.type) }}</span>
+                                <span v-if="method.quality" class="memory-card-quality"
+                                    :class="'q-' + Math.round(method.quality)">★{{ Math.round(method.quality) }}</span>
                             </div>
                             <div class="memory-card-body">
                                 <p class="memory-card-desc">{{ method.description }}</p>
@@ -1606,6 +1610,392 @@ const WORD_SCENES = {
     salty: '咸'
 }
 
+const ETYMOLOGY_MAP = {
+    salary: { text: '来自拉丁语 salarium，古罗马士兵发盐作为酬劳 → 盐钱 → 薪水', tip: null },
+    companion: { text: 'com(一起) + pan(面包) → 一起吃面包的人 → 同伴', tip: null },
+    disaster: { text: 'dis(否定) + aster(星) → 星位不正 → 灾难（古人迷信星象）', tip: null },
+    breakfast: { text: 'break(打破) + fast(斋戒) → 打破一夜的斋戒 → 早餐', tip: null },
+    sandwich: { text: '来自约翰·蒙塔古伯爵的绰号"三明治"，他为了赌博让人把肉夹在面包里', tip: null },
+    window: { text: '古挪威语 vindr(风) + auga(眼睛) → 风的眼睛 → 窗户', tip: null },
+    clock: { text: '源自中古英语 clokke，最初指教堂的钟 → 时钟', tip: null },
+    robot: { text: '源自捷克语 robota(强制劳动) → 机器人', tip: null },
+    quilt: { text: '源自拉丁语 culcita(床垫) → 缝起来的被子', tip: null },
+    disaster: { text: 'dis(不) + aster(星) → 星位不正 → 灾难', tip: null },
+    import: { text: 'im(进入) + port(搬运) → 搬进来 → 进口', tip: null },
+    export: { text: 'ex(出去) + port(搬运) → 搬出去 → 出口', tip: null },
+    report: { text: 're(再次) + port(搬运) → 再次搬运信息 → 报告', tip: null },
+    support: { text: 'sub(下面) + port(搬运) → 从下面支撑 → 支持', tip: null },
+    transport: { text: 'trans(跨越) + port(搬运) → 跨越搬运 → 运输', tip: null },
+    portable: { text: 'port(搬运) + able(能) → 能搬运的 → 便携的', tip: null },
+    evidence: { text: 'e(出) + vid(看) + ence → 看出来的东西 → 证据', tip: null },
+    provide: { text: 'pro(向前) + vid(看) + e → 提前看到需求 → 提供', tip: null },
+    revise: { text: 're(再次) + vis(看) + e → 再看一遍 → 修订', tip: null },
+    supervise: { text: 'super(上面) + vis(看) + e → 从上往下看 → 监督', tip: null },
+    television: { text: 'tele(远) + vis(看) + ion → 远方看到 → 电视', tip: null }
+}
+
+const TPR_ACTIONS = {
+    jump: '双脚用力蹬地，向上跳起',
+    run: '快速交替迈步，向前奔跑',
+    walk: '自然交替迈步，向前行走',
+    open: '双手做出推开门/掀开盖子的动作',
+    close: '双手做出拉门/合盖的动作',
+    carry: '双手抱重物在胸前，迈步前行',
+    whisper: '凑近耳边，捂嘴小声说话',
+    shout: '张大嘴巴，用力呼喊',
+    eat: '拿起食物，放入口中咀嚼',
+    drink: '端起杯子，凑到嘴边饮用',
+    write: '手握笔状，在纸上书写',
+    read: '双手捧书，眼睛扫动阅读',
+    push: '双手用力向前推',
+    pull: '双手用力向后拉',
+    lift: '弯腰屈膝，双手向上举起',
+    throw: '挥手向前抛掷',
+    catch: '双手向前伸出抓取',
+    climb: '手脚并用向上攀登',
+    swim: '双臂划水，双腿蹬水',
+    dance: '身体随节奏摆动，手脚舞动',
+    sing: '嘴巴张开，发出旋律',
+    sleep: '双手合十放耳边，闭眼打哈欠',
+    cry: '双手揉眼睛，假装流泪',
+    laugh: '双手捂肚子，弯腰大笑',
+    smell: '凑近物体，用力吸气',
+    taste: '舌尖舔嘴唇，品味味道',
+    touch: '手指轻触物体表面',
+    feel: '手掌按在胸口，闭眼感受',
+    hide: '双手捂脸，蹲低身体',
+    seek: '手搭凉棚，四处张望',
+    escape: '急促摆手，向后退避',
+    hurry: '快步走动，频繁看手表',
+    wait: '双手交叠身前，耐心等候',
+    stop: '张开手掌，发出停止手势',
+    start: '挥手向前，做出开始手势',
+    sit: '屈膝坐下，身体放松',
+    stand: '向上挺直身体，双脚站立',
+    lie: '身体躺平，双手放身侧',
+    fight: '双拳出击，交替攻防',
+    protect: '双手交叉护在胸前',
+    attack: '双拳向前猛击',
+    escape: '转身奔跑，快速离开'
+}
+
+const LETTER_PICTOGRAM = {
+    a: '山尖似A，人字梯',
+    b: '眼镜似B，两个圆',
+    c: '弯月似C，开口笑',
+    d: '半圆弓似D',
+    e: '梳子似E，三横',
+    f: '旗杆似F',
+    g: '门环似G',
+    h: '梯子似H',
+    i: '柱子似I，蜡烛',
+    j: '钩子似J',
+    k: '踢腿似K',
+    l: '直角尺似L',
+    m: '双峰山似M',
+    n: '闪电似N',
+    o: '圆环似O，嘴巴',
+    p: '旗子似P',
+    q: '蝌蚪似Q，带尾',
+    r: '人腿似R',
+    s: '蛇似S，天鹅',
+    t: '伞柄似T',
+    u: '杯子似U',
+    v: '胜利手势似V',
+    w: '波浪似W',
+    x: '交叉似X，剪刀',
+    y: '树杈似Y',
+    z: '闪电似Z'
+}
+
+const PHONICS_RULES = {
+    magicE: { pattern: 'a_e, i_e, o_e, u_e', desc: '魔法E：结尾的e让元音读字母本音', examples: ['cake', 'bike', 'home', 'cute'] },
+    vowelDigraph: { pattern: 'ai, ee, oa, ou, ea', desc: '元音组合：两个元音一起发一个音', examples: ['rain', 'see', 'coat', 'shout', 'meat'] },
+    rControlled: { pattern: 'ar, er, ir, or, ur', desc: 'R控制音：R改变前面元音的发音', examples: ['car', 'her', 'bird', 'for', 'burn'] },
+    consonantBlend: { pattern: 'ch, sh, th, ph, wh', desc: '辅音组合：两个辅音一起发一个新音', examples: ['chair', 'ship', 'this', 'phone', 'what'] },
+    doubleConsonant: { pattern: 'bb, dd, gg, ll, mm, nn, pp, rr, ss, tt', desc: '双辅音：两个相同辅音只发一个音', examples: ['book', 'happy', 'better'] }
+}
+
+const WORD_FAMILY_MAP = {
+    work: ['worker', 'working', 'works', 'workplace'],
+    beauty: ['beautiful', 'beautifully', 'beautify'],
+    act: ['actor', 'action', 'active', 'activity'],
+    happy: ['happiness', 'happily', 'unhappy'],
+    know: ['knowledge', 'known', 'unknown'],
+    help: ['helper', 'helpful', 'helpless'],
+    like: ['likely', 'unlike', 'likeness'],
+    love: ['lover', 'lovely', 'loving'],
+    play: ['player', 'playing', 'playful'],
+    run: ['runner', 'running', 'runway'],
+    write: ['writer', 'writing', 'written'],
+    read: ['reader', 'reading', 'readable'],
+    speak: ['speaker', 'speaking', 'speech'],
+    teach: ['teacher', 'teaching', 'teachable'],
+    learn: ['learner', 'learning', 'learned'],
+    sing: ['singer', 'singing', 'song'],
+    dance: ['dancer', 'dancing', 'danceable'],
+    jump: ['jumper', 'jumping', 'jumpy'],
+    swim: ['swimmer', 'swimming', 'swimsuit'],
+    eat: ['eater', 'eating', 'eatable'],
+    drink: ['drinker', 'drinking', 'drinkable'],
+    open: ['opening', 'opened', 'openly'],
+    close: ['closer', 'closing', 'closure'],
+    make: ['maker', 'making', 'makeup'],
+    break: ['breaker', 'breaking', 'breakfast'],
+    take: ['taker', 'taking', 'mistake'],
+    give: ['giver', 'giving', 'forgive'],
+    go: ['going', 'gogo', 'ongoing'],
+    come: ['comer', 'coming', 'income'],
+    see: ['seer', 'seeing', 'foresee'],
+    look: ['looker', 'looking', 'outlook'],
+    say: ['sayer', 'saying', 'unsay'],
+    pay: ['payer', 'paying', 'repay'],
+    buy: ['buyer', 'buying', 'rebuy'],
+    sell: ['seller', 'selling', 'resell'],
+    meet: ['meeter', 'meeting', 'unmeet'],
+    leave: ['leaver', 'leaving', 'believe'],
+    live: ['liver', 'living', 'alive'],
+    die: ['dier', 'dying', 'undying'],
+    try: ['trier', 'trying', 'retry'],
+    fly: ['flyer', 'flying', 'flyable'],
+    dry: ['dryer', 'drying', 'dryly'],
+    cry: ['crier', 'crying', 'crystal'],
+    // More word families
+    important: ['importance', 'importantly', 'unimportant'],
+    differ: ['different', 'difference', 'differently'],
+    similar: ['similarity', 'similarly', 'dissimilar'],
+    possible: ['possibility', 'possibly', 'impossible'],
+    probable: ['probability', 'probably', 'improbable'],
+    able: ['ability', 'abroad', 'disable'],
+    nature: ['natural', 'naturally', 'naturalist'],
+    culture: ['cultural', 'culturally', 'multicultural'],
+    friend: ['friendly', 'friendship', 'friendless'],
+    member: ['membership', 'memberless'],
+    partner: ['partnership', 'partnerless'],
+    leader: ['leadership', 'leaderless'],
+    hard: ['hardship', 'hardware', 'hardly'],
+    soft: ['softness', 'software', 'softly'],
+    bright: ['brightness', 'brightly', 'brighten'],
+    dark: ['darkness', 'darkly', 'darken'],
+    light: ['lightness', 'lightly', 'lighten'],
+    heavy: ['heaviness', 'heavily'],
+    strong: ['strength', 'strongly', 'strengthen'],
+    weak: ['weakness', 'weakly', 'weaken'],
+    long: ['length', 'longly', 'lengthen'],
+    short: ['shortness', 'shortly', 'shorten'],
+    high: ['height', 'highly', 'highlight'],
+    low: ['lowness', 'lowly', 'lower'],
+    wide: ['width', 'widely', 'widen'],
+    narrow: ['narrowness', 'narrowly', 'narrow'],
+    deep: ['depth', 'deeply', 'deepen'],
+    shallow: ['shallowness', 'shallowly'],
+    fast: ['fastness', 'fastly', 'fasten'],
+    slow: ['slowness', 'slowly', 'slowdown'],
+    new: ['newness', 'newly', 'renew'],
+    old: ['oldness', 'oldly', 'olden'],
+    young: ['youngness', 'youngster'],
+    big: ['bigness', 'bigger', 'biggest'],
+    small: ['smallness', 'smaller', 'smallest'],
+    good: ['goodness', 'goodbye', 'goodnight'],
+    bad: ['badness', 'badly', 'badminton'],
+    happy: ['happiness', 'happily', 'unhappy'],
+    sad: ['sadness', 'sadly', 'sadden'],
+    angry: ['anger', 'angrily', 'angry'],
+    afraid: ['fear', 'fearful', 'fearlessly'],
+    tired: ['tiredness', 'tiredly', 'retire'],
+    hungry: ['hunger', 'hungrily'],
+    thirsty: ['thirst', 'thirstily'],
+    cold: ['coldness', 'coldly', 'colden'],
+    hot: ['hotness', 'hotly'],
+    warm: ['warmth', 'warmly', 'warmen'],
+    cool: ['coolness', 'coolly', 'coolen'],
+    beautiful: ['beauty', 'beautifully', 'beautify'],
+    ugly: ['ugliness', 'uglily'],
+    clean: ['cleanliness', 'cleanly', 'cleanse'],
+    dirty: ['dirtiness', 'dirtily'],
+    bright: ['brightness', 'brightly', 'brighten'],
+    dark: ['darkness', 'darkly', 'darken'],
+    soft: ['softness', 'softly', 'soften'],
+    hard: ['hardness', 'hardly', 'harden'],
+    sweet: ['sweetness', 'sweetly', 'sweeten'],
+    bitter: ['bitterness', 'bitterly', 'embitter'],
+    funny: ['funniness', 'funnily'],
+    exciting: ['excitement', 'excitedly'],
+    boring: ['boredom', 'boringly'],
+    interesting: ['interest', 'interestingly'],
+    easy: ['easiness', 'easily', 'ease'],
+    difficult: ['difficulty', 'difficultly'],
+    possible: ['possibility', 'possibly', 'impossible'],
+    important: ['importance', 'importantly', 'unimportant'],
+    necessary: ['necessity', 'necessarily', 'unnecessary'],
+    different: ['difference', 'differently', 'differentiate'],
+    same: ['sameness', 'samewise'],
+    similar: ['similarity', 'similarly', 'dissimilar'],
+    common: ['commonness', 'commonly', 'commonplace'],
+    unique: ['uniqueness', 'uniquely'],
+    rare: ['rarity', 'rarely'],
+    precious: ['preciousness', 'preciously'],
+    valuable: ['value', 'valuably', 'invaluable'],
+    essential: ['essence', 'essentially'],
+    vital: ['vitality', 'vitally'],
+    crucial: ['cruciality', 'crucially'],
+    critical: ['criticism', 'critically'],
+    urgent: ['urgency', 'urgently'],
+    immediate: ['immediacy', 'immediately'],
+    important: ['importance', 'importantly']
+}
+
+const SIMILAR_WORDS = [
+    { group: 'adapt/adopt', words: ['adapt', 'adopt'], diff: 'adapt中间a(adjust调整→适应)，adopt中间o(own拥有→收养)' },
+    { group: 'quite/quiet', words: ['quite', 'quiet'], diff: 'quiet多了个e，e像一个人坐着很安静' },
+    { group: 'through/though', words: ['through', 'though'], diff: 'through多一个r，r像路上的石头，穿过需要经过石头' },
+    { group: 'plan/plane', words: ['plan', 'plane'], diff: 'plane比plan多一个e，e像翅膀，飞机有翅膀才能飞' },
+    { group: 'price/prize', words: ['price', 'prize'], diff: 'price中间c(cost花费)，prize中间z(奖杯形状)' },
+    { group: 'affect/effect', words: ['affect', 'effect'], diff: 'affect(a开头→影响动作)，effect(e开头→效果结果)' },
+    { group: 'lie/lay', words: ['lie', 'lay'], diff: 'lie躺(不规则lay-lain)，lay放(规则laid)' },
+    { group: 'among/between', words: ['among', 'between'], diff: 'among(三者以上之间)，between(两者之间)' },
+    { group: 'beside/besides', words: ['beside', 'besides'], diff: 'beside旁边，besides除...之外还有' },
+    { group: 'desert/dessert', words: ['desert', 'dessert'], diff: 'desert沙漠(一个s)，dessert甜点(两个s，像两层蛋糕)' },
+    { group: 'later/latter', words: ['later', 'latter'], diff: 'later更晚，latter后者' },
+    { group: 'historic/historical', words: ['historic', 'historical'], diff: 'historic有历史意义的，historical历史的' },
+    { group: 'economic/economical', words: ['economic', 'economical'], diff: 'economic经济的，economical节约的' },
+    { group: 'classic/classical', words: ['classic', 'classical'], diff: 'classic经典的，classical古典的' },
+    { group: 'electric/electrical', words: ['electric', 'electrical'], diff: 'electric电的，electrical电气的' },
+    { group: 'historic/historical', words: ['historic', 'historical'], diff: 'historic有历史意义的，historical历史的' }
+]
+
+const ALPHABET_FEATURES = {
+    banana: '字母a重复3次，像香蕉的弯曲形状',
+    see: '两个e代表两只眼睛，中间y像鼻梁 → 看见',
+    book: '两个o像两只眼睛在看书',
+    foot: '两个o像两个脚趾',
+    teeth: '两个e像两排牙齿',
+    balloon: '两个o像两个气球',
+    coffee: '两个f像两个咖啡壶',
+    address: '两个d像两扇门',
+    tomorrow: '两个o像两个明天的太阳',
+    letter: '两个e像两个信封',
+    green: '两个e像两片绿叶',
+    weekend: '两个e像两个周末的太阳',
+    butterfly: '两个t像蝴蝶翅膀',
+    school: '两个o像教室的两个窗户'
+}
+
+const SENTENCE_STORIES = {
+    cat: 'The cat likes to fish for fish. 猫喜欢钓鱼。',
+    dog: 'A dog runs in the park every day. 一只狗每天在公园跑。',
+    book: 'I read a book before sleeping. 我睡前读书。',
+    water: 'Fish live in water. 鱼生活在水里。',
+    happy: 'She is happy to see her friend. 她见到朋友很开心。',
+    sad: 'He felt sad when his cat died. 他的猫死了，他很伤心。',
+    run: 'I run in the park every morning. 我每天早上在公园跑步。',
+    eat: 'We eat breakfast at 7. 我们7点吃早餐。',
+    sleep: 'Babies sleep a lot. 婴儿睡得很多。',
+    love: 'I love my family. 我爱我的家人。',
+    friend: 'A friend in need is a friend indeed. 患难见真情。',
+    school: 'I go to school by bike. 我骑自行车上学。',
+    work: 'My father works in a hospital. 我爸爸在医院工作。',
+    play: 'Children play in the garden. 孩子们在花园里玩。',
+    study: 'She studies hard for the exam. 她为考试努力学习。',
+    music: 'I listen to music every day. 我每天听音乐。',
+    dance: 'They dance at the party. 他们在派对上跳舞。',
+    sing: 'She sings in the choir. 她在合唱团唱歌。',
+    jump: 'The children jump for joy. 孩子们高兴得跳起来。',
+    swim: 'Fish swim in the river. 鱼在河里游。',
+    fly: 'Birds fly high in the sky. 鸟儿在天空高飞。',
+    walk: 'We walk after dinner. 我们晚饭后散步。',
+    talk: 'We talk about our dreams. 我们谈论梦想。',
+    read: 'He reads newspapers every morning. 他每天早上读报纸。',
+    write: 'She writes letters to her pen pal. 她给笔友写信。',
+    teach: 'Mr. Wang teaches us English. 王老师教我们英语。',
+    learn: 'We learn English at school. 我们在学校学英语。',
+    help: 'I help my mother with housework. 我帮妈妈做家务。',
+    like: 'I like apples very much. 我非常喜欢苹果。',
+    want: 'I want to be a doctor. 我想成为一名医生。'
+}
+
+const EMOTION_ANCHORS = {
+    fragile: '想象快递盒上写着 FRAGILE，结果里面装着一颗会爆炸的炸弹 → 你必须轻拿轻放',
+    hungry: '想象一个人饿到啃自己的胳膊 → hungry 到饿疯了',
+    lazy: '懒到张嘴吃饭都要别人喂 → lazy',
+    giant: '想象一只蚂蚁举起重物 → 反差：蚂蚁举"巨"大重物',
+    tiny: '想象一头大象钻进针眼 → 反差：大象"tiny"地穿过针眼',
+    silent: '想象摇滚乐队全体静音 → 反差：最吵闹的乐队"silent"',
+    huge: '想象一只蚂蚁扛着一栋楼 → 反差：蚂蚁扛"巨"大的楼',
+    strong: '想象一根牙签顶住一座大厦 → 反差：牙签"strong"到顶大厦',
+    bright: '想象太阳戴墨镜 → 反差：太阳太"bright"了',
+    dark: '想象黑人牙膏美白牙齿 → 反差：用了反而"dark"',
+    hot: '想象冰块在火炉里 → 反差：冰在火炉里"hot"',
+    cold: '想象火焰在冰箱里 → 反差：火焰在冰箱里"cold"',
+    fast: '想象蜗牛开赛车 → 反差：蜗牛开赛车特别"fast"',
+    slow: '想象猎豹慢跑 → 反差：猎豹"slow"到可以打盹',
+    easy: '想象微积分是小学题 → 反差：微积分"easy"到小学生都会',
+    difficult: '想象1+1算不出来 → 反差：1+1太"difficult"了',
+    beautiful: '想象一只猪戴皇冠 → 反差：猪变"beautiful"了',
+    ugly: '想象王子变青蛙 → 反差：王子变"ugly"青蛙',
+    happy: '想象哭着笑 → 反差：哭着却很"happy"',
+    sad: '想象葬礼上大笑 → 反差：葬礼上却"sad"不起来'
+}
+
+const CREATIVE_SPLIT_RULES = {
+    types: {
+        word: '完整熟词',
+        affix: '词缀组合',
+        sound: '发音片段',
+        pictogram: '象形字母',
+        number: '数字谐音',
+        pinyin: '拼音联想'
+    }
+}
+
+const RHYME_PAIRS = [
+    { words: ['bee', 'tree'], rhyme: 'I see a bee fly to the tree. 我看见一只蜜蜂飞向大树。' },
+    { words: ['cat', 'hat'], rhyme: 'The cat wears a hat. 猫戴着一顶帽子。' },
+    { words: ['dog', 'fog'], rhyme: 'A dog runs in the fog. 一只狗在雾中奔跑。' },
+    { words: ['fox', 'box'], rhyme: 'A fox is in the box. 一只狐狸在盒子里。' },
+    { words: ['pig', 'wig'], rhyme: 'The pig has a wig. 猪戴着一顶假发。' },
+    { words: ['bird', 'word'], rhyme: 'A bird knows every word. 一只鸟认识每个单词。' },
+    { words: ['book', 'cook'], rhyme: 'I read a book, you be a cook. 我读书，你当厨师。' },
+    { words: ['fish', 'dish'], rhyme: 'The fish is on the dish. 鱼在盘子里。' },
+    { words: ['moon', 'balloon'], rhyme: 'The moon is a big balloon. 月亮像一个大气球。' },
+    { words: ['star', 'car'], rhyme: 'A star drives a car. 一颗星星开着车。' },
+    { words: ['rain', 'train'], rhyme: 'The rain stops the train. 大雨让火车停了。' },
+    { words: ['snow', 'glow'], rhyme: 'The snow starts to glow. 雪开始发光。' },
+    { words: ['sun', 'bun'], rhyme: 'The sun eats a bun. 太阳吃了一个面包。' },
+    { words: ['tree', 'bee'], rhyme: 'Under the tree, there is a bee. 树下有一只蜜蜂。' },
+    { words: ['cat', 'bat'], rhyme: 'The cat sees a bat. 猫看见一只蝙蝠。' }
+]
+
+const FIRST_LETTER_GROUPS = [
+    { letters: 'ROYGBIV', words: ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Indigo', 'Violet'], desc: '彩虹七色' },
+    { letters: 'FAMILIES', words: ['Father', 'And', 'Mother', 'I', 'Love', 'IES'], desc: '家庭：爸妈我爱你们' },
+    { letters: 'PANDA', words: ['People', 'And', 'Nature', 'Dream', 'Action'], desc: '熊猫：人与自然梦想行动' },
+    { letters: 'TEACHER', words: ['Teach', 'Encourage', 'Advice', 'Create', 'Help', 'Educate', 'Respect'], desc: '老师：教导鼓励建议创造帮助教育尊重' },
+    { letters: 'STUDENT', words: ['Study', 'Think', 'Understand', 'Do', 'Explore', 'Notice', 'Try'], desc: '学生：学习思考理解探索注意尝试' }
+]
+
+function classifyWord(word) {
+    const lowerWord = word.toLowerCase()
+    const len = lowerWord.length
+    let lengthCat = 'short'
+    if (len >= 7) lengthCat = 'long'
+    else if (len >= 4) lengthCat = 'medium'
+
+    let decomposable = 'none'
+    if (len >= 5) {
+        const hasPrefix = Object.keys(PREFIXES).some(p => lowerWord.startsWith(p) && lowerWord.length > p.length)
+        const hasSuffix = Object.keys(SUFFIXES).some(s => lowerWord.endsWith(s) && lowerWord.length > s.length)
+        const hasRoot = Object.keys(ROOTS).some(r => lowerWord.includes(r))
+        if ((hasPrefix || hasSuffix) && hasRoot) decomposable = 'strong'
+        else if (hasPrefix || hasSuffix || hasRoot) decomposable = 'medium'
+        else {
+            const hasCommonWord = [...COMMON_WORDS].some(cw => cw.length >= 3 && lowerWord.includes(cw))
+            if (hasCommonWord) decomposable = 'weak'
+        }
+    }
+    return { length: lengthCat, decomposable }
+}
+
 function analyzeRootAffix(word) {
     const lowerWord = word.toLowerCase()
     const len = lowerWord.length
@@ -1781,56 +2171,318 @@ function analyzeAntonym(word) {
     }
 }
 
+function analyzeEtymology(word) {
+    const lowerWord = word.toLowerCase()
+    const entry = ETYMOLOGY_MAP[lowerWord]
+    if (!entry) return null
+    return { type: 'etymology', description: entry.text, tip: entry.tip }
+}
+
+function analyzeCreativeSplit(word) {
+    const lowerWord = word.toLowerCase()
+    const len = lowerWord.length
+    if (len < 5) return null
+
+    const segments = []
+    for (const [key, meaning] of Object.entries(PREFIXES)) {
+        if (lowerWord.startsWith(key) && lowerWord.length > key.length) {
+            segments.push({ text: key, type: 'affix', meaning })
+            break
+        }
+    }
+    const remaining1 = segments.length ? lowerWord.slice(segments[0].text.length) : lowerWord
+    for (const [key, meaning] of Object.entries(SUFFIXES)) {
+        if (remaining1.endsWith(key) && remaining1.length > key.length) {
+            segments.push({ text: key, type: 'affix', meaning })
+            break
+        }
+    }
+    let midPart = remaining1
+    if (segments.length >= 2) midPart = remaining1.slice(0, -segments[segments.length - 1].text.length)
+    else if (segments.length === 1 && segments[0].type === 'affix') {
+        if (lowerWord.startsWith(segments[0].text)) midPart = lowerWord.slice(segments[0].text.length)
+        else midPart = lowerWord.slice(0, -segments[0].text.length)
+    }
+
+    for (const [key, meaning] of Object.entries(ROOTS)) {
+        if (midPart.includes(key)) {
+            segments.push({ text: key, type: 'word', meaning })
+            break
+        }
+    }
+
+    let creativeSegs = [...segments]
+    if (creativeSegs.length < 2) {
+        const found = []
+        for (let i = 2; i < len - 1; i++) {
+            const p1 = lowerWord.slice(0, i)
+            const p2 = lowerWord.slice(i)
+            if (COMMON_WORDS.has(p1) && p2.length >= 2) {
+                found.push({ text: p1, type: 'word', meaning: '熟词' })
+                found.push({ text: p2, type: 'sound', meaning: '发音联想' })
+                break
+            }
+        }
+        creativeSegs = found
+    }
+
+    if (creativeSegs.length === 0) {
+        return null
+    }
+
+    const desc = creativeSegs.map(s => `${s.text}(${s.meaning})`).join(' + ')
+    return {
+        type: 'creativeSplit',
+        description: `${word} = ${desc} → 创意拆分记忆`,
+        tip: '⚠️ 创意拆分，非官方词根'
+    }
+}
+
+function analyzeWordFamily(word) {
+    const lowerWord = word.toLowerCase()
+    const family = WORD_FAMILY_MAP[lowerWord]
+    if (!family || family.length === 0) return null
+
+    const derivs = family.slice(0, 4)
+    const parts = []
+    for (const d of derivs) {
+        const suffix = d.replace(lowerWord, '')
+        if (suffix.startsWith('er')) parts.push(`${d}(-er 人)`)
+        else if (suffix.startsWith('ing')) parts.push(`${d}(-ing 进行时)`)
+        else if (suffix.startsWith('ly')) parts.push(`${d}(-ly 副词)`)
+        else if (suffix.startsWith('ness')) parts.push(`${d}(-ness 名词)`)
+        else if (suffix.startsWith('ful')) parts.push(`${d}(-ful 充满)`)
+        else if (suffix.startsWith('less')) parts.push(`${d}(-less 没有)`)
+        else if (suffix.startsWith('tion')) parts.push(`${d}(-tion 名词)`)
+        else if (suffix.startsWith('ment')) parts.push(`${d}(-ment 名词)`)
+        else parts.push(d)
+    }
+
+    return {
+        type: 'wordFamily',
+        description: `${word} 词族：${parts.join('、')}，记住一个，一串都会！`,
+        tip: null
+    }
+}
+
+function analyzeSimilarWord(word) {
+    const lowerWord = word.toLowerCase()
+    for (const group of SIMILAR_WORDS) {
+        if (group.words.includes(lowerWord)) {
+            return {
+                type: 'similarWord',
+                description: `${group.group}：${group.diff}`,
+                tip: null
+            }
+        }
+    }
+    return null
+}
+
+function analyzeTPR(word) {
+    const lowerWord = word.toLowerCase()
+    const action = TPR_ACTIONS[lowerWord]
+    if (!action) return null
+    return {
+        type: 'tpr',
+        description: `${word}：${action}。快跟我做一次！`,
+        tip: '用身体动作建立肌肉记忆'
+    }
+}
+
+function analyzeLetterPictogram(word) {
+    const lowerWord = word.toLowerCase()
+    const firstLetter = lowerWord[0]
+    if (!firstLetter) return null
+    const picto = LETTER_PICTOGRAM[firstLetter]
+    if (!picto) return null
+
+    const letters = [...new Set(lowerWord.split(''))].slice(0, 3)
+    const parts = letters.map(l => LETTER_PICTOGRAM[l] || l).filter(Boolean)
+
+    return {
+        type: 'letterPictogram',
+        description: `${word}：${parts.join('，')}`,
+        tip: '字母象形记忆，适合低龄用户'
+    }
+}
+
+function analyzePhonics(word) {
+    const lowerWord = word.toLowerCase()
+    const len = lowerWord.length
+    if (len < 3 || len > 10) return null
+
+    for (const [key, rule] of Object.entries(PHONICS_RULES)) {
+        if (rule.examples.includes(lowerWord)) {
+            return {
+                type: 'phonics',
+                description: `${word} 符合「${rule.desc}」规则 → 更容易记住拼写`,
+                tip: null
+            }
+        }
+    }
+
+    if (lowerWord.match(/[a-z]+e$/)) {
+        const vowel = lowerWord[0]
+        if ('aio'.includes(vowel) && lowerWord.length > 3) {
+            return {
+                type: 'phonics',
+                description: `${word} 符合「魔法E」规则：结尾的e让${vowel}读字母本音 /${vowel}/`,
+                tip: null
+            }
+        }
+    }
+    return null
+}
+
+function analyzeEmotionAnchor(word) {
+    const lowerWord = word.toLowerCase()
+    const anchor = EMOTION_ANCHORS[lowerWord]
+    if (!anchor) return null
+    return {
+        type: 'emotionAnchor',
+        description: anchor,
+        tip: '情绪锚定：越反差越难忘'
+    }
+}
+
+function analyzeAlphabetFeature(word) {
+    const lowerWord = word.toLowerCase()
+    const feature = ALPHABET_FEATURES[lowerWord]
+    if (!feature) return null
+
+    const counts = {}
+    for (const ch of lowerWord) counts[ch] = (counts[ch] || 0) + 1
+    const repeated = Object.entries(counts).filter(([_, c]) => c >= 2)
+    const repeatDesc = repeated.length > 0
+        ? `字母「${repeated.map(([ch]) => ch).join('、')}」重复出现`
+        : ''
+
+    return {
+        type: 'alphabetFeature',
+        description: `${word}：${feature}${repeatDesc ? '。' + repeatDesc : ''}`,
+        tip: null
+    }
+}
+
+function analyzeSentenceStory(word) {
+    const lowerWord = word.toLowerCase()
+    const story = SENTENCE_STORIES[lowerWord]
+    if (!story) return null
+    return {
+        type: 'sentenceStory',
+        description: story,
+        tip: null
+    }
+}
+
+function analyzeRhyme(word) {
+    const lowerWord = word.toLowerCase()
+    for (const pair of RHYME_PAIRS) {
+        if (pair.words.includes(lowerWord)) {
+            return {
+                type: 'rhyme',
+                description: pair.rhyme,
+                tip: '押韵顺口溜，朗朗上口'
+            }
+        }
+    }
+    return null
+}
+
+function analyzeFirstLetter(word) {
+    const lowerWord = word.toLowerCase()
+    const letter = lowerWord[0]
+    if (!letter) return null
+    for (const group of FIRST_LETTER_GROUPS) {
+        if (group.words.map(w => w.toLowerCase()).includes(lowerWord)) {
+            return {
+                type: 'firstLetter',
+                description: `${group.desc}：${group.letters} = ${group.words.join('、')}`,
+                tip: '首字母组合记忆'
+            }
+        }
+    }
+    return null
+}
+
+function scoreQuality(method, wordClass) {
+    let score = 3
+    const desc = method.description || ''
+
+    if (desc.length >= 40 && desc.length <= 80) score += 1
+    if (desc.length > 80) score += 0.5
+    if (desc.length < 20) score -= 1
+
+    const logicTypes = ['rootAffix', 'compound', 'etymology', 'creativeSplit', 'wordFamily', 'similarWord', 'phonics']
+    const imageTypes = ['homophonic', 'scene', 'tpr', 'letterPictogram', 'emotionAnchor', 'rhyme']
+
+    if (logicTypes.includes(method.type)) score += 1
+    if (imageTypes.includes(method.type)) score += 0.5
+    if (wordClass.length === 'long' && logicTypes.includes(method.type)) score += 0.5
+    if (wordClass.length === 'short' && imageTypes.includes(method.type)) score += 0.5
+    if (method.tip) score += 0.5
+
+    return Math.min(5, Math.max(1, score))
+}
+
 const memoryMethods = computed(() => {
     const word = String(props.word || '').trim()
+    const meaning = String(props.meaning || '').trim()
     if (!word) return []
 
-    const methods = []
-    const usedTypes = new Set()
+    const wordClass = classifyWord(word)
+    const allCandidates = []
 
-    const rootAffix = analyzeRootAffix(word)
-    if (rootAffix && !usedTypes.has('rootAffix')) {
-        methods.push(rootAffix)
-        usedTypes.add('rootAffix')
+    const analyzers = [
+        analyzeRootAffix,
+        analyzeCompoundWord,
+        analyzeEtymology,
+        analyzeCreativeSplit,
+        analyzeWordFamily,
+        analyzeInnerWord,
+        analyzeSimilarWord,
+        analyzePhonics,
+        analyzeHomophonic,
+        analyzeLetterPictogram,
+        analyzeTPR,
+        analyzeScene,
+        analyzeEmotionAnchor,
+        analyzeAlphabetFeature,
+        analyzeSynonym,
+        analyzeAntonym,
+        analyzeSentenceStory,
+        analyzeRhyme,
+        analyzeFirstLetter
+    ]
+
+    for (const analyzer of analyzers) {
+        const result = analyzer(word)
+        if (result) {
+            const qs = scoreQuality(result, wordClass)
+            allCandidates.push({ ...result, quality: qs })
+        }
     }
 
-    const compound = analyzeCompoundWord(word)
-    if (compound && !usedTypes.has('compound')) {
-        methods.push(compound)
-        usedTypes.add('compound')
+    const filtered = allCandidates.filter(m => m.quality >= 2)
+    filtered.sort((a, b) => b.quality - a.quality)
+
+    const seenTypes = new Set()
+    const unique = filtered.filter(m => {
+        if (seenTypes.has(m.type)) return false
+        seenTypes.add(m.type)
+        return true
+    })
+
+    const hasLogic = unique.some(m => ['rootAffix', 'compound', 'etymology', 'creativeSplit', 'wordFamily', 'similarWord', 'phonics'].includes(m.type))
+    const hasImage = unique.some(m => ['homophonic', 'scene', 'tpr', 'letterPictogram', 'emotionAnchor', 'rhyme', 'sentenceStory'].includes(m.type))
+
+    if (!hasLogic && !hasImage && unique.length > 0) {
+        const sentence = analyzeSentenceStory(word)
+        if (sentence) unique.push({ ...sentence, quality: 3 })
     }
 
-    const innerWord = analyzeInnerWord(word)
-    if (innerWord && !usedTypes.has('innerWord')) {
-        methods.push(innerWord)
-        usedTypes.add('innerWord')
-    }
-
-    const homophonic = analyzeHomophonic(word)
-    if (homophonic && !usedTypes.has('homophonic')) {
-        methods.push(homophonic)
-        usedTypes.add('homophonic')
-    }
-
-    const scene = analyzeScene(word)
-    if (scene && !usedTypes.has('scene')) {
-        methods.push(scene)
-        usedTypes.add('scene')
-    }
-
-    const synonym = analyzeSynonym(word)
-    if (synonym && !usedTypes.has('synonym')) {
-        methods.push(synonym)
-        usedTypes.add('synonym')
-    }
-
-    const antonym = analyzeAntonym(word)
-    if (antonym && !usedTypes.has('antonym')) {
-        methods.push(antonym)
-        usedTypes.add('antonym')
-    }
-
-    return methods.slice(0, 3)
+    return unique.slice(0, 3)
 })
 
 function getMethodIcon(type) {
@@ -1841,7 +2493,19 @@ function getMethodIcon(type) {
         homophonic: '🎵',
         scene: '🎬',
         synonym: '🔗',
-        antonym: '⚖️'
+        antonym: '⚖️',
+        etymology: '📖',
+        creativeSplit: '✂️',
+        wordFamily: '🌳',
+        similarWord: '🔀',
+        tpr: '🏃',
+        letterPictogram: '🔤',
+        phonics: '📐',
+        emotionAnchor: '🎭',
+        alphabetFeature: '🔠',
+        sentenceStory: '📝',
+        rhyme: '🎤',
+        firstLetter: '🔡'
     }
     return icons[type] || '💡'
 }
@@ -1854,7 +2518,19 @@ function getMethodName(type) {
         homophonic: '谐音联想记忆',
         scene: '图像场景联想',
         synonym: '近义词关联记忆',
-        antonym: '反义词对比记忆'
+        antonym: '反义词对比记忆',
+        etymology: '词源故事记忆',
+        creativeSplit: '创意拆分记忆',
+        wordFamily: '词族联动记忆',
+        similarWord: '形近词对比记忆',
+        tpr: 'TPR动作记忆',
+        letterPictogram: '字母象形记忆',
+        phonics: '拼读规则记忆',
+        emotionAnchor: '情绪锚定记忆',
+        alphabetFeature: '字母特征记忆',
+        sentenceStory: '短句故事记忆',
+        rhyme: '顺口溜记忆',
+        firstLetter: '首字母缩写记忆'
     }
     return names[type] || '创意记忆'
 }
@@ -1966,6 +2642,39 @@ watch(() => props.word, () => {
     font-size: 14px;
     font-weight: 600;
     color: #126b62;
+}
+
+.memory-card-quality {
+    margin-left: auto;
+    font-size: 12px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.memory-card-quality.q-5 {
+    background: #ff6b35;
+    color: #fff;
+}
+
+.memory-card-quality.q-4 {
+    background: #ffa726;
+    color: #fff;
+}
+
+.memory-card-quality.q-3 {
+    background: #ffd54f;
+    color: #5d4037;
+}
+
+.memory-card-quality.q-2 {
+    background: #e0e0e0;
+    color: #757575;
+}
+
+.memory-card-quality.q-1 {
+    background: #ef5350;
+    color: #fff;
 }
 
 .memory-card-body {
