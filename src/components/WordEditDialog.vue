@@ -93,6 +93,7 @@ const formData = ref({
   note: ''
 })
 
+const entryId = ref(null)
 const tags = ref([])
 
 watch(() => props.visible, (val) => {
@@ -111,6 +112,7 @@ function loadWordData() {
   tags.value = vocabularyStore.tags
   const entry = vocabularyStore.words.find(w => w.word === props.word)
   if (entry) {
+    entryId.value = entry.id
     formData.value = {
       word: entry.word,
       meaning: entry.meaning || '',
@@ -145,10 +147,10 @@ async function save() {
   }
 
   const level = formData.value.level ?? 'unknown'
+  const lookup = entryId.value || props.word
 
   if (props.editableWord && newWord !== props.word) {
-    await vocabularyStore.removeWord(props.word)
-    await vocabularyStore.addWord({
+    await vocabularyStore.updateWord(lookup, {
       word: newWord,
       meaning: formData.value.meaning,
       phonetic: formData.value.phonetic,
@@ -158,7 +160,7 @@ async function save() {
       note: formData.value.note
     })
   } else {
-    await vocabularyStore.updateWord(formData.value.word, {
+    await vocabularyStore.updateWord(lookup, {
       meaning: formData.value.meaning,
       phonetic: formData.value.phonetic,
       level,
