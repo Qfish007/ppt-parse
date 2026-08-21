@@ -1050,7 +1050,7 @@ onMounted(() => {
 <style scoped>
 .vocab-test-page {
   /* 测试页对齐 token：修改时只改这里 */
-  --test-max: 1200px;
+  --test-max: 1400px;
   --test-border: 1px;
 
   min-height: 100vh;

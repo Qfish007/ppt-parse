@@ -478,7 +478,7 @@ function parseEnglishText(text) {
 
 .word-detail-header,
 .word-detail-card {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -520,7 +520,7 @@ function parseEnglishText(text) {
 .detail-row-middle {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr;
-  height: 400px;
+  height: 480px;
 }
 
 .detail-row-bottom {

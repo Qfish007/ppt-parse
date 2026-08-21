@@ -1705,35 +1705,6 @@ const TPR_ACTIONS = {
     escape: '转身奔跑，快速离开'
 }
 
-const LETTER_PICTOGRAM = {
-    a: '山尖似A，人字梯',
-    b: '眼镜似B，两个圆',
-    c: '弯月似C，开口笑',
-    d: '半圆弓似D',
-    e: '梳子似E，三横',
-    f: '旗杆似F',
-    g: '门环似G',
-    h: '梯子似H',
-    i: '柱子似I，蜡烛',
-    j: '钩子似J',
-    k: '踢腿似K',
-    l: '直角尺似L',
-    m: '双峰山似M',
-    n: '闪电似N',
-    o: '圆环似O，嘴巴',
-    p: '旗子似P',
-    q: '蝌蚪似Q，带尾',
-    r: '人腿似R',
-    s: '蛇似S，天鹅',
-    t: '伞柄似T',
-    u: '杯子似U',
-    v: '胜利手势似V',
-    w: '波浪似W',
-    x: '交叉似X，剪刀',
-    y: '树杈似Y',
-    z: '闪电似Z'
-}
-
 const PHONICS_RULES = {
     magicE: { pattern: 'a_e, i_e, o_e, u_e', desc: '魔法E：结尾的e让元音读字母本音', examples: ['cake', 'bike', 'home', 'cute'] },
     vowelDigraph: { pattern: 'ai, ee, oa, ou, ea', desc: '元音组合：两个元音一起发一个音', examples: ['rain', 'see', 'coat', 'shout', 'meat'] },
@@ -2316,23 +2287,6 @@ function analyzeTPR(word) {
     }
 }
 
-function analyzeLetterPictogram(word) {
-    const lowerWord = word.toLowerCase()
-    const firstLetter = lowerWord[0]
-    if (!firstLetter) return null
-    const picto = LETTER_PICTOGRAM[firstLetter]
-    if (!picto) return null
-
-    const letters = [...new Set(lowerWord.split(''))].slice(0, 3)
-    const parts = letters.map(l => LETTER_PICTOGRAM[l] || l).filter(Boolean)
-
-    return {
-        type: 'letterPictogram',
-        description: `${word}：${parts.join('，')}`,
-        tip: '字母象形记忆，适合低龄用户'
-    }
-}
-
 function analyzePhonics(word) {
     const lowerWord = word.toLowerCase()
     const len = lowerWord.length
@@ -2441,7 +2395,7 @@ function scoreQuality(method, wordClass) {
     if (desc.length < 20) score -= 1
 
     const logicTypes = ['rootAffix', 'compound', 'etymology', 'creativeSplit', 'wordFamily', 'similarWord', 'phonics']
-    const imageTypes = ['homophonic', 'scene', 'tpr', 'letterPictogram', 'emotionAnchor', 'rhyme']
+    const imageTypes = ['homophonic', 'scene', 'tpr', 'emotionAnchor', 'rhyme']
 
     if (logicTypes.includes(method.type)) score += 1
     if (imageTypes.includes(method.type)) score += 0.5
@@ -2470,7 +2424,6 @@ const memoryMethods = computed(() => {
         analyzeSimilarWord,
         analyzePhonics,
         analyzeHomophonic,
-        analyzeLetterPictogram,
         analyzeTPR,
         analyzeScene,
         analyzeEmotionAnchor,
@@ -2501,7 +2454,7 @@ const memoryMethods = computed(() => {
     })
 
     const hasLogic = unique.some(m => ['rootAffix', 'compound', 'etymology', 'creativeSplit', 'wordFamily', 'similarWord', 'phonics'].includes(m.type))
-    const hasImage = unique.some(m => ['homophonic', 'scene', 'tpr', 'letterPictogram', 'emotionAnchor', 'rhyme', 'sentenceStory'].includes(m.type))
+    const hasImage = unique.some(m => ['homophonic', 'scene', 'tpr', 'emotionAnchor', 'rhyme', 'sentenceStory'].includes(m.type))
 
     if (!hasLogic && !hasImage && unique.length > 0) {
         const sentence = analyzeSentenceStory(word)
@@ -2525,7 +2478,6 @@ function getMethodIcon(type) {
         wordFamily: '🌳',
         similarWord: '🔀',
         tpr: '🏃',
-        letterPictogram: '🔤',
         phonics: '📐',
         emotionAnchor: '🎭',
         alphabetFeature: '🔠',
@@ -2550,7 +2502,6 @@ function getMethodName(type) {
         wordFamily: '词族联动记忆',
         similarWord: '形近词对比记忆',
         tpr: 'TPR动作记忆',
-        letterPictogram: '字母象形记忆',
         phonics: '拼读规则记忆',
         emotionAnchor: '情绪锚定记忆',
         alphabetFeature: '字母特征记忆',
@@ -2663,12 +2614,36 @@ watch(() => props.word, () => {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    min-height: 0;
 }
 
 .memory-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: #b2dfdb transparent;
+}
+
+.memory-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.memory-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.memory-list::-webkit-scrollbar-thumb {
+    background: #b2dfdb;
+    border-radius: 3px;
+}
+
+.memory-list::-webkit-scrollbar-thumb:hover {
+    background: #80cbc4;
 }
 
 .memory-card {

@@ -82,6 +82,17 @@ function sortByAlphabet(entries) {
   return [...entries].sort((a, b) => a.word.localeCompare(b.word, 'en', { sensitivity: 'base' }));
 }
 
+function sortTags(tags) {
+  return [...tags].sort((a, b) => {
+    const nameA = a.name || '';
+    const nameB = b.name || '';
+    const numA = parseInt(nameA.match(/\d+/)?.[0] || '0', 10);
+    const numB = parseInt(nameB.match(/\d+/)?.[0] || '0', 10);
+    if (numA !== numB) return numA - numB;
+    return nameA.localeCompare(nameB, 'zh');
+  });
+}
+
 function normalizeBook(book, fallbackName = '默认生词本') {
   const now = Date.now();
   const name = normalizeBookName(book?.name) || fallbackName;
@@ -92,7 +103,7 @@ function normalizeBook(book, fallbackName = '默认生词本') {
       ? sortByAlphabet(book.words.map(normalizeEntry).filter(Boolean))
       : [],
     tags: Array.isArray(book?.tags)
-      ? book.tags.map(normalizeTag).filter(Boolean)
+      ? sortTags(book.tags.map(normalizeTag).filter(Boolean))
       : [],
     createdAt: Number(book?.createdAt) || now,
     updatedAt: Number(book?.updatedAt) || now
@@ -422,6 +433,7 @@ export function useVocabularyStore(options) {
       if (existing) return existing;
       const tag = normalizeTag({ name: normalizedName });
       book.tags.push(tag);
+      book.tags = sortTags(book.tags);
       book.updatedAt = Date.now();
       this.syncActiveBook();
       await this.save();
@@ -539,6 +551,7 @@ export function useVocabularyStore(options) {
           count += 1;
         }
       });
+      book.tags = sortTags(book.tags);
       book.updatedAt = Date.now();
       this.syncActiveBook();
       await this.save();

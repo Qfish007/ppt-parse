@@ -92,7 +92,7 @@ onMounted(() => {
 }
 
 .settings-header {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto 18px;
     display: flex;
     justify-content: space-between;
@@ -113,7 +113,7 @@ onMounted(() => {
 }
 
 .settings-card {
-    max-width: 800px;
+    max-width: 1000px;
     margin: 0 auto 14px;
     border: 1px solid #d7dfdc;
     border-radius: 8px;
