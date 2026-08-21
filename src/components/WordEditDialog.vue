@@ -116,7 +116,7 @@ function loadWordData() {
       meaning: entry.meaning || '',
       phonetic: entry.phonetic || '',
       level: entry.level || null,
-      memoryText: entry.memoryText || '',
+      memoryText: (entry.memoryParts || []).join('. '),
       tagIds: entry.tagIds || [],
       note: entry.note || ''
     }
@@ -146,24 +146,23 @@ async function save() {
 
   const level = formData.value.level ?? 'unknown'
 
-  if (editableWord && newWord !== props.word) {
+  if (props.editableWord && newWord !== props.word) {
     await vocabularyStore.removeWord(props.word)
     await vocabularyStore.addWord({
       word: newWord,
       meaning: formData.value.meaning,
       phonetic: formData.value.phonetic,
       level,
-      memoryText: formData.value.memoryText,
+      memoryParts: formData.value.memoryText,
       tagIds: formData.value.tagIds,
       note: formData.value.note
     })
   } else {
-    vocabularyStore.updateWord({
-      word: formData.value.word,
+    await vocabularyStore.updateWord(formData.value.word, {
       meaning: formData.value.meaning,
       phonetic: formData.value.phonetic,
       level,
-      memoryText: formData.value.memoryText,
+      memoryParts: formData.value.memoryText,
       tagIds: formData.value.tagIds,
       note: formData.value.note
     })
