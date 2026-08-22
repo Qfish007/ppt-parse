@@ -17,7 +17,7 @@
                 <label class="field-label">功能开关</label>
             </div>
             <div class="card-body">
-                <div class="setting-item">
+                <div class="setting-item" style="display: none;">
                     <div class="setting-info">
                         <span class="setting-name">纠错功能</span>
                         <span class="setting-desc">在错误列表中显示纠错按钮，可将错误单词标记为正确</span>
