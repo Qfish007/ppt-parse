@@ -12,7 +12,7 @@
           <h2 class="cn-print-title">中文练习打印</h2>
           <p class="cn-print-subtitle">
             {{ activeBookName }} · 可打印 {{ availableWords.length }} 个词条 ·
-            每页 {{ safeTableRows * safeTableCols }} 个词语 · 共 {{ printPages.length }} 页
+            流式排版 · 共 {{ printPages.length }} 页
           </p>
         </div>
       </div>
@@ -70,11 +70,6 @@
                   <div class="cn-help-section"><b>页面设置</b></div>
                   <div>• H：页面左右内边距（px）</div>
                   <div>• V：页面上下内边距（px）</div>
-                  <div class="cn-help-section"><b>表格设置</b></div>
-                  <div>• row：每页行数</div>
-                  <div>• col：每行单元格数</div>
-                  <div>• show-border：是否显示边框（0/1）</div>
-                  <div>• border-width：单元格边框厚度（px）</div>
                   <div class="cn-help-section"><b>中文设置</b></div>
                   <div>• font：中文字号（px）</div>
                   <div>• row：中文占几行高度（每行一组汉字格子）</div>
@@ -87,12 +82,15 @@
                   <div>• show：是否显示拼音文字（0/1，不影响 grid 格子）</div>
                   <div>• pos：显示顺序</div>
                   <div>• grid：格子类型（同上）</div>
-                  <div class="cn-help-section"><b>单元格设置</b></div>
-                  <div>• top/left/right/bottom：单元格内边距（px）</div>
+                  <div class="cn-help-section"><b>单词设置</b></div>
+                  <div>• top/left/right/bottom：单词内边距（px）</div>
                   <div>• align：内容垂直对齐（top/bottom/center）</div>
                   <div>• text-align：内容水平对齐（left/center/right）</div>
-                  <div>• background：单元格背景色</div>
+                  <div>• background：单词背景色</div>
                   <div>• space：中文与拼音的上下间距（px）</div>
+                  <div>• h-space：单词之间的水平间距（px）</div>
+                  <div>• v-space：换行后单词之间的垂直间距（px）</div>
+                  <div class="cn-help-tip">流式排版：单词按内容宽度排列，末尾放不下时自动换行</div>
                   <div class="cn-help-tip">grid 可用数字 0-5 或名称：无/米/田/口/横/三</div>
                 </div>
               </template>
@@ -126,14 +124,14 @@
           <span class="cn-a4-info">水平：【{{ selectedLevelLabels }}】</span>
           <span class="cn-a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
         </div>
-        <div class="cn-a4-body" :class="{ 'show-border': safeTableShowBorder }">
-          <div v-for="(entry, i) in page" :key="i" class="cn-word-cell" :class="{ 'show-border': safeTableShowBorder }">
+        <div class="cn-a4-body">
+          <div v-for="item in page" :key="item.idx" class="cn-word-cell" :style="{ width: item.width + 'px' }">
             <div class="cn-cell-content" :style="contentAlignStyle">
               <template v-for="block in orderedBlocks" :key="block.type">
                 <!-- 中文 block：只显示一遍 -->
                 <div v-if="block.type === 'zh'" class="cn-block cn-block-zh">
                   <div class="cn-zh-row" :style="{ height: layout.charGridSize + 'px' }">
-                    <div v-for="(char, ci) in charsOf(entry)" :key="ci" class="cn-char-cell"
+                    <div v-for="(char, ci) in charsOf(item.entry)" :key="ci" class="cn-char-cell"
                       :class="'grid-' + safeChineseGrid"
                       :style="{ width: layout.charGridSize + 'px', height: layout.charGridSize + 'px' }">
                       <span class="cn-gl cn-gl-h"></span>
@@ -150,9 +148,9 @@
                 <!-- 拼音 block：只显示一遍 -->
                 <div v-else-if="block.type === 'pinyin'" class="cn-block cn-block-pinyin">
                   <div class="cn-pinyin-row" :class="'pgrid-' + safePinyinGrid"
-                    :style="{ height: safePinyinFont * 1.6 + 'px' }">
+                    :style="{ height: layout.pinyinLineH + 'px' }">
                     <span v-if="safePinyinShow" class="cn-pinyin-text" :style="{ fontSize: safePinyinFont + 'px' }">{{
-                      entry.pinyin || '' }}</span>
+                      item.entry.pinyin || '' }}</span>
                   </div>
                 </div>
               </template>
@@ -187,18 +185,13 @@ const presetColors = ['#d4a0a0', '#4a90d9', '#8a8a8a', '#d97706']
 
 // ===== 配置文本框（参照 vocabulary/print） =====
 const DEFAULT_CONFIG_TEXT = `页面设置:H=20,V=30;
-表格设置:row=10;col=4;show-border=0;border-width=1
 中文设置:font=22;row=2;show=1;pos=3;grid=1
 拼音设置:font=18;row=1;show=1;pos=2;grid=0
-单元格设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;space:10`
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:50;v-space:20`
 
 const DEFAULTS = {
   pagePaddingH: 20,
   pagePaddingV: 30,
-  tableRows: 10,
-  tableCols: 4,
-  tableShowBorder: false,
-  tableBorderWidth: 1,
   chineseFont: 22,
   chineseRow: 2,
   chineseShow: true,
@@ -217,14 +210,13 @@ const DEFAULTS = {
   cellBackground: '#ffffff',
   cellTextAlign: 'left',
   cellSpace: 10,
+  wordHSpace: 50,
+  wordVSpace: 20,
 }
 
 const RANGES = {
   pagePaddingH: { min: 0, max: 200 },
   pagePaddingV: { min: 0, max: 200 },
-  tableRows: { min: 1, max: 50 },
-  tableCols: { min: 1, max: 10 },
-  tableBorderWidth: { min: 0, max: 10 },
   chineseFont: { min: 6, max: 80 },
   chineseRow: { min: 1, max: 10 },
   chinesePos: { min: 0, max: 99 },
@@ -238,11 +230,13 @@ const RANGES = {
   cellPaddingRight: { min: 0, max: 100 },
   cellPaddingBottom: { min: 0, max: 100 },
   cellSpace: { min: 0, max: 100 },
+  wordHSpace: { min: 0, max: 200 },
+  wordVSpace: { min: 0, max: 200 },
 }
 
 const VALID_ALIGNS = ['top', 'bottom', 'center']
 const VALID_TEXT_ALIGNS = ['left', 'center', 'right']
-const BOOL_KEYS = new Set(['tableShowBorder', 'chineseShow', 'pinyinShow'])
+const BOOL_KEYS = new Set(['chineseShow', 'pinyinShow'])
 
 // grid 名称 → 数字映射
 const GRID_NAMES = {
@@ -256,22 +250,18 @@ const GRID_NAMES = {
 
 const SECTION_ALIASES = {
   '页面设置': '页面设置', '页面': '页面设置', 'page': '页面设置',
-  '表格设置': '表格设置', '表格': '表格设置', 'table': '表格设置',
   '中文设置': '中文设置', '中文': '中文设置', 'zh': '中文设置', 'chinese': '中文设置',
   '拼音设置': '拼音设置', '拼音': '拼音设置', 'pinyin': '拼音设置',
-  '单元格设置': '单元格设置', '单元格': '单元格设置', 'cell': '单元格设置',
+  '单词设置': '单词设置', '单词': '单词设置', 'word': '单词设置',
+  // 兼容旧配置中的「单元格设置 / 表格设置」写法
+  '单元格设置': '单词设置', '单元格': '单词设置', 'cell': '单词设置',
+  '表格设置': '单词设置', '表格': '单词设置', 'table': '单词设置',
 }
 
 const KEY_ALIASES = {
   '页面设置': {
     'H': 'pagePaddingH', 'h': 'pagePaddingH', 'horizontal': 'pagePaddingH', '左右': 'pagePaddingH',
     'V': 'pagePaddingV', 'v': 'pagePaddingV', 'vertical': 'pagePaddingV', '上下': 'pagePaddingV',
-  },
-  '表格设置': {
-    'row': 'tableRows', 'rows': 'tableRows', '行': 'tableRows',
-    'col': 'tableCols', 'cols': 'tableCols', 'columns': 'tableCols', '列': 'tableCols',
-    'show-border': 'tableShowBorder', 'showBorder': 'tableShowBorder', '显示边框': 'tableShowBorder', '边框': 'tableShowBorder',
-    'border-width': 'tableBorderWidth', 'borderWidth': 'tableBorderWidth', '厚度': 'tableBorderWidth',
   },
   '中文设置': {
     'font': 'chineseFont', 'size': 'chineseFont', '大小': 'chineseFont', '字号': 'chineseFont',
@@ -287,13 +277,17 @@ const KEY_ALIASES = {
     'pos': 'pinyinPos', 'position': 'pinyinPos', '位置': 'pinyinPos',
     'grid': 'pinyinGrid', '格子': 'pinyinGrid',
   },
-  '单元格设置': {
+  '单词设置': {
     'top': 'cellPaddingTop', 'left': 'cellPaddingLeft',
     'right': 'cellPaddingRight', 'bottom': 'cellPaddingBottom',
     'align': 'cellAlign', '对齐': 'cellAlign', '对齐方式': 'cellAlign',
     'background': 'cellBackground', 'bg': 'cellBackground', '背景': 'cellBackground',
     'text-align': 'cellTextAlign', 'textAlign': 'cellTextAlign', '文本对齐': 'cellTextAlign', '文字对齐': 'cellTextAlign',
     'space': 'cellSpace', 'gap': 'cellSpace', '间距': 'cellSpace', '上下间距': 'cellSpace',
+    'h-space': 'wordHSpace', 'hspace': 'wordHSpace', 'hSpace': 'wordHSpace',
+    '水平间距': 'wordHSpace', '横向间距': 'wordHSpace',
+    'v-space': 'wordVSpace', 'vspace': 'wordVSpace', 'vSpace': 'wordVSpace',
+    '垂直间距': 'wordVSpace', '纵向间距': 'wordVSpace',
   },
 }
 
@@ -394,17 +388,11 @@ const parsedConfig = computed(() => parseConfig(configText.value))
 // 安全值
 const safePagePaddingH = computed(() => parsedConfig.value.pagePaddingH)
 const safePagePaddingV = computed(() => parsedConfig.value.pagePaddingV)
-const safeTableRows = computed(() => parsedConfig.value.tableRows)
-const safeTableCols = computed(() => parsedConfig.value.tableCols)
-const safeTableShowBorder = computed(() => parsedConfig.value.tableShowBorder)
-const safeTableBorderWidth = computed(() => parsedConfig.value.tableBorderWidth)
 const safeChineseFont = computed(() => parsedConfig.value.chineseFont)
-const safeChineseRow = computed(() => parsedConfig.value.chineseRow)
 const safeChineseShow = computed(() => parsedConfig.value.chineseShow)
 const safeChinesePos = computed(() => parsedConfig.value.chinesePos)
 const safeChineseGrid = computed(() => parsedConfig.value.chineseGrid)
 const safePinyinFont = computed(() => parsedConfig.value.pinyinFont)
-const safePinyinRow = computed(() => parsedConfig.value.pinyinRow)
 const safePinyinShow = computed(() => parsedConfig.value.pinyinShow)
 const safePinyinPos = computed(() => parsedConfig.value.pinyinPos)
 const safePinyinGrid = computed(() => parsedConfig.value.pinyinGrid)
@@ -416,6 +404,8 @@ const safeCellAlign = computed(() => parsedConfig.value.cellAlign)
 const safeCellTextAlign = computed(() => parsedConfig.value.cellTextAlign)
 const safeCellBackground = computed(() => parsedConfig.value.cellBackground)
 const safeCellSpace = computed(() => parsedConfig.value.cellSpace)
+const safeWordHSpace = computed(() => parsedConfig.value.wordHSpace)
+const safeWordVSpace = computed(() => parsedConfig.value.wordVSpace)
 
 // 内容块是否渲染：show 只控制文字显隐；只要 grid>0（有格子线），即使 show=0 也必须保留整个块
 const zhBlockVisible = computed(() => safeChineseShow.value || safeChineseGrid.value > 0)
@@ -469,18 +459,7 @@ watch(availableWords, () => {
   if (availableWords.value.length > 0 && !printWords.value.length) resamplePrintWords()
 })
 
-const wordsPerPage = computed(() => safeTableRows.value * safeTableCols.value)
 
-const printPages = computed(() => {
-  const list = printWords.value || []
-  if (!list.length) return []
-  const pageSize = Math.max(1, wordsPerPage.value || 1)
-  const pages = []
-  for (let i = 0; i < list.length; i += pageSize) {
-    pages.push(list.slice(i, i + pageSize))
-  }
-  return pages
-})
 
 const selectedTagNames = computed(() => {
   const ids = Array.isArray(tagFilter.value) ? tagFilter.value : []
@@ -514,48 +493,103 @@ function charsOf(entry) {
   return Array.from(String(entry?.word || '').trim())
 }
 
-// ===== 布局计算 =====
+// ===== 流式布局计算 =====
 const HEADER_LINE_H = 26
 const HEADER_PADDING = 14
 const HEADER_BORDER = 2
 const HEADER_BLOCK_H = HEADER_LINE_H + HEADER_PADDING + HEADER_BORDER
 
-const layout = computed(() => {
-  const contentW = A4_W - safePagePaddingH.value * 2
-  const bodyH = A4_H - safePagePaddingV.value * 2 - HEADER_BLOCK_H - safePagePaddingV.value
-  const cellW = contentW / safeTableCols.value
-  const cellH = bodyH / safeTableRows.value
-  const cellInnerW = cellW - safeCellPaddingLeft.value - safeCellPaddingRight.value
-  const cellInnerH = cellH - safeCellPaddingTop.value - safeCellPaddingBottom.value
-
-  // 格子尺寸严格跟随字体：约 1.75 倍（如 font=20 → 格子 35px，font=16 → 28px），
-  // 保证汉字在格子内四周有舒适边距。多字词一行排不下时自动换行（见 .cn-zh-row flex-wrap）。
-  let charGridSize = Math.round(safeChineseFont.value * 1.75)
-
-  // 高度兜底：仅保证"一行汉字格 + 拼音"能放进单元格；放不下时才等比缩小
-  // 注意：show=0 但 grid>0 时格子块依然占位，高度和间距也要照常扣除
-  const pinyinLineH = safePinyinFont.value * 1.6
-  const pinyinBlockH = pinyinBlockVisible.value ? safePinyinRow.value * pinyinLineH : 0
-  const blockGap = zhBlockVisible.value && pinyinBlockVisible.value ? safeCellSpace.value : 0
-  const availForOneRow = cellInnerH - pinyinBlockH - blockGap
-  if (charGridSize > availForOneRow) {
-    charGridSize = Math.max(8, Math.floor(availForOneRow))
+// canvas 文本测量（用于计算拼音实际占位宽度）
+let measureCtx = null
+function measureTextPx(text) {
+  if (!measureCtx) {
+    if (typeof document === 'undefined') return 0
+    measureCtx = document.createElement('canvas').getContext('2d')
   }
+  measureCtx.font = `600 ${safePinyinFont.value}px "Times New Roman", "PingFang SC", serif`
+  return measureCtx.measureText(String(text || '')).width
+}
 
-  return { charGridSize, cellW, cellH, cellInnerW, cellInnerH, bodyH }
+const layout = computed(() => {
+  // 页面可用内容区域
+  const contentW = A4_W - safePagePaddingH.value * 2
+  const bodyH = A4_H - safePagePaddingV.value * 2 - HEADER_BLOCK_H
+
+  // 格子尺寸严格跟随字体：约 1.75 倍（如 font=22 → 格子 39px）
+  const charGridSize = Math.round(safeChineseFont.value * 1.75)
+
+  // 单词块高度：show=0 但 grid>0 时格子块依然占位
+  const pinyinLineH = safePinyinFont.value * 1.6
+  const zhH = zhBlockVisible.value ? charGridSize : 0
+  const pyH = pinyinBlockVisible.value ? pinyinLineH : 0
+  const blockGap = zhBlockVisible.value && pinyinBlockVisible.value ? safeCellSpace.value : 0
+  const contentH = zhH + pyH + blockGap
+  // 同一行所有单词高度一致（字号/行数固定），加上下内边距即为行高
+  const lineH = contentH + safeCellPaddingTop.value + safeCellPaddingBottom.value
+
+  return { contentW, bodyH, charGridSize, pinyinLineH, lineH }
+})
+
+// 每个单词按自身内容计算宽度：取「汉字格子行」与「拼音行」的较大值
+const laidItems = computed(() => (printWords.value || []).map((entry, idx) => {
+  const charCount = charsOf(entry).length
+  const zhW = charCount * layout.value.charGridSize
+  let pyW = 0
+  if (pinyinBlockVisible.value) {
+    pyW = Math.ceil(measureTextPx(entry.pinyin))
+    if (safePinyinGrid.value > 0) pyW += 2 // 拼音格上下/左右边框补偿
+  }
+  const contentW = Math.max(zhW, pyW)
+  const width = Math.ceil(contentW + safeCellPaddingLeft.value + safeCellPaddingRight.value)
+  return { entry, idx, width }
+}))
+
+// 流式分页：先按宽度贪心换行，再按行高切页
+const printPages = computed(() => {
+  const items = laidItems.value
+  if (!items.length) return []
+  const { contentW, bodyH, lineH } = layout.value
+  const hGap = safeWordHSpace.value
+  const vGap = safeWordVSpace.value
+
+  // 1) 横向贪心装箱：当前行剩余宽度放不下时，整个单词移到下一行
+  const lines = []
+  let line = []
+  let usedW = 0
+  for (const item of items) {
+    if (!line.length) {
+      line.push(item)
+      usedW = item.width
+    } else if (usedW + hGap + item.width <= contentW) {
+      line.push(item)
+      usedW += hGap + item.width
+    } else {
+      lines.push(line)
+      line = [item]
+      usedW = item.width
+    }
+  }
+  if (line.length) lines.push(line)
+
+  // 2) 纵向分页：每页可容纳的行数（行与行之间有 v-space）
+  const linesPerPage = Math.max(1, Math.floor((bodyH + vGap) / (lineH + vGap)))
+  const pages = []
+  for (let i = 0; i < lines.length; i += linesPerPage) {
+    pages.push(lines.slice(i, i + linesPerPage).flat())
+  }
+  return pages
 })
 
 const pageStyle = computed(() => ({
   '--cn-grid-color': gridColor.value,
-  '--cn-border-width': `${safeTableBorderWidth.value}px`,
   '--cn-cell-bg': safeCellBackground.value,
   '--cn-cell-pad-t': `${safeCellPaddingTop.value}px`,
   '--cn-cell-pad-l': `${safeCellPaddingLeft.value}px`,
   '--cn-cell-pad-r': `${safeCellPaddingRight.value}px`,
   '--cn-cell-pad-b': `${safeCellPaddingBottom.value}px`,
-  '--cn-cols': safeTableCols.value,
-  '--cn-rows': safeTableRows.value,
-  '--cn-body-h': `${layout.value.bodyH}px`,
+  '--cn-word-h': `${layout.value.lineH}px`,
+  '--cn-h-gap': `${safeWordHSpace.value}px`,
+  '--cn-v-gap': `${safeWordVSpace.value}px`,
   paddingTop: `${safePagePaddingV.value}px`,
   paddingBottom: `${safePagePaddingV.value}px`,
   paddingLeft: `${safePagePaddingH.value}px`,
@@ -833,18 +867,15 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-/* ===== 表格区域 ===== */
+/* ===== 流式单词区域 ===== */
 .cn-a4-body {
-  display: grid;
-  grid-template-columns: repeat(var(--cn-cols, 4), 1fr);
-  grid-template-rows: repeat(var(--cn-rows, 10), 1fr);
+  display: flex;
+  flex-flow: row wrap;
+  align-content: flex-start;
+  align-items: stretch;
+  column-gap: var(--cn-h-gap, 50px);
+  row-gap: var(--cn-v-gap, 20px);
   width: 100%;
-  height: var(--cn-body-h, 900px);
-}
-
-.cn-a4-body.show-border {
-  border-top: var(--cn-border-width) solid #333;
-  border-left: var(--cn-border-width) solid #333;
 }
 
 .cn-word-cell {
@@ -853,13 +884,9 @@ onMounted(() => {
   box-sizing: border-box;
   overflow: hidden;
   min-width: 0;
+  height: var(--cn-word-h, auto);
   background: var(--cn-cell-bg, #fff);
   padding: var(--cn-cell-pad-t) var(--cn-cell-pad-r) var(--cn-cell-pad-b) var(--cn-cell-pad-l);
-}
-
-.cn-word-cell.show-border {
-  border-right: var(--cn-border-width) solid #333;
-  border-bottom: var(--cn-border-width) solid #333;
 }
 
 .cn-cell-content {
