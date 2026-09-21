@@ -2,14 +2,18 @@
   <div class="cn-detail-page">
     <header class="cn-detail-header">
       <el-button type="primary" @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+        <el-icon>
+          <ArrowLeft />
+        </el-icon>
         返回
       </el-button>
       <h2 class="cn-detail-header-title">中文词条详情</h2>
     </header>
 
     <div v-if="pageLoading" class="cn-detail-loading">
-      <el-icon class="is-loading cn-detail-loading-icon"><Loading /></el-icon>
+      <el-icon class="is-loading cn-detail-loading-icon">
+        <Loading />
+      </el-icon>
       <span>正在加载词条…</span>
     </div>
 
@@ -32,9 +36,22 @@
               </svg>
             </button>
           </div>
-          <div class="cn-hero-pinyin">
+          <div v-if="chineseStore.visibleColumns.pinyin" class="cn-hero-pinyin">
             <span class="cn-hero-pinyin-label">拼音</span>
             <span class="cn-hero-pinyin-text">{{ entry.pinyin || '暂无拼音' }}</span>
+            <span class="cn-hero-pinyin-hint">（可在右侧编辑修改）</span>
+          </div>
+          <div class="cn-hero-thirdparty">
+            <a :href="thirdPartyUrl" target="_blank" rel="noopener noreferrer" class="cn-hero-thirdparty-link"
+              title="在百度汉语中查看">
+              第三方
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+            </a>
           </div>
           <div class="cn-hero-tags">
             <span class="cn-hero-field-label">标签</span>
@@ -48,8 +65,13 @@
         <!-- 可编辑区：掌握水平 / 标签 / 备注 -->
         <div class="cn-hero-edit">
           <div class="cn-edit-field">
+            <label class="cn-edit-label">拼音</label>
+            <el-input v-model="editPinyin" clearable placeholder="编辑拼音，如 shǒu zhū dài tù" />
+          </div>
+          <div class="cn-edit-field">
             <label class="cn-edit-label">掌握水平</label>
-            <el-select v-model="editLevel" popper-class="cn-level-popper" :class="['cn-edit-level', levelClass(editLevel)]">
+            <el-select v-model="editLevel" popper-class="cn-level-popper"
+              :class="['cn-edit-level', levelClass(editLevel)]">
               <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
@@ -72,7 +94,9 @@
 
       <!-- 百度汉语全字段 -->
       <div v-if="refreshing" class="cn-fetch-hint">
-        <el-icon class="is-loading"><Loading /></el-icon>
+        <el-icon class="is-loading">
+          <Loading />
+        </el-icon>
         正在从百度汉语抓取最新数据，请稍候…
       </div>
 
@@ -183,16 +207,28 @@ const entryTags = computed(() => {
   return chineseStore.tags.filter(tag => entry.value.tagIds.includes(tag.id))
 })
 
+// 第三方百度汉语链接：单字走 zici 字典页，词组走 term/detail 词条页
+const thirdPartyUrl = computed(() => {
+  const w = entry.value?.word || ''
+  if (!w) return 'https://hanyu.baidu.com/hanyu-page'
+  const isSingle = Array.from(w).length === 1
+  return isSingle
+    ? `https://hanyu.baidu.com/hanyu-page/zici/s?wd=${encodeURIComponent(w)}&ptype=zici`
+    : `https://hanyu.baidu.com/hanyu-page/term/detail?wd=${encodeURIComponent(w)}&device=pc&from=home`
+})
+
 // 编辑态
 const editLevel = ref('unknown')
 const editTagIds = ref([])
 const editNote = ref('')
+const editPinyin = ref('')
 
 watch(entry, (val) => {
   if (val) {
     editLevel.value = val.level
     editTagIds.value = [...(val.tagIds || [])]
     editNote.value = val.note || ''
+    editPinyin.value = val.pinyin || ''
   }
 }, { immediate: true })
 
@@ -238,7 +274,8 @@ async function saveEdit() {
     await chineseStore.updateWord(entry.value.word, {
       level: editLevel.value,
       tagIds: [...editTagIds.value],
-      note: editNote.value
+      note: editNote.value,
+      pinyin: editPinyin.value
     })
     ElMessage.success('已保存修改')
   } finally {
@@ -276,7 +313,7 @@ async function refreshFromHanyu() {
   }
 }
 
-;(async function init() {
+; (async function init() {
   await chineseStore.ensureLoaded()
   pageLoading.value = false
 })()
@@ -446,12 +483,42 @@ async function refreshFromHanyu() {
   letter-spacing: 1px;
 }
 
+.cn-hero-pinyin-hint {
+  font-size: 12px;
+  color: #c5a88e;
+  font-weight: 400;
+}
+
 .cn-hero-tags {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
   margin-top: 12px;
+}
+
+.cn-hero-thirdparty {
+  margin-top: 10px;
+}
+
+.cn-hero-thirdparty-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  background: #fbe6d4;
+  border: 1px solid #e5b07f;
+  color: #b8480f;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.cn-hero-thirdparty-link:hover {
+  background: #f4c79d;
+  border-color: #d97706;
 }
 
 .cn-hero-tag {
@@ -666,7 +733,7 @@ async function refreshFromHanyu() {
   line-height: 1.7;
 }
 
-.cn-source-block + .cn-source-block {
+.cn-source-block+.cn-source-block {
   margin-top: 14px;
   padding-top: 14px;
   border-top: 1px dashed #f0d8b8;

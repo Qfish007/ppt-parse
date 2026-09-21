@@ -142,13 +142,16 @@
             </el-tag>
             <span v-if="!tagsForEntry(entry).length" class="cn-tag-empty">-</span>
           </div>
-          <div v-if="chineseStore.visibleColumns.level" class="cn-level">
-            <span class="cn-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
-            <el-select :class="['cn-level-select', levelClass(entry.level)]" :model-value="entry.level" size="small"
-              popper-class="cn-level-popper" @change="value => updateLevel(entry.word, value)">
+          <div v-if="chineseStore.visibleColumns.level" class="cn-level" @mouseenter="levelHoverWord = entry.word"
+            @mouseleave="levelHoverWord = ''">
+            <el-select v-if="isLevelActive(entry.word)" :class="['cn-level-select', levelClass(entry.level)]"
+              :model-value="entry.level" size="small" popper-class="cn-level-popper"
+              @visible-change="v => onLevelVisibleChange(entry.word, v)"
+              @change="value => updateLevel(entry.word, value)">
               <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
+            <span v-else class="cn-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
           </div>
           <div v-if="chineseStore.visibleColumns.note" class="cn-note">
             {{ entry.note || '-' }}
@@ -263,6 +266,10 @@
       :close-on-click-modal="true">
       <div class="cn-tag-dialog-body">
         <div class="cn-tag-dialog-word">词条：{{ tagDialog.word }}</div>
+        <div class="cn-tag-dialog-field">
+          <div class="cn-tag-dialog-label">拼音</div>
+          <el-input v-model="tagDialog.pinyin" clearable placeholder="编辑拼音，如 shǒu zhū dài tù" />
+        </div>
         <div class="cn-tag-dialog-field">
           <div class="cn-tag-dialog-label">选择标签</div>
           <el-select v-model="tagDialog.tagIds" multiple clearable placeholder="选择标签">
@@ -386,11 +393,12 @@ const filteredWords = computed(() => {
 })
 
 const gridTemplateColumns = computed(() => {
-  const cols = ['48px', '48px', '120px', '50px']
-  if (chineseStore.visibleColumns.pinyin) cols.push('120px')
+  // 中文列/拼音列加宽，标签列缩窄
+  const cols = ['48px', '48px', '180px', '50px']
+  if (chineseStore.visibleColumns.pinyin) cols.push('160px')
   cols.push('1fr') // 词条空白列以填充
-  if (chineseStore.visibleColumns.tags) cols.push('100px')
-  if (chineseStore.visibleColumns.level) cols.push('56px')
+  if (chineseStore.visibleColumns.tags) cols.push('80px')
+  if (chineseStore.visibleColumns.level) cols.push('96px')
   if (chineseStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
   cols.push('56px')
   return cols.join(' ')
@@ -448,7 +456,10 @@ watch(() => chineseStore.activeBookId, (newId, oldId) => {
 })
 
 onMounted(() => {
-  runWithListLoading(() => chineseStore.ensureLoaded())
+  runWithListLoading(() => chineseStore.ensureLoaded()).then(() => {
+    // 后台补全缺拼音的存量词条，不阻塞列表
+    backfillMissingEntries()
+  })
 })
 
 // ========================== 弹窗 / 状态变量 ==========================
@@ -477,7 +488,8 @@ const formatDialog = ref({
 const tagDialog = ref({
   visible: false,
   word: '',
-  tagIds: []
+  tagIds: [],
+  pinyin: ''
 })
 const chineseFormatList = getChineseFormatList()
 
@@ -845,18 +857,38 @@ function openTagDialog(entry) {
   tagDialog.value = {
     visible: true,
     word: entry.word,
-    tagIds: [...(entry.tagIds || [])]
+    tagIds: [...(entry.tagIds || [])],
+    pinyin: entry.pinyin || ''
   }
 }
 
 async function saveWordTags() {
   if (!tagDialog.value.word) return
-  await chineseStore.updateWordTags(tagDialog.value.word, tagDialog.value.tagIds)
-  ElMessage.success('标签已更新')
+  await chineseStore.updateWord(tagDialog.value.word, {
+    pinyin: tagDialog.value.pinyin,
+    tagIds: tagDialog.value.tagIds
+  })
+  ElMessage.success('已保存')
   tagDialog.value.visible = false
 }
 
 // ========================== 掌握水平 ==========================
+// 默认显示水平徽章，鼠标悬浮该行水平格时才切换为下拉；下拉展开期间鼠标移出也保持显示
+const levelHoverWord = ref('')
+const levelOpenWord = ref('')
+
+function isLevelActive(word) {
+  return levelHoverWord.value === word || levelOpenWord.value === word
+}
+
+function onLevelVisibleChange(word, visible) {
+  if (visible) {
+    levelOpenWord.value = word
+  } else if (levelOpenWord.value === word) {
+    levelOpenWord.value = ''
+  }
+}
+
 async function updateLevel(word, level) {
   await chineseStore.updateLevel(word, level)
 }
@@ -905,10 +937,10 @@ async function handleImport(event) {
       tagIdMap = r.tagIdMap
     }
     const count = await chineseStore.importWords(words, 'active', tagIdMap)
-    ElMessage.success(`已导入 ${count} 个词条`)
+    ElMessage.success(`已导入 ${count} 个词条，正在后台补全拼音释义…`)
 
-    // 异步从百度汉语补全字段（不阻塞）
-    refreshHanyuForAllEntries()
+    // 后台补全缺拼音的词条（带 skip 机制，不阻塞 UI）
+    backfillMissingEntries()
   } catch (err) {
     ElMessage.error(`导入失败：${err.message || '请检查文件格式'}`)
   } finally {
@@ -917,45 +949,64 @@ async function handleImport(event) {
   }
 }
 
-async function refreshHanyuForAllEntries() {
-  const entries = chineseStore.words.filter(w => !w.pinyin || !w.meaning)
+// 用百度汉语（优先本地缓存）补全单个词条字段，返回是否补全成功
+async function fillEntryFromHanyu(entry) {
+  const cached = await chineseStore.getHanyuCache(entry.word)
+  if (cached && (cached.pinyin || cached.meaning)) {
+    await chineseStore.updateWord(entry.word, {
+      pinyin: cached.pinyin,
+      meaning: cached.meaning,
+      cihui: cached.cihui,
+      liju: cached.liju,
+      idiomStory: cached.idiomStory,
+      synonyms: cached.synonyms,
+      antonyms: cached.antonyms,
+      sameMeaningDiffForm: cached.sameMeaningDiffForm,
+      chuchu: cached.chuchu,
+      yinzhen: cached.yinzhen
+    })
+    return true
+  }
+  const data = await fetchHanyuDetail(entry.word)
+  if (!data) return false
+  await chineseStore.updateWord(entry.word, {
+    pinyin: data.pinyin || '',
+    meaning: data.meaning || '',
+    cihui: data.cihui || '',
+    liju: data.liju || '',
+    idiomStory: data.idiomStory || '',
+    synonyms: data.synonyms || '',
+    antonyms: data.antonyms || '',
+    sameMeaningDiffForm: data.sameMeaningDiffForm || '',
+    chuchu: data.chuchu || '',
+    yinzhen: data.yinzhen || ''
+  })
+  await chineseStore.setHanyuCache({ word: entry.word, ...data })
+  return true
+}
+
+// 列表加载后自动补全缺拼音的存量词条；
+// 每个词条每个浏览器会话最多尝试一次，百度汉语确实查不到的词不反复打扰后端
+const HANYU_SKIP_KEY = 'cn-hanyu-backfill-skipped'
+
+async function backfillMissingEntries() {
+  let skipped = []
+  try { skipped = JSON.parse(sessionStorage.getItem(HANYU_SKIP_KEY) || '[]') } catch { skipped = [] }
+  const skipSet = new Set(Array.isArray(skipped) ? skipped : [])
+  const entries = chineseStore.words.filter(w => !w.pinyin && !skipSet.has(w.word))
   for (const entry of entries) {
+    let ok = false
     try {
-      const cached = await chineseStore.getHanyuCache(entry.word)
-      if (cached && (cached.pinyin || cached.meaning)) {
-        await chineseStore.updateWord(entry.word, {
-          pinyin: cached.pinyin,
-          meaning: cached.meaning,
-          cihui: cached.cihui,
-          liju: cached.liju,
-          idiomStory: cached.idiomStory,
-          synonyms: cached.synonyms,
-          antonyms: cached.antonyms,
-          sameMeaningDiffForm: cached.sameMeaningDiffForm,
-          chuchu: cached.chuchu,
-          yinzhen: cached.yinzhen
-        })
-        continue
-      }
-      const data = await fetchHanyuDetail(entry.word)
-      if (data) {
-        await chineseStore.updateWord(entry.word, {
-          pinyin: data.pinyin || '',
-          meaning: data.meaning || '',
-          cihui: data.cihui || '',
-          liju: data.liju || '',
-          idiomStory: data.idiomStory || '',
-          synonyms: data.synonyms || '',
-          antonyms: data.antonyms || '',
-          sameMeaningDiffForm: data.sameMeaningDiffForm || '',
-          chuchu: data.chuchu || '',
-          yinzhen: data.yinzhen || ''
-        })
-        await chineseStore.setHanyuCache({ word: entry.word, ...data })
-      }
+      ok = await fillEntryFromHanyu(entry)
     } catch (err) {
-      console.warn(`补全词条「${entry.word}」失败:`, err)
+      console.warn(`自动补全词条「${entry.word}」失败:`, err)
     }
+    if (ok) {
+      skipSet.delete(entry.word)
+    } else {
+      skipSet.add(entry.word)
+    }
+    try { sessionStorage.setItem(HANYU_SKIP_KEY, JSON.stringify([...skipSet])) } catch { /* ignore */ }
   }
 }
 

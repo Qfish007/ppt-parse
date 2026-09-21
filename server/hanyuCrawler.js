@@ -242,6 +242,55 @@ const EXTRACTION_SCRIPT = () => {
   return result;
 };
 
+// 单字（字典页）提取脚本
+// 单字在 term/detail 页没有词典内容（只有百科释义），需要走 /hanyu-page/zici/s?wd=字&ptype=zici 字典页：
+//   https://hanyu.baidu.com/hanyu-page/zici/s?wd=陈&ptype=zici
+// 页面结构实测：
+//   标题: "陈是什么意思|陈怎么读_笔顺_拼音_笔画_部首|百度教育"
+//   拼音: .pinyin-item .pinyin-text（多读音，如 chén / zhèn）
+//   释义: 每个 .definition-wrap 一条（.definition-index 编号 + .shiyi 内 .cixing 词性 + .definition 释义）
+//   例词/近义/反义: .definition-item 内 .item-label + .edu-tag-item 标签
+const ZICI_EXTRACTION_SCRIPT = () => {
+  const getText = (el) => (el?.textContent || '').trim().replace(/\s+/g, ' ');
+  const result = {
+    word: '', pinyin: '', audio: '', meaning: '', cihui: '', liju: '',
+    idiomStory: '', synonyms: '', antonyms: '', sameMeaningDiffForm: '', chuchu: '', yinzhen: ''
+  };
+
+  // 词：从标题提取，如 "陈是什么意思|..." -> "陈"
+  const m = (document.title || '').match(/^(.+?)(?:是什么意思|怎么读)/);
+  result.word = m ? m[1].trim() : '';
+
+  // 拼音：只取顶部 .word-pinyin-list 内的读音（右侧区域 là/zhōu/zǎo 是组词其他字的拼音）
+  const pys = Array.from(document.querySelectorAll('.word-pinyin-list .pinyin-text')).map(getText).filter(Boolean);
+  result.pinyin = pys.join(' ');
+
+  const meanings = [];
+  const cihuiParts = [];
+  const synParts = [];
+  const antParts = [];
+  document.querySelectorAll('.definition-wrap').forEach(wrap => {
+    const idx = getText(wrap.querySelector('.definition-index'));
+    const shiyi = wrap.querySelector('.shiyi');
+    const cixing = getText(shiyi?.querySelector('.cixing'));
+    const def = getText(shiyi?.querySelector('.definition'));
+    if (def) meanings.push([idx, cixing, def].filter(Boolean).join(' '));
+    wrap.querySelectorAll('.definition-item').forEach(item => {
+      const label = getText(item.querySelector('.item-label'));
+      const tags = Array.from(item.querySelectorAll('.edu-tag-item')).map(getText).filter(Boolean);
+      if (!tags.length) return;
+      if (label.includes('例词')) cihuiParts.push(...tags);
+      else if (label.includes('近义')) synParts.push(...tags);
+      else if (label.includes('反义')) antParts.push(...tags);
+    });
+  });
+  result.meaning = meanings.join('\n');
+  result.cihui = [...new Set(cihuiParts)].join('、');
+  result.synonyms = [...new Set(synParts)].join(' ');
+  result.antonyms = [...new Set(antParts)].join(' ');
+  return result;
+};
+
 /**
  * 在页面内识别当前状态：真实内容 / 百度安全验证 / 词条不存在 / 仍在加载
  */
@@ -249,7 +298,7 @@ const DETECT_STATE_SCRIPT = () => {
   const title = document.title || '';
   const href = location.href || '';
   const bodyText = (document.body?.textContent || '').replace(/\s+/g, ' ').trim();
-  const hasName = !!document.querySelector('.pinyin-box .name, .name.name-space, .idiom-title');
+  const hasName = !!document.querySelector('.pinyin-box .name, .name.name-space, .idiom-title, .pinyin-item .pinyin-text');
   const isChallenge =
     /安全验证/.test(title) ||
     /wappass|static\/captcha|\/v\//i.test(href) ||
@@ -264,7 +313,7 @@ const DETECT_STATE_SCRIPT = () => {
  * 单次抓取（含安全验证等待）
  * @returns {Promise<{status:'ok',data}|{status:'notfound'}|{status:'challenge'}|{status:'empty'}>}
  */
-async function crawlOnce(word, targetUrl) {
+async function crawlOnce(word, targetUrl, extractScript) {
   const browser = await getBrowser();
   let page;
   try {
@@ -304,7 +353,7 @@ async function crawlOnce(word, targetUrl) {
     // 再给 Vue 1 秒把字段渲染齐
     await sleep(1000);
 
-    const data = await page.evaluate(EXTRACTION_SCRIPT);
+    const data = await page.evaluate(extractScript || EXTRACTION_SCRIPT);
     if (data.word) {
 
       // DEBUG: 如果词拿到了但释义为空，dump HTML 便于诊断页面结构
@@ -350,11 +399,16 @@ export async function fetchHanyuDetail(wd) {
   const word = String(wd || '').trim();
   if (!word) return null;
 
-  const targetUrl = `https://hanyu.baidu.com/hanyu-page/term/detail?wd=${encodeURIComponent(word)}&device=pc&from=home`;
+  // 单字没有 term/detail 词典内容，走字典页 /hanyu-page/zici/s?wd=字&ptype=zici
+  const isSingle = Array.from(word).length === 1;
+  const targetUrl = isSingle
+    ? `https://hanyu.baidu.com/hanyu-page/zici/s?wd=${encodeURIComponent(word)}&ptype=zici`
+    : `https://hanyu.baidu.com/hanyu-page/term/detail?wd=${encodeURIComponent(word)}&device=pc&from=home`;
+  const extractScript = isSingle ? ZICI_EXTRACTION_SCRIPT : EXTRACTION_SCRIPT;
   const MAX_ATTEMPTS = 3;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
-    const result = await crawlOnce(word, targetUrl);
+    const result = await crawlOnce(word, targetUrl, extractScript);
 
     if (result.status === 'ok') return result.data;
     if (result.status === 'notfound') return null;
@@ -378,13 +432,13 @@ export async function fetchHanyuDetail(wd) {
  * 释放浏览器实例（用于开发期热重载或显式清理）
  */
 export async function closeHanyuBrowser() {
-    if (!browserPromise) return;
-    try {
-      const browser = await browserPromise;
-      await browser.close();
-    } catch {
-      // ignore
-    } finally {
-      browserPromise = null;
-    }
+  if (!browserPromise) return;
+  try {
+    const browser = await browserPromise;
+    await browser.close();
+  } catch {
+    // ignore
+  } finally {
+    browserPromise = null;
   }
+}

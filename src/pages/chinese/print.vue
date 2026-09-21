@@ -12,7 +12,7 @@
           <h2 class="cn-print-title">中文练习打印</h2>
           <p class="cn-print-subtitle">
             {{ activeBookName }} · 可打印 {{ availableWords.length }} 个词条 ·
-            每页 {{ rows * cols }} 个词语 · 共 {{ printPages.length }} 页
+            每页 {{ safeTableRows * safeTableCols }} 个词语 · 共 {{ printPages.length }} 页
           </p>
         </div>
       </div>
@@ -26,76 +26,84 @@
 
     <!-- 设置面板（打印时自动隐藏） -->
     <section class="cn-print-panel">
-      <div class="cn-panel-block">
-        <h3 class="cn-panel-title">筛选条件</h3>
-        <div class="cn-panel-grid">
-          <div class="cn-panel-item">
-            <label>掌握水平</label>
+      <div class="cn-panel-section">
+        <h3 class="cn-panel-section-title">筛选条件</h3>
+        <div class="cn-filter-grid">
+          <div class="cn-filter-item">
+            <span class="cn-filter-label">掌握水平：</span>
             <el-select v-model="levelFilter" multiple collapse-tags collapse-tags-tooltip clearable placeholder="全部水平">
               <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :label="level.label" :value="level.value" />
             </el-select>
           </div>
-          <div class="cn-panel-item">
-            <label>词条标签</label>
+          <div class="cn-filter-item">
+            <span class="cn-filter-label">词条标签：</span>
             <el-select v-model="tagFilter" multiple collapse-tags collapse-tags-tooltip clearable placeholder="全部标签">
               <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
             </el-select>
           </div>
-          <div class="cn-panel-item">
-            <label>排序方式</label>
-            <el-select v-model="printOrder">
-              <el-option label="拼音顺序" value="pinyin" />
-              <el-option label="随机打乱" value="random" />
+          <div class="cn-filter-item">
+            <span class="cn-filter-label">排序方式：</span>
+            <el-select v-model="printOrder" placeholder="排序">
+              <el-option label="拼音顺序" :value="false" />
+              <el-option label="随机打乱" :value="true" />
             </el-select>
           </div>
-        </div>
-      </div>
-
-      <div class="cn-panel-block">
-        <h3 class="cn-panel-title">练习与格子设置</h3>
-        <div class="cn-panel-grid">
-          <div class="cn-panel-item">
-            <label>练习模式</label>
-            <el-radio-group v-model="practiceMode">
-              <el-radio-button label="pinyin2hanzi">拼音写汉字</el-radio-button>
-              <el-radio-button label="hanzi2pinyin">看汉字写拼音</el-radio-button>
-            </el-radio-group>
-          </div>
-          <div class="cn-panel-item">
-            <label>格子类型</label>
-            <el-radio-group v-model="gridType">
-              <el-radio-button label="tian">田字格</el-radio-button>
-              <el-radio-button label="kou">口字格</el-radio-button>
-              <el-radio-button label="mi">米字格</el-radio-button>
-            </el-radio-group>
-          </div>
-          <div class="cn-panel-item">
-            <label>每行词语数：{{ cols }}</label>
-            <el-slider v-model="cols" :min="2" :max="6" :step="1" show-stops />
-          </div>
-          <div class="cn-panel-item">
-            <label>每页行数：{{ rows }}</label>
-            <el-slider v-model="rows" :min="3" :max="10" :step="1" show-stops />
-          </div>
-          <div class="cn-panel-item">
-            <label>
-              {{ practiceMode === 'pinyin2hanzi' ? `每词抄写遍数：${copies}` : `拼音横线条数：${copies}` }}
-            </label>
-            <el-slider v-model="copies" :min="1" :max="5" :step="1" show-stops />
-          </div>
-          <div class="cn-panel-item">
-            <label>格子线条颜色</label>
+          <div class="cn-filter-item">
+            <span class="cn-filter-label">格子颜色：</span>
             <div class="cn-color-row">
               <el-color-picker v-model="gridColor" />
               <el-button v-for="c in presetColors" :key="c" class="cn-color-dot" :style="{ background: c }" :title="c"
                 @click="gridColor = c" />
             </div>
           </div>
-          <div class="cn-panel-item cn-panel-item-wide">
-            <el-checkbox v-model="showAnswer">首格显示淡色示范字（答案 / 描红字帖模式）</el-checkbox>
+        </div>
+      </div>
+
+      <div class="cn-panel-section">
+        <h3 class="cn-panel-section-title">布局设置</h3>
+        <div class="cn-config-row">
+          <div class="cn-config-label">
+            <el-tooltip placement="right" effect="light">
+              <template #content>
+                <div class="cn-help-tooltip">
+                  <div class="cn-help-title">配置说明</div>
+                  <div class="cn-help-section"><b>页面设置</b></div>
+                  <div>• H：页面左右内边距（px）</div>
+                  <div>• V：页面上下内边距（px）</div>
+                  <div class="cn-help-section"><b>表格设置</b></div>
+                  <div>• row：每页行数</div>
+                  <div>• col：每行单元格数</div>
+                  <div>• show-border：是否显示边框（0/1）</div>
+                  <div>• border-width：单元格边框厚度（px）</div>
+                  <div class="cn-help-section"><b>中文设置</b></div>
+                  <div>• font：中文字号（px）</div>
+                  <div>• row：中文占几行高度（每行一组汉字格子）</div>
+                  <div>• show：是否显示中文文字（0/1，不影响 grid 格子）</div>
+                  <div>• pos：显示顺序（数字小的在上）</div>
+                  <div>• grid：格子类型（0无/1米/2田/3口/4横线/5三横线）</div>
+                  <div class="cn-help-section"><b>拼音设置</b></div>
+                  <div>• font：拼音字号（px）</div>
+                  <div>• row：拼音占几行高度</div>
+                  <div>• show：是否显示拼音文字（0/1，不影响 grid 格子）</div>
+                  <div>• pos：显示顺序</div>
+                  <div>• grid：格子类型（同上）</div>
+                  <div class="cn-help-section"><b>单元格设置</b></div>
+                  <div>• top/left/right/bottom：单元格内边距（px）</div>
+                  <div>• align：内容垂直对齐（top/bottom/center）</div>
+                  <div>• text-align：内容水平对齐（left/center/right）</div>
+                  <div>• background：单元格背景色</div>
+                  <div>• space：中文与拼音的上下间距（px）</div>
+                  <div class="cn-help-tip">grid 可用数字 0-5 或名称：无/米/田/口/横/三</div>
+                </div>
+              </template>
+              <el-icon class="cn-help-icon">
+                <QuestionFilled />
+              </el-icon>
+            </el-tooltip>
+            <div>配置：</div>
           </div>
-          <div class="cn-panel-item cn-panel-item-wide">
-            <el-checkbox v-model="showHeader">打印标题与姓名日期栏</el-checkbox>
+          <div class="cn-config-wrap">
+            <el-input v-model="configText" type="textarea" :rows="7" class="cn-config-textarea" resize="vertical" />
           </div>
         </div>
       </div>
@@ -111,55 +119,44 @@
     <!-- 打印内容区：A4 分页 -->
     <div v-else id="cnPrintContent">
       <div v-for="(page, pageIdx) in printPages" :key="pageIdx" class="cn-a4-page" :style="pageStyle">
-        <div v-if="showHeader" class="cn-a4-head" :style="{ height: '46px' }">
-          <span class="cn-a4-title">{{ practiceMode === 'pinyin2hanzi' ? '看拼音写词语练习' : '看词语写拼音练习' }}</span>
-          <span class="cn-a4-meta">
-            <span class="cn-a4-blank">姓名：</span>
-            <span class="cn-a4-blank">日期：</span>
-            <span class="cn-a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
-          </span>
+        <div class="cn-a4-header">
+          <span class="cn-a4-title">{{ headerTitle }}</span>
+          <span class="cn-a4-info">生词本：{{ activeBookName }}</span>
+          <span class="cn-a4-info">标签：【{{ selectedTagNames }}】</span>
+          <span class="cn-a4-info">水平：【{{ selectedLevelLabels }}】</span>
+          <span class="cn-a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
         </div>
-
-        <div class="cn-sheet-body" :style="bodyGridStyle">
-          <div v-for="(group, gIdx) in page" :key="`${pageIdx}-${gIdx}`" class="cn-sheet-group">
-            <!-- 模式一：拼音写汉字 -->
-            <template v-if="practiceMode === 'pinyin2hanzi'">
-              <div class="cn-pinyin-strip" :style="{ width: group.chars.length * layout.cellPx + 'px' }">
-                <template v-if="group.pinyinMatched">
-                  <span v-for="(syl, i) in group.syllables" :key="i" class="cn-pinyin-slot"
-                    :style="{ width: layout.cellPx + 'px' }">{{ syl }}</span>
-                </template>
-                <span v-else class="cn-pinyin-full" :style="{ width: group.chars.length * layout.cellPx + 'px' }">{{
-                  group.pinyin
-                  }}</span>
-              </div>
-              <div class="cn-cell-row">
-                <template v-for="copy in group.copies" :key="copy">
-                  <div v-for="(char, ci) in group.chars" :key="`${copy}-${ci}`" class="cn-cell"
-                    :class="['cn-cell-' + gridType]">
-                    <span v-if="gridType !== 'kou'" class="cn-gl cn-gl-h"></span>
-                    <span v-if="gridType !== 'kou'" class="cn-gl cn-gl-v"></span>
-                    <span v-if="gridType === 'mi'" class="cn-gl cn-gl-d1"></span>
-                    <span v-if="gridType === 'mi'" class="cn-gl cn-gl-d2"></span>
-                    <span v-if="showAnswer && copy === 0" class="cn-cell-answer">{{ char }}</span>
+        <div class="cn-a4-body" :class="{ 'show-border': safeTableShowBorder }">
+          <div v-for="(entry, i) in page" :key="i" class="cn-word-cell" :class="{ 'show-border': safeTableShowBorder }">
+            <div class="cn-cell-content" :style="contentAlignStyle">
+              <template v-for="block in orderedBlocks" :key="block.type">
+                <!-- 中文 block：只显示一遍 -->
+                <div v-if="block.type === 'zh'" class="cn-block cn-block-zh">
+                  <div class="cn-zh-row" :style="{ height: layout.charGridSize + 'px' }">
+                    <div v-for="(char, ci) in charsOf(entry)" :key="ci" class="cn-char-cell"
+                      :class="'grid-' + safeChineseGrid"
+                      :style="{ width: layout.charGridSize + 'px', height: layout.charGridSize + 'px' }">
+                      <span class="cn-gl cn-gl-h"></span>
+                      <span class="cn-gl cn-gl-v"></span>
+                      <span class="cn-gl cn-gl-d1"></span>
+                      <span class="cn-gl cn-gl-d2"></span>
+                      <span class="cn-gl cn-gl-h13"></span>
+                      <span class="cn-gl cn-gl-h23"></span>
+                      <span v-if="safeChineseShow" class="cn-char-text" :style="{ fontSize: safeChineseFont + 'px' }">{{
+                        char }}</span>
+                    </div>
                   </div>
-                </template>
-              </div>
-            </template>
-
-            <!-- 模式二：看汉字写拼音 -->
-            <template v-else>
-              <div class="cn-cell-row">
-                <div v-for="(char, ci) in group.chars" :key="ci" class="cn-cell" :class="['cn-cell-' + gridType]">
-                  <span v-if="gridType !== 'kou'" class="cn-gl cn-gl-h"></span>
-                  <span v-if="gridType !== 'kou'" class="cn-gl cn-gl-v"></span>
-                  <span v-if="gridType === 'mi'" class="cn-gl cn-gl-d1"></span>
-                  <span v-if="gridType === 'mi'" class="cn-gl cn-gl-d2"></span>
-                  <span class="cn-cell-char">{{ char }}</span>
                 </div>
-              </div>
-              <div v-for="copy in group.copies" :key="`line-${copy}`" class="cn-pinyin-line"></div>
-            </template>
+                <!-- 拼音 block：只显示一遍 -->
+                <div v-else-if="block.type === 'pinyin'" class="cn-block cn-block-pinyin">
+                  <div class="cn-pinyin-row" :class="'pgrid-' + safePinyinGrid"
+                    :style="{ height: safePinyinFont * 1.6 + 'px' }">
+                    <span v-if="safePinyinShow" class="cn-pinyin-text" :style="{ fontSize: safePinyinFont + 'px' }">{{
+                      entry.pinyin || '' }}</span>
+                  </div>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
       </div>
@@ -168,9 +165,9 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Printer } from '@element-plus/icons-vue'
+import { ArrowLeft, Printer, QuestionFilled } from '@element-plus/icons-vue'
 import { useChineseStore } from '../../stores/chinese.js'
 import { CHINESE_LEVELS } from '../../types/index.js'
 
@@ -180,31 +177,265 @@ const chineseStore = useChineseStore({ lazy: true })
 // ===== A4 常量（96dpi） =====
 const A4_W = 794
 const A4_H = 1123
-const PAGE_PAD_X = 30
-const PAGE_PAD_TOP = 22
-const PAGE_PAD_BOTTOM = 24
-const HEADER_H = 46
-const PINYIN_STRIP_H = 26
-const PINYIN_LINE_H = 30
-const CELL_MIN = 16
-const CELL_MAX = 60
 
-// ===== 筛选 / 排版状态 =====
+// ===== 筛选状态 =====
 const levelFilter = ref([])
 const tagFilter = ref([])
-const printOrder = ref('pinyin')
+const printOrder = ref(false)
+const gridColor = ref('#d4a0a0')
+const presetColors = ['#d4a0a0', '#4a90d9', '#8a8a8a', '#d97706']
 
-const practiceMode = ref('pinyin2hanzi') // pinyin2hanzi | hanzi2pinyin
-const gridType = ref('tian')             // tian | kou | mi
-const cols = ref(4)
-const rows = ref(7)
-const copies = ref(2)
-const gridColor = ref('#e08181')
-const showAnswer = ref(false)
-const showHeader = ref(true)
+// ===== 配置文本框（参照 vocabulary/print） =====
+const DEFAULT_CONFIG_TEXT = `页面设置:H=20,V=30;
+表格设置:row=10;col=4;show-border=0;border-width=1
+中文设置:font=22;row=2;show=1;pos=3;grid=1
+拼音设置:font=18;row=1;show=1;pos=2;grid=0
+单元格设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;space:10`
 
-const presetColors = ['#e08181', '#4a90d9', '#8a8a8a', '#d97706']
+const DEFAULTS = {
+  pagePaddingH: 20,
+  pagePaddingV: 30,
+  tableRows: 10,
+  tableCols: 4,
+  tableShowBorder: false,
+  tableBorderWidth: 1,
+  chineseFont: 22,
+  chineseRow: 2,
+  chineseShow: true,
+  chinesePos: 3,
+  chineseGrid: 1,
+  pinyinFont: 18,
+  pinyinRow: 1,
+  pinyinShow: true,
+  pinyinPos: 2,
+  pinyinGrid: 0,
+  cellPaddingTop: 10,
+  cellPaddingLeft: 2,
+  cellPaddingRight: 2,
+  cellPaddingBottom: 0,
+  cellAlign: 'top',
+  cellBackground: '#ffffff',
+  cellTextAlign: 'left',
+  cellSpace: 10,
+}
 
+const RANGES = {
+  pagePaddingH: { min: 0, max: 200 },
+  pagePaddingV: { min: 0, max: 200 },
+  tableRows: { min: 1, max: 50 },
+  tableCols: { min: 1, max: 10 },
+  tableBorderWidth: { min: 0, max: 10 },
+  chineseFont: { min: 6, max: 80 },
+  chineseRow: { min: 1, max: 10 },
+  chinesePos: { min: 0, max: 99 },
+  chineseGrid: { min: 0, max: 5 },
+  pinyinFont: { min: 6, max: 80 },
+  pinyinRow: { min: 1, max: 10 },
+  pinyinPos: { min: 0, max: 99 },
+  pinyinGrid: { min: 0, max: 5 },
+  cellPaddingTop: { min: 0, max: 100 },
+  cellPaddingLeft: { min: 0, max: 100 },
+  cellPaddingRight: { min: 0, max: 100 },
+  cellPaddingBottom: { min: 0, max: 100 },
+  cellSpace: { min: 0, max: 100 },
+}
+
+const VALID_ALIGNS = ['top', 'bottom', 'center']
+const VALID_TEXT_ALIGNS = ['left', 'center', 'right']
+const BOOL_KEYS = new Set(['tableShowBorder', 'chineseShow', 'pinyinShow'])
+
+// grid 名称 → 数字映射
+const GRID_NAMES = {
+  '无': 0, 'none': 0, 'no': 0,
+  '米': 1, 'mi': 1,
+  '田': 2, 'tian': 2,
+  '口': 3, 'kou': 3,
+  '横': 4, 'heng': 4, 'line': 4,
+  '三': 5, 'san': 5, 'three': 5,
+}
+
+const SECTION_ALIASES = {
+  '页面设置': '页面设置', '页面': '页面设置', 'page': '页面设置',
+  '表格设置': '表格设置', '表格': '表格设置', 'table': '表格设置',
+  '中文设置': '中文设置', '中文': '中文设置', 'zh': '中文设置', 'chinese': '中文设置',
+  '拼音设置': '拼音设置', '拼音': '拼音设置', 'pinyin': '拼音设置',
+  '单元格设置': '单元格设置', '单元格': '单元格设置', 'cell': '单元格设置',
+}
+
+const KEY_ALIASES = {
+  '页面设置': {
+    'H': 'pagePaddingH', 'h': 'pagePaddingH', 'horizontal': 'pagePaddingH', '左右': 'pagePaddingH',
+    'V': 'pagePaddingV', 'v': 'pagePaddingV', 'vertical': 'pagePaddingV', '上下': 'pagePaddingV',
+  },
+  '表格设置': {
+    'row': 'tableRows', 'rows': 'tableRows', '行': 'tableRows',
+    'col': 'tableCols', 'cols': 'tableCols', 'columns': 'tableCols', '列': 'tableCols',
+    'show-border': 'tableShowBorder', 'showBorder': 'tableShowBorder', '显示边框': 'tableShowBorder', '边框': 'tableShowBorder',
+    'border-width': 'tableBorderWidth', 'borderWidth': 'tableBorderWidth', '厚度': 'tableBorderWidth',
+  },
+  '中文设置': {
+    'font': 'chineseFont', 'size': 'chineseFont', '大小': 'chineseFont', '字号': 'chineseFont',
+    'row': 'chineseRow', 'rows': 'chineseRow', '行数': 'chineseRow', '行': 'chineseRow',
+    'show': 'chineseShow', '显示': 'chineseShow',
+    'pos': 'chinesePos', 'position': 'chinesePos', '位置': 'chinesePos',
+    'grid': 'chineseGrid', '格子': 'chineseGrid',
+  },
+  '拼音设置': {
+    'font': 'pinyinFont', 'size': 'pinyinFont', '大小': 'pinyinFont', '字号': 'pinyinFont',
+    'row': 'pinyinRow', 'rows': 'pinyinRow', '行数': 'pinyinRow', '行': 'pinyinRow',
+    'show': 'pinyinShow', '显示': 'pinyinShow',
+    'pos': 'pinyinPos', 'position': 'pinyinPos', '位置': 'pinyinPos',
+    'grid': 'pinyinGrid', '格子': 'pinyinGrid',
+  },
+  '单元格设置': {
+    'top': 'cellPaddingTop', 'left': 'cellPaddingLeft',
+    'right': 'cellPaddingRight', 'bottom': 'cellPaddingBottom',
+    'align': 'cellAlign', '对齐': 'cellAlign', '对齐方式': 'cellAlign',
+    'background': 'cellBackground', 'bg': 'cellBackground', '背景': 'cellBackground',
+    'text-align': 'cellTextAlign', 'textAlign': 'cellTextAlign', '文本对齐': 'cellTextAlign', '文字对齐': 'cellTextAlign',
+    'space': 'cellSpace', 'gap': 'cellSpace', '间距': 'cellSpace', '上下间距': 'cellSpace',
+  },
+}
+
+function parseBool(val) {
+  const v = String(val).trim().toLowerCase()
+  if (['否', '不', '无', 'false', '0', 'no', 'n', 'off'].includes(v)) return false
+  if (['是', '有', 'true', '1', 'yes', 'y', 'on'].includes(v)) return true
+  return null
+}
+
+function parseGrid(val) {
+  const v = String(val).trim().toLowerCase()
+  if (GRID_NAMES[v] !== undefined) return GRID_NAMES[v]
+  const n = Number(v)
+  if (Number.isFinite(n) && n >= 0 && n <= 5) return n
+  return null
+}
+
+function parseConfig(text) {
+  const result = { ...DEFAULTS }
+  if (!text || typeof text !== 'string') return result
+
+  const tokens = text.split(/[\r\n;]+/)
+  let currentSection = null
+
+  for (const rawToken of tokens) {
+    const token = rawToken.trim()
+    if (!token) continue
+
+    const colonIdx = token.indexOf(':')
+    if (colonIdx !== -1) {
+      const sectionName = token.slice(0, colonIdx).trim()
+      const canonical = SECTION_ALIASES[sectionName]
+      if (canonical) {
+        currentSection = canonical
+        const rest = token.slice(colonIdx + 1).trim()
+        if (rest) {
+          for (const pair of rest.split(',')) {
+            applyPair(result, currentSection, pair.trim())
+          }
+        }
+        continue
+      }
+    }
+
+    if (currentSection) {
+      applyPair(result, currentSection, token)
+    }
+  }
+  return result
+}
+
+function applyPair(result, section, pairStr) {
+  if (!pairStr) return
+  const sepIdx = pairStr.search(/[=:]/)
+  if (sepIdx === -1) return
+  const rawKey = pairStr.slice(0, sepIdx).trim()
+  const rawVal = pairStr.slice(sepIdx + 1).trim()
+  const keyMap = KEY_ALIASES[section]
+  if (!keyMap) return
+  const canonicalKey = keyMap[rawKey]
+  if (!canonicalKey) return
+
+  // grid 参数特殊处理：支持名称和数字
+  if (canonicalKey === 'chineseGrid' || canonicalKey === 'pinyinGrid') {
+    const g = parseGrid(rawVal)
+    if (g !== null) result[canonicalKey] = g
+    return
+  }
+
+  if (BOOL_KEYS.has(canonicalKey)) {
+    const b = parseBool(rawVal)
+    if (b !== null) result[canonicalKey] = b
+  } else if (canonicalKey === 'cellAlign') {
+    const v = rawVal.toLowerCase()
+    if (VALID_ALIGNS.includes(v)) result[canonicalKey] = v
+  } else if (canonicalKey === 'cellTextAlign') {
+    const v = rawVal.toLowerCase()
+    if (VALID_TEXT_ALIGNS.includes(v)) result[canonicalKey] = v
+  } else if (canonicalKey === 'cellBackground') {
+    if (/^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/.test(rawVal) || rawVal === '#') {
+      result[canonicalKey] = rawVal === '#' ? '#ffffff' : rawVal
+    }
+  } else {
+    const n = Number(rawVal)
+    if (Number.isFinite(n)) {
+      const range = RANGES[canonicalKey]
+      if (!range || (n >= range.min && n <= range.max)) {
+        result[canonicalKey] = n
+      }
+    }
+  }
+}
+
+const configText = ref(DEFAULT_CONFIG_TEXT)
+const parsedConfig = computed(() => parseConfig(configText.value))
+
+// 安全值
+const safePagePaddingH = computed(() => parsedConfig.value.pagePaddingH)
+const safePagePaddingV = computed(() => parsedConfig.value.pagePaddingV)
+const safeTableRows = computed(() => parsedConfig.value.tableRows)
+const safeTableCols = computed(() => parsedConfig.value.tableCols)
+const safeTableShowBorder = computed(() => parsedConfig.value.tableShowBorder)
+const safeTableBorderWidth = computed(() => parsedConfig.value.tableBorderWidth)
+const safeChineseFont = computed(() => parsedConfig.value.chineseFont)
+const safeChineseRow = computed(() => parsedConfig.value.chineseRow)
+const safeChineseShow = computed(() => parsedConfig.value.chineseShow)
+const safeChinesePos = computed(() => parsedConfig.value.chinesePos)
+const safeChineseGrid = computed(() => parsedConfig.value.chineseGrid)
+const safePinyinFont = computed(() => parsedConfig.value.pinyinFont)
+const safePinyinRow = computed(() => parsedConfig.value.pinyinRow)
+const safePinyinShow = computed(() => parsedConfig.value.pinyinShow)
+const safePinyinPos = computed(() => parsedConfig.value.pinyinPos)
+const safePinyinGrid = computed(() => parsedConfig.value.pinyinGrid)
+const safeCellPaddingTop = computed(() => parsedConfig.value.cellPaddingTop)
+const safeCellPaddingLeft = computed(() => parsedConfig.value.cellPaddingLeft)
+const safeCellPaddingRight = computed(() => parsedConfig.value.cellPaddingRight)
+const safeCellPaddingBottom = computed(() => parsedConfig.value.cellPaddingBottom)
+const safeCellAlign = computed(() => parsedConfig.value.cellAlign)
+const safeCellTextAlign = computed(() => parsedConfig.value.cellTextAlign)
+const safeCellBackground = computed(() => parsedConfig.value.cellBackground)
+const safeCellSpace = computed(() => parsedConfig.value.cellSpace)
+
+// 内容块是否渲染：show 只控制文字显隐；只要 grid>0（有格子线），即使 show=0 也必须保留整个块
+const zhBlockVisible = computed(() => safeChineseShow.value || safeChineseGrid.value > 0)
+const pinyinBlockVisible = computed(() => safePinyinShow.value || safePinyinGrid.value > 0)
+
+// 按 pos 排序的内容块
+const orderedBlocks = computed(() => {
+  const blocks = []
+  if (zhBlockVisible.value) blocks.push({ type: 'zh', pos: safeChinesePos.value })
+  if (pinyinBlockVisible.value) blocks.push({ type: 'pinyin', pos: safePinyinPos.value })
+  return blocks.sort((a, b) => a.pos - b.pos)
+})
+
+function alignToJustify(align) {
+  if (align === 'bottom') return 'flex-end'
+  if (align === 'center') return 'center'
+  return 'flex-start'
+}
+
+// ===== 数据 =====
 const activeWords = computed(() => chineseStore.words)
 const activeBookName = computed(() => chineseStore.getActiveBook()?.name || '默认中文生词本')
 
@@ -218,82 +449,137 @@ const availableWords = computed(() => {
   })
 })
 
-// ===== 格子尺寸自适应（保证一定在 A4 内） =====
-const layout = computed(() => {
-  const contentW = A4_W - PAGE_PAD_X * 2
-  const bodyH = A4_H - PAGE_PAD_TOP - PAGE_PAD_BOTTOM - (showHeader.value ? HEADER_H : 0)
-  const maxChars = Math.max(1, ...printViewModels.value.map(g => g.chars.length))
+const printWords = ref([])
 
-  let cellPx
-  if (practiceMode.value === 'pinyin2hanzi') {
-    const maxCellsAcross = maxChars * copies.value
-    const sizeByWidth = Math.floor(contentW / (cols.value * maxCellsAcross))
-    const sizeByHeight = Math.floor(bodyH / rows.value - PINYIN_STRIP_H)
-    cellPx = Math.min(sizeByWidth, sizeByHeight)
-  } else {
-    const sizeByWidth = Math.floor(contentW / (cols.value * maxChars))
-    const sizeByHeight = Math.floor((bodyH / rows.value - copies.value * PINYIN_LINE_H))
-    cellPx = Math.min(sizeByWidth, sizeByHeight)
-  }
-  cellPx = Math.max(CELL_MIN, Math.min(CELL_MAX, cellPx))
-  return { cellPx, contentW, bodyH }
-})
-
-// ===== 把词条转成打印视图模型 =====
-function toViewModel(entry) {
-  const chars = Array.from(String(entry.word || '').trim())
-  const syllables = String(entry.pinyin || '').trim().split(/\s+/).filter(Boolean)
-  return {
-    word: entry.word,
-    pinyin: entry.pinyin || '',
-    chars,
-    syllables,
-    pinyinMatched: syllables.length === chars.length,
-    copies: copies.value
-  }
+function shuffleWords(words) {
+  return [...words].sort(() => Math.random() - 0.5)
 }
 
-const orderedWords = computed(() => {
-  const list = [...availableWords.value]
-  if (printOrder.value === 'random') {
-    for (let i = list.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-        ;[list[i], list[j]] = [list[j], list[i]]
-    }
+function resamplePrintWords() {
+  const candidates = availableWords.value
+  if (!candidates.length) {
+    printWords.value = []
+    return
   }
-  return list
+  printWords.value = printOrder.value ? shuffleWords(candidates) : [...candidates]
+}
+
+watch([levelFilter, tagFilter, printOrder], () => resamplePrintWords(), { deep: true, immediate: true })
+watch(availableWords, () => {
+  if (availableWords.value.length > 0 && !printWords.value.length) resamplePrintWords()
 })
 
-const printViewModels = computed(() => orderedWords.value.map(toViewModel))
-
-const groupsPerPage = computed(() => cols.value * rows.value)
+const wordsPerPage = computed(() => safeTableRows.value * safeTableCols.value)
 
 const printPages = computed(() => {
-  const models = printViewModels.value
-  const perPage = groupsPerPage.value
+  const list = printWords.value || []
+  if (!list.length) return []
+  const pageSize = Math.max(1, wordsPerPage.value || 1)
   const pages = []
-  for (let i = 0; i < models.length; i += perPage) {
-    pages.push(models.slice(i, i + perPage))
+  for (let i = 0; i < list.length; i += pageSize) {
+    pages.push(list.slice(i, i + pageSize))
   }
   return pages
 })
 
+const selectedTagNames = computed(() => {
+  const ids = Array.isArray(tagFilter.value) ? tagFilter.value : []
+  if (!ids.length) return '全部'
+  const names = ids.map(id => {
+    const tag = (chineseStore.tags || []).find(t => t.id === id)
+    return tag ? tag.name : ''
+  }).filter(Boolean)
+  return names.length ? names.join('，') : '全部'
+})
+
+const selectedLevelLabels = computed(() => {
+  const vals = Array.isArray(levelFilter.value) ? levelFilter.value : []
+  if (!vals.length) return '全部'
+  const labels = vals.map(v => {
+    const level = CHINESE_LEVELS.find(l => l.value === v)
+    return level ? level.label : ''
+  }).filter(Boolean)
+  return labels.length ? labels.join('，') : '全部'
+})
+
+const headerTitle = computed(() => {
+  if (!safeChineseShow.value && safePinyinShow.value) return '看拼音写词语练习'
+  if (safeChineseShow.value && !safePinyinShow.value) return '汉字书写练习'
+  if (!safeChineseShow.value && !safePinyinShow.value) return '词语练习'
+  return '看拼音写词语练习'
+})
+
+// ===== 拆字 =====
+function charsOf(entry) {
+  return Array.from(String(entry?.word || '').trim())
+}
+
+// ===== 布局计算 =====
+const HEADER_LINE_H = 26
+const HEADER_PADDING = 14
+const HEADER_BORDER = 2
+const HEADER_BLOCK_H = HEADER_LINE_H + HEADER_PADDING + HEADER_BORDER
+
+const layout = computed(() => {
+  const contentW = A4_W - safePagePaddingH.value * 2
+  const bodyH = A4_H - safePagePaddingV.value * 2 - HEADER_BLOCK_H - safePagePaddingV.value
+  const cellW = contentW / safeTableCols.value
+  const cellH = bodyH / safeTableRows.value
+  const cellInnerW = cellW - safeCellPaddingLeft.value - safeCellPaddingRight.value
+  const cellInnerH = cellH - safeCellPaddingTop.value - safeCellPaddingBottom.value
+
+  // 格子尺寸严格跟随字体：约 1.75 倍（如 font=20 → 格子 35px，font=16 → 28px），
+  // 保证汉字在格子内四周有舒适边距。多字词一行排不下时自动换行（见 .cn-zh-row flex-wrap）。
+  let charGridSize = Math.round(safeChineseFont.value * 1.75)
+
+  // 高度兜底：仅保证"一行汉字格 + 拼音"能放进单元格；放不下时才等比缩小
+  // 注意：show=0 但 grid>0 时格子块依然占位，高度和间距也要照常扣除
+  const pinyinLineH = safePinyinFont.value * 1.6
+  const pinyinBlockH = pinyinBlockVisible.value ? safePinyinRow.value * pinyinLineH : 0
+  const blockGap = zhBlockVisible.value && pinyinBlockVisible.value ? safeCellSpace.value : 0
+  const availForOneRow = cellInnerH - pinyinBlockH - blockGap
+  if (charGridSize > availForOneRow) {
+    charGridSize = Math.max(8, Math.floor(availForOneRow))
+  }
+
+  return { charGridSize, cellW, cellH, cellInnerW, cellInnerH, bodyH }
+})
+
 const pageStyle = computed(() => ({
   '--cn-grid-color': gridColor.value,
-  '--cn-cell-px': `${layout.value.cellPx}px`,
-  '--cn-pinyin-strip-h': `${PINYIN_STRIP_H}px`,
-  '--cn-pinyin-line-h': `${PINYIN_LINE_H}px`,
-  paddingTop: `${PAGE_PAD_TOP}px`,
-  paddingBottom: `${PAGE_PAD_BOTTOM}px`,
-  paddingLeft: `${PAGE_PAD_X}px`,
-  paddingRight: `${PAGE_PAD_X}px`
+  '--cn-border-width': `${safeTableBorderWidth.value}px`,
+  '--cn-cell-bg': safeCellBackground.value,
+  '--cn-cell-pad-t': `${safeCellPaddingTop.value}px`,
+  '--cn-cell-pad-l': `${safeCellPaddingLeft.value}px`,
+  '--cn-cell-pad-r': `${safeCellPaddingRight.value}px`,
+  '--cn-cell-pad-b': `${safeCellPaddingBottom.value}px`,
+  '--cn-cols': safeTableCols.value,
+  '--cn-rows': safeTableRows.value,
+  '--cn-body-h': `${layout.value.bodyH}px`,
+  paddingTop: `${safePagePaddingV.value}px`,
+  paddingBottom: `${safePagePaddingV.value}px`,
+  paddingLeft: `${safePagePaddingH.value}px`,
+  paddingRight: `${safePagePaddingH.value}px`,
 }))
 
-const bodyGridStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${cols.value}, 1fr)`,
-  gridTemplateRows: `repeat(${rows.value}, 1fr)`,
-  height: `${layout.value.bodyH}px`
+const contentAlignStyle = computed(() => ({
+  justifyContent: alignToJustify(safeCellAlign.value),
+  alignItems: textAlignToAlignItems(safeCellTextAlign.value),
+  '--cn-justify': textAlignToJustify(safeCellTextAlign.value),
+  '--cn-block-gap': `${safeCellSpace.value}px`,
 }))
+
+function textAlignToAlignItems(align) {
+  if (align === 'center') return 'center'
+  if (align === 'right') return 'flex-end'
+  return 'flex-start'
+}
+
+function textAlignToJustify(align) {
+  if (align === 'center') return 'center'
+  if (align === 'right') return 'flex-end'
+  return 'flex-start'
+}
 
 function goBack() {
   if (window.history.length > 1) {
@@ -311,6 +597,7 @@ async function doPrint() {
 
 onMounted(() => {
   chineseStore.ensureLoaded()
+  if (availableWords.value.length) resamplePrintWords()
 })
 </script>
 
@@ -323,7 +610,7 @@ onMounted(() => {
 }
 
 .cn-print-header {
-  max-width: 820px;
+  max-width: 860px;
   margin: 0 auto 18px;
   display: flex;
   align-items: center;
@@ -353,7 +640,7 @@ onMounted(() => {
 
 /* ===== 设置面板 ===== */
 .cn-print-panel {
-  max-width: 820px;
+  max-width: 860px;
   margin: 0 auto 22px;
   background: #fff;
   border-radius: 14px;
@@ -361,41 +648,50 @@ onMounted(() => {
   overflow: hidden;
 }
 
-.cn-panel-block {
+.cn-panel-section {
   padding: 18px 22px;
 }
 
-.cn-panel-block+.cn-panel-block {
+.cn-panel-section+.cn-panel-section {
   border-top: 1px solid #f0e8dd;
 }
 
-.cn-panel-title {
+.cn-panel-section-title {
   margin: 0 0 14px;
   font-size: 15px;
   font-weight: 800;
   color: #b8480f;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0e8dd;
 }
 
-.cn-panel-grid {
+.cn-filter-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 14px 22px;
+  align-items: center;
 }
 
-.cn-panel-item {
+.cn-filter-item {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
 }
 
-.cn-panel-item label {
-  font-size: 12px;
+.cn-filter-label {
+  font-size: 13px;
   font-weight: 700;
   color: #7a563a;
+  flex-shrink: 0;
+  white-space: nowrap;
+  width: 80px;
+  text-align: right;
 }
 
-.cn-panel-item-wide {
-  grid-column: 1 / -1;
+.cn-filter-item :deep(.el-select) {
+  flex: 1;
+  min-width: 0;
 }
 
 .cn-color-row {
@@ -411,6 +707,71 @@ onMounted(() => {
   border: 2px solid rgba(0, 0, 0, 0.1);
   padding: 0;
   cursor: pointer;
+}
+
+.cn-config-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.cn-config-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7a563a;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.cn-help-icon {
+  font-size: 20px;
+  color: #b8480f;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.cn-help-tooltip {
+  max-width: 360px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.cn-help-title {
+  font-weight: 800;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.cn-help-section {
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.cn-help-section b {
+  color: #b8480f;
+}
+
+.cn-help-tip {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed #d1d5db;
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.cn-config-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-config-textarea {
+  font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* ===== A4 页面 ===== */
@@ -437,91 +798,179 @@ onMounted(() => {
   text-align: center;
 }
 
-.cn-a4-head {
-  height: var(--cn-header-reserve, 46px);
+.cn-a4-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.cn-a4-title {
-  font-size: 18px;
+  gap: 20px;
+  font-size: 15px;
   font-weight: 800;
   color: #1c1408;
-}
-
-.cn-a4-meta {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  font-size: 13px;
-  color: #333;
-}
-
-.cn-a4-blank {
-  display: inline-block;
-}
-
-.cn-a4-page-no {
-  color: #666;
-}
-
-/* ===== 练习格子区 ===== */
-.cn-sheet-body {
-  display: grid;
-  width: 100%;
-}
-
-.cn-sheet-group {
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  padding: 0 6px;
-  min-width: 0;
-}
-
-.cn-pinyin-strip {
-  display: flex;
-  align-items: flex-end;
-  height: var(--cn-pinyin-strip-h);
-}
-
-.cn-pinyin-slot {
-  flex-shrink: 0;
-  text-align: center;
-  font-size: 14px;
-  color: #333;
-  font-family: "Times New Roman", "PingFang SC", serif;
-  letter-spacing: 0;
+  padding-bottom: 14px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #b8480f;
+  white-space: nowrap;
   overflow: hidden;
 }
 
-.cn-pinyin-full {
-  text-align: center;
-  font-size: 13px;
-  color: #333;
-}
-
-.cn-cell-row {
-  display: flex;
-}
-
-.cn-cell {
-  position: relative;
+.cn-a4-title {
+  font-weight: 800;
+  color: #1c1408;
   flex-shrink: 0;
-  width: var(--cn-cell-px);
-  height: var(--cn-cell-px);
-  box-sizing: border-box;
-  border: 1px solid var(--cn-grid-color);
-  background: #fff;
 }
 
-/* 内部辅助线：十字虚线（田字格 / 米字格） */
-.cn-gl {
+.cn-a4-info {
+  font-weight: 600;
+  color: #4a3320;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.cn-a4-page-no {
+  font-weight: 600;
+  color: #8b6645;
+  font-size: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* ===== 表格区域 ===== */
+.cn-a4-body {
+  display: grid;
+  grid-template-columns: repeat(var(--cn-cols, 4), 1fr);
+  grid-template-rows: repeat(var(--cn-rows, 10), 1fr);
+  width: 100%;
+  height: var(--cn-body-h, 900px);
+}
+
+.cn-a4-body.show-border {
+  border-top: var(--cn-border-width) solid #333;
+  border-left: var(--cn-border-width) solid #333;
+}
+
+.cn-word-cell {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  overflow: hidden;
+  min-width: 0;
+  background: var(--cn-cell-bg, #fff);
+  padding: var(--cn-cell-pad-t) var(--cn-cell-pad-r) var(--cn-cell-pad-b) var(--cn-cell-pad-l);
+}
+
+.cn-word-cell.show-border {
+  border-right: var(--cn-border-width) solid #333;
+  border-bottom: var(--cn-border-width) solid #333;
+}
+
+.cn-cell-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cn-block-gap, 0);
+  min-height: 0;
+}
+
+/* ===== 中文 block ===== */
+.cn-block-zh {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.cn-zh-row {
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: 2px;
+  justify-content: var(--cn-justify, center);
+}
+
+/* ===== 汉字格子 ===== */
+.cn-char-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* 所有格子线默认隐藏 */
+.cn-char-cell .cn-gl {
   position: absolute;
   pointer-events: none;
+  display: none;
 }
 
+/* grid-0：无格子 */
+.cn-char-cell.grid-0 {
+  border: none;
+}
+
+/* grid-1：米字格 */
+.cn-char-cell.grid-1 {
+  border: 1px solid var(--cn-grid-color);
+}
+
+.cn-char-cell.grid-1 .cn-gl-h {
+  display: block;
+}
+
+.cn-char-cell.grid-1 .cn-gl-v {
+  display: block;
+}
+
+.cn-char-cell.grid-1 .cn-gl-d1 {
+  display: block;
+}
+
+.cn-char-cell.grid-1 .cn-gl-d2 {
+  display: block;
+}
+
+/* grid-2：田字格 */
+.cn-char-cell.grid-2 {
+  border: 1px solid var(--cn-grid-color);
+}
+
+.cn-char-cell.grid-2 .cn-gl-h {
+  display: block;
+}
+
+.cn-char-cell.grid-2 .cn-gl-v {
+  display: block;
+}
+
+/* grid-3：口字格 */
+.cn-char-cell.grid-3 {
+  border: 1px solid var(--cn-grid-color);
+}
+
+/* grid-4：只显示横线 */
+.cn-char-cell.grid-4 {
+  border-top: 1px solid var(--cn-grid-color);
+  border-bottom: 1px solid var(--cn-grid-color);
+}
+
+.cn-char-cell.grid-4 .cn-gl-h {
+  display: block;
+}
+
+/* grid-5：三横线（类似英语书写） */
+.cn-char-cell.grid-5 {
+  border-top: 1px solid var(--cn-grid-color);
+  border-bottom: 1px solid var(--cn-grid-color);
+}
+
+.cn-char-cell.grid-5 .cn-gl-h13 {
+  display: block;
+}
+
+.cn-char-cell.grid-5 .cn-gl-h23 {
+  display: block;
+}
+
+/* 横线（居中虚线） */
 .cn-gl-h {
   left: 0;
   right: 0;
@@ -529,6 +978,7 @@ onMounted(() => {
   border-top: 1px dashed var(--cn-grid-color);
 }
 
+/* 竖线（居中虚线） */
 .cn-gl-v {
   top: 0;
   bottom: 0;
@@ -536,6 +986,7 @@ onMounted(() => {
   border-left: 1px dashed var(--cn-grid-color);
 }
 
+/* 对角线 */
 .cn-gl-d1,
 .cn-gl-d2 {
   top: 50%;
@@ -553,33 +1004,120 @@ onMounted(() => {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-/* 淡色示范字（描红 / 答案） */
-.cn-cell-answer {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-family: "Songti SC", "STSong", "SimSun", serif;
-  font-size: calc(var(--cn-cell-px) * 0.82);
-  color: rgba(0, 0, 0, 0.16);
-  line-height: 1;
+/* 1/3 横线 */
+.cn-gl-h13 {
+  left: 0;
+  right: 0;
+  top: 33.33%;
+  border-top: 1px dashed var(--cn-grid-color);
 }
 
-/* 看汉字写拼音：实心示范汉字 */
-.cn-cell-char {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
+/* 2/3 横线 */
+.cn-gl-h23 {
+  left: 0;
+  right: 0;
+  top: 66.67%;
+  border-top: 1px dashed var(--cn-grid-color);
+}
+
+/* 汉字文本 */
+.cn-char-text {
+  position: relative;
+  z-index: 1;
   font-family: "Songti SC", "STSong", "SimSun", serif;
-  font-size: calc(var(--cn-cell-px) * 0.82);
+  font-weight: 600;
   color: #1c1408;
   line-height: 1;
 }
 
-.cn-pinyin-line {
-  height: var(--cn-pinyin-line-h);
-  border-bottom: 1px solid #555;
+/* ===== 拼音 block ===== */
+.cn-block-pinyin {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+}
+
+.cn-pinyin-row {
+  display: flex;
+  align-items: center;
+  justify-content: var(--cn-justify, center);
+  box-sizing: border-box;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 拼音格子类型 */
+.cn-pinyin-row.pgrid-0 {
+  border: none;
+}
+
+.cn-pinyin-row.pgrid-1 {
+  border: 1px solid var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-1::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-1::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px dashed var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-2 {
+  border: 1px solid var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-2::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-3 {
+  border: 1px solid var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-4 {
+  border-top: 1px solid var(--cn-grid-color);
+  border-bottom: 1px solid var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-5 {
+  border-top: 1px solid var(--cn-grid-color);
+  border-bottom: 1px solid var(--cn-grid-color);
+}
+
+.cn-pinyin-row.pgrid-5::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px dashed var(--cn-grid-color);
+}
+
+.cn-pinyin-text {
+  position: relative;
+  z-index: 1;
+  font-family: "Times New Roman", "PingFang SC", serif;
+  font-weight: 600;
+  color: #333;
+  line-height: 1;
+  text-align: center;
 }
 
 /* ===== 打印输出 ===== */
@@ -613,6 +1151,12 @@ onMounted(() => {
   .cn-a4-page:last-child {
     page-break-after: auto;
     break-after: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  .cn-filter-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
