@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createHash } from 'crypto';
+import { fetchHanyuDetail } from './hanyuCrawler.js';
 
 const ROOT = process.cwd();
 const imageExts = new Set(['.jpg', '.jpeg', '.png', '.bmp', '.webp', '.gif']);
@@ -520,6 +521,38 @@ async function handleYoudaoWordDetail(req, res, url) {
 }
 
 /**
+ * GET /hanyu/detail?wd=守株待兔
+ * 返回百度汉语词条数据（puppeteer 渲染 + DOM 提取）
+ *   { code: 1, data: { word, pinyin, audio, meaning, cihui, liju, idiomStory, synonyms, antonyms, sameMeaningDiffForm, chuchu, yinzhen } }
+ *   { code: 0, data: null }  百度汉语查不到该词
+ *   { code: -1, error: '...' } 服务器错误
+ */
+async function handleHanyuDetail(req, res, url) {
+  if (req.method !== 'GET') {
+    sendJSON(res, { error: 'Method not allowed' }, 405);
+    return;
+  }
+
+  const wd = String(url.searchParams.get('wd') || '').trim();
+  if (!wd) {
+    sendJSON(res, { code: -1, error: 'wd is required' }, 400);
+    return;
+  }
+
+  try {
+    const data = await fetchHanyuDetail(wd);
+    if (!data) {
+      // 百度汉语查不到该词，前端会据此决定"仍然入库，字段留空待补"
+      sendJSON(res, { code: 0, data: null, wd });
+      return;
+    }
+    sendJSON(res, { code: 1, data, wd });
+  } catch (error) {
+    sendJSON(res, { code: -1, error: error.message, wd }, 500);
+  }
+}
+
+/**
  * API 路由处理
  */
 export async function apiMiddleware(req, res, next) {
@@ -563,6 +596,14 @@ export async function apiMiddleware(req, res, next) {
   // ============ GET /youdao/detail ============
   if (pathname === '/youdao/detail') {
     await handleYoudaoWordDetail(req, res, url);
+    return;
+  }
+
+  // ============ GET /hanyu/detail ============
+  // 百度汉语词条详情抓取（puppeteer 渲染后从 DOM 提取）
+  // 返回 { word, pinyin, audio, meaning, cihui, liju, idiomStory, synonyms, antonyms, sameMeaningDiffForm, chuchu, yinzhen }
+  if (pathname === '/hanyu/detail' && req.method === 'GET') {
+    await handleHanyuDetail(req, res, url);
     return;
   }
 

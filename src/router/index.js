@@ -11,6 +11,12 @@ const VocabularyTestView = () => import('../pages/vocabulary/test.vue')
 const VocabularyTestSettingView = () => import('../pages/vocabulary/test_setting.vue')
 const VocabularyPrintView = () => import('../pages/vocabulary/print.vue')
 
+// 中文生词本（完全独立于 vocabulary）
+const ChineseView = () => import('../pages/chinese/chinese.vue')
+const ChineseSettingsView = () => import('../pages/chinese/setting.vue')
+const ChinesePrintView = () => import('../pages/chinese/print.vue')
+const ChineseDetailView = () => import('../pages/chinese/detail.vue')
+
 const routes = [
   // 根路径 → 新主页面 home
   {
@@ -85,6 +91,27 @@ const routes = [
     path: '/vocabulary/:word',
     name: 'VocabularyDetail',
     component: VocabularyDetailView
+  },
+  // 中文生词本（独立路由，独立数据层）
+  {
+    path: '/chinese',
+    name: 'Chinese',
+    component: ChineseView
+  },
+  {
+    path: '/chinese/settings',
+    name: 'ChineseSettings',
+    component: ChineseSettingsView
+  },
+  {
+    path: '/chinese/print',
+    name: 'ChinesePrint',
+    component: ChinesePrintView
+  },
+  {
+    path: '/chinese/:word',
+    name: 'ChineseDetail',
+    component: ChineseDetailView
   }
 ]
 

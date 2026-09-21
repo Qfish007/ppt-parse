@@ -27,9 +27,24 @@
           </svg>
         </div>
         <div class="home-card-body">
-          <h2 class="home-card-title">生词本</h2>
+          <h2 class="home-card-title">英文生词本</h2>
           <p class="home-card-desc">管理单词、记录学习进度、随时测试记忆</p>
-          <span class="home-card-action">进入生词本 →</span>
+          <span class="home-card-action">进入英文生词本 →</span>
+        </div>
+      </article>
+
+      <article class="home-card home-card--chinese" @click="goChinese">
+        <div class="home-card-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 7h18M3 12h18M3 17h12" />
+            <path d="M17 14l4 3-4 3v-6z" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="home-card-body">
+          <h2 class="home-card-title">中文生词本</h2>
+          <p class="home-card-desc">汉字词、拼音学习、百度汉语释义、田字格默写打印</p>
+          <span class="home-card-action">进入中文生词本 →</span>
         </div>
       </article>
 
@@ -60,6 +75,10 @@ const projectsStore = useProjectsStore()
 
 function goVocabulary() {
   router.push('/vocabulary')
+}
+
+function goChinese() {
+  router.push('/chinese')
 }
 
 function goBooks() {
@@ -182,6 +201,15 @@ function goSetting() {
 .home-card--books .home-card-icon {
   background: #eef1f8;
   color: #304b7d;
+}
+
+.home-card--chinese .home-card-icon {
+  background: #fbeee6;
+  color: #b8480f;
+}
+
+.home-card--chinese .home-card-action {
+  background: #d97706;
 }
 
 .home-card-body {

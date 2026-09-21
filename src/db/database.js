@@ -16,7 +16,12 @@ export class ReaderDatabase extends Dexie {
             wordPhonetics: '&word, phonetic, updatedAt',
             bookEdits: '&title, pages, updatedAt',
             projects: 'id, index, name, type, createdAt',
-            activeProject: '&key, value'
+            activeProject: '&key, value',
+            // 中文生词本（完全独立于 vocabulary，复用 settings 表存配置）
+            chineseBooks: 'id, name, createdAt, updatedAt',
+            chineseWords: 'word, bookId, level, createdAt, updatedAt',
+            chineseTags: 'id, bookId, name, createdAt',
+            chineseHanyuCache: '&word, pinyin, audio, updatedAt, meaning, cihui, liju, idiomStory, synonyms, antonyms, sameMeaningDiffForm, chuchu, yinzhen'
         });
     }
 }

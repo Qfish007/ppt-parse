@@ -12,6 +12,14 @@ export const VOCABULARY_LEVELS = [
     { value: 'familiar', label: '已熟记' }
 ];
 
+// 中文生词本掌握水平（与 vocabulary 完全独立，颜色含义同项目约定）
+export const CHINESE_LEVELS = [
+    { value: 'unknown', label: '不认识', color: '#f56c6c' },
+    { value: 'learning', label: '已了解', color: '#409eff' },
+    { value: 'mastered', label: '已掌握', color: '#e6a23c' },
+    { value: 'familiar', label: '已熟记', color: '#67c23a' }
+];
+
 export const PROJECT_TYPES = {
     DEFAULT: 'default',
     IMAGE: 'image',
@@ -35,7 +43,15 @@ export const STORAGE_KEYS = {
     VOCABULARY_DEFAULT_BOOK: 'bilingual-reader-default-vocabulary-book',
     VOCABULARY_STATS_VISIBLE: 'bilingual-reader-vocabulary-stats-visible',
     TEST_ENABLE_MARK_CORRECT: 'bilingual-reader-test-enable-mark-correct',
-    TEST_SHOW_PRONUNCIATION: 'bilingual-reader-test-show-pronunciation'
+    TEST_SHOW_PRONUNCIATION: 'bilingual-reader-test-show-pronunciation',
+    // 中文生词本（独立 storage keys）
+    CHINESE: 'bilingual-reader-chinese',
+    CHINESE_TAGS: 'bilingual-reader-chinese-tags',
+    CHINESE_BOOKS: 'bilingual-reader-chinese-books',
+    CHINESE_ACTIVE_BOOK: 'bilingual-reader-active-chinese-book',
+    CHINESE_DEFAULT_BOOK: 'bilingual-reader-default-chinese-book',
+    CHINESE_STATS_VISIBLE: 'bilingual-reader-chinese-stats-visible',
+    CHINESE_VISIBLE_COLUMNS: 'bilingual-reader-chinese-visible-columns'
 };
 
 export const ROUTE_NAMES = {
@@ -46,7 +62,11 @@ export const ROUTE_NAMES = {
     VOCABULARY: 'Vocabulary',
     VOCABULARY_SETTINGS: 'VocabularySettings',
     VOCABULARY_TEST: 'VocabularyTest',
-    VOCABULARY_DETAIL: 'VocabularyDetail'
+    VOCABULARY_DETAIL: 'VocabularyDetail',
+    CHINESE: 'Chinese',
+    CHINESE_SETTINGS: 'ChineseSettings',
+    CHINESE_PRINT: 'ChinesePrint',
+    CHINESE_DETAIL: 'ChineseDetail'
 };
 
 export const ROUTE_PATHS = {
@@ -57,5 +77,9 @@ export const ROUTE_PATHS = {
     VOCABULARY: '/vocabulary',
     VOCABULARY_SETTINGS: '/vocabulary/settings',
     VOCABULARY_TEST: '/vocabulary/test',
-    VOCABULARY_DETAIL: '/vocabulary/:word'
+    VOCABULARY_DETAIL: '/vocabulary/:word',
+    CHINESE: '/chinese',
+    CHINESE_SETTINGS: '/chinese/settings',
+    CHINESE_PRINT: '/chinese/print',
+    CHINESE_DETAIL: '/chinese/:word'
 };
