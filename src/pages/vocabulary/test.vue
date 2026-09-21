@@ -13,7 +13,24 @@
           <p class="test-subtitle">默认词本：{{ defaultBook?.name || '默认生词本' }}</p>
         </div>
       </div>
-      <el-button type="info" @click="showHistory">历史记录</el-button>
+      <div class="test-header-actions">
+        <el-button @click="showHistory" title="历史记录">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 3v5h5" />
+            <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
+            <path d="M12 7v5l4 2" />
+          </svg>
+        </el-button>
+        <el-button @click="goTestSetting" title="测试设置">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </el-button>
+      </div>
     </header>
 
     <section class="test-panel">
@@ -26,16 +43,20 @@
           placeholder="按标签筛选">
           <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
+        <div class="wrong-count-filter">
+          <span class="wrong-count-label">错误次数</span>
+          <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
+            class="wrong-count-input" />
+          <span class="wrong-count-sep">~</span>
+          <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
+            class="wrong-count-input" />
+        </div>
         <el-select v-model="testMode" class="test-control" placeholder="测试方式">
           <el-option label="根据中文意思" value="meaning" />
           <el-option label="根据发音" value="sound" />
         </el-select>
         <el-input-number v-model="testCount" class="test-count" :min="1" :max="Math.max(1, availableWords.length)"
           controls-position="right" @change="onTestCountChange" />
-        <div class="sound-toggle">
-          <span class="sound-toggle-label">发音</span>
-          <el-switch v-model="showSoundButton" />
-        </div>
         <el-button type="primary" :disabled="!availableWords.length" @click="startTest">
           开始测试
         </el-button>
@@ -73,8 +94,9 @@
             <el-input ref="answerInputRef" v-model="answerText" size="large" class="answer-input" placeholder="输入单词"
               @keyup.enter="submitAnswer" />
             <div class="answer-buttons">
-              <el-button type="primary" size="large" class="answer-submit" @click="submitAnswer">提交</el-button>
-              <el-button size="large" class="answer-skip" @click="skipWord">跳过</el-button>
+              <el-button type="primary" size="large" class="answer-submit" :disabled="submitting"
+                @click="submitAnswer">提交</el-button>
+              <el-button size="large" class="answer-skip" :disabled="submitting" @click="skipWord">跳过</el-button>
             </div>
           </div>
           <div v-if="showCorrectToast" class="correct-toast">
@@ -88,7 +110,7 @@
         请设置筛选条件后开始测试。
       </section>
 
-      <el-dialog v-model="errorDialogVisible" width="560px" :show-close="true" :close-on-click-modal="false"
+      <el-dialog v-model="errorDialogVisible" width="560px" :show-close="false" :close-on-click-modal="false"
         custom-class="error-dialog">
         <template #header>
           <span class="error-dialog-title">回答错误</span>
@@ -101,7 +123,7 @@
           <div class="correct-info">
             <div class="correct-word-row">
               <span class="correct-word">{{ errorInfo.word }}</span>
-              <button class="error-sound-btn" @click="playWord(errorInfo.word)">
+              <button v-if="showSoundButton" class="error-sound-btn" @click="playWord(errorInfo.word)">
                 <svg viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z"></path>
                 </svg>
@@ -114,6 +136,23 @@
         <template #footer>
           <div class="error-footer">
             <el-button type="primary" size="large" @click="handleErrorNext">下一个</el-button>
+          </div>
+        </template>
+      </el-dialog>
+
+      <el-dialog v-model="markCorrectDialogVisible" width="420px" :show-close="true" custom-class="mark-correct-dialog">
+        <template #header>
+          <span class="mark-correct-title">确认纠错</span>
+        </template>
+        <div class="mark-correct-content">
+          <p>将单词 <strong>{{ markCorrectItem.word }}</strong> 标记为正确吗？</p>
+          <p class="mark-correct-hint">你的答案：{{ markCorrectItem.answer || '-' }}</p>
+          <p class="mark-correct-tip">此操作会将该条目从错误列表移至正确列表</p>
+        </div>
+        <template #footer>
+          <div class="mark-correct-footer">
+            <el-button @click="markCorrectDialogVisible = false">取消</el-button>
+            <el-button type="primary" @click="handleMarkCorrect">确认标记</el-button>
           </div>
         </template>
       </el-dialog>
@@ -134,15 +173,16 @@
             <div v-if="record.wrongResults.length" class="history-wrong-list">
               <div v-for="(item, index) in record.wrongResults" :key="`h-${record.id}-${index}`"
                 class="history-wrong-item">
-                <span class="history-wrong-word">{{ item.word }}</span>
-                <button class="history-sound-btn" @click="playWord(item.word)">
-                  <svg viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"></path>
-                  </svg>
-                </button>
-                <span v-if="item.phonetic" class="history-wrong-phonetic">{{ item.phonetic }}</span>
-                <span class="history-wrong-answer">你的答案：{{ item.answer || '-' }}</span>
+                <div class="history-wrong-left">
+                  <span class="history-wrong-word">{{ item.word }}</span>
+                  <button v-if="showSoundButton" class="history-sound-btn" @click="playWord(item.word)">
+                    <svg viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"></path>
+                    </svg>
+                  </button>
+                </div>
                 <span class="history-wrong-meaning">{{ item.meaning || '暂无释义' }}</span>
+                <span class="history-wrong-answer">你的答案：{{ item.answer || '-' }}</span>
               </div>
             </div>
             <div v-if="record.wrongResults.length" class="history-record-footer">
@@ -188,7 +228,7 @@
                 <div class="result-word-line">
                   <div class="result-word-group">
                     <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                    <button class="result-sound-btn" @click="playWord(item.word)">
+                    <button v-if="showSoundButton" class="result-sound-btn" @click="playWord(item.word)">
                       <svg viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"></path>
                       </svg>
@@ -205,7 +245,7 @@
             <div class="result-block-header">
               <h4>错误列表</h4>
               <div v-if="wrongResults.length" class="result-actions">
-                <el-button size="small" @click="exportWrongWords">导出</el-button>
+                <el-button size="small" @click="exportWrongWords">导出TXT</el-button>
                 <el-button size="small" :loading="exportingWrongPdf" :disabled="exportingWrongPdf"
                   @click="printWrongWords">导出PDF</el-button>
               </div>
@@ -217,13 +257,23 @@
                 <div class="result-word-line">
                   <div class="result-word-group">
                     <button class="result-word-button" @click="openWordDetail(item.word)">{{ item.word }}</button>
-                    <button class="result-sound-btn" @click="playWord(item.word)">
+                    <button v-if="showSoundButton" class="result-sound-btn" @click="playWord(item.word)">
                       <svg viewBox="0 0 24 24">
                         <path d="M8 5v14l11-7z"></path>
                       </svg>
                     </button>
                   </div>
-                  <span class="result-stat">{{ resultStatText(item) }}</span>
+                  <div class="result-actions-inline">
+                    <button v-if="settingsStore.testEnableMarkCorrect" class="mark-correct-btn"
+                      @click="confirmMarkCorrect(item)">
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z">
+                        </path>
+                      </svg>
+                    </button>
+                    <span class="result-stat">{{ resultStatText(item) }}</span>
+                  </div>
                 </div>
                 <span>{{ item.phonetic || '' }}</span>
                 <span>你的答案：{{ item.answer || '-' }}</span>
@@ -244,15 +294,19 @@ import { ElMessage, ElDialog } from 'element-plus'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
+import { useSettingsStore } from '../../stores/settings.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
 
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
+const settingsStore = useSettingsStore()
 const TEST_SESSION_STORAGE_KEY = 'bilingual-reader-vocabulary-test-session'
 const TEST_HISTORY_STORAGE_KEY = 'bilingual-reader-vocabulary-test-history'
 
 const levelFilter = ref([])
 const tagFilter = ref([])
+const wrongCountMin = ref(null)
+const wrongCountMax = ref(null)
 const testMode = ref('meaning')
 const testCount = ref(null)
 const userSetCount = ref(false)
@@ -266,10 +320,13 @@ const answerInputRef = ref(null)
 const errorDialogVisible = ref(false)
 const errorInfo = ref({ word: '', phonetic: '', meaning: '', answer: '' })
 const showCorrectToast = ref(false)
-const showSoundButton = ref(true)
+const showSoundButton = computed(() => settingsStore.testShowPronunciation)
 const exportingWrongPdf = ref(false)
 const historyVisible = ref(false)
 const historyRecords = ref([])
+const markCorrectDialogVisible = ref(false)
+const markCorrectItem = ref({})
+const submitting = ref(false)
 
 const A4_WIDTH_PX = 794
 const A4_HEIGHT_PX = 1123
@@ -281,19 +338,25 @@ const WRONG_PAGE_HEADER_HEIGHT = 44
 const WRONG_PAGE_GAP = 14
 const WRONG_WORD_FONT = '800 20px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
 const WRONG_META_FONT = '600 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
-const WRONG_ANSWER_FONT = '500 13px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
 const WRONG_MEANING_FONT = '500 14px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+const WRONG_COLUMNS = 3
+const WRONG_COL_GAP = 16
 
 const defaultBook = computed(() => vocabularyStore.getDefaultBook())
 const defaultWords = computed(() => defaultBook.value?.words || [])
 const defaultTags = computed(() => defaultBook.value?.tags || [])
 const availableWords = computed(() => {
   const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
+  const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
+  const max = wrongCountMax.value !== null ? Number(wrongCountMax.value) : null
   return defaultWords.value.filter(entry => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
-    return matchLevel && matchTags
+    const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
+    const matchMin = min === null || wrongCount >= min
+    const matchMax = max === null || wrongCount <= max
+    return matchLevel && matchTags && matchMin && matchMax
   })
 })
 const normalizedTestCount = computed(() => {
@@ -341,6 +404,10 @@ function goBack() {
   }
 }
 
+function goTestSetting() {
+  router.push('/vocabulary/test/setting')
+}
+
 function onTestCountChange() {
   userSetCount.value = true
 }
@@ -357,6 +424,8 @@ function saveTestSession() {
   const payload = {
     levelFilter: levelFilter.value,
     tagFilter: tagFilter.value,
+    wrongCountMin: wrongCountMin.value,
+    wrongCountMax: wrongCountMax.value,
     testMode: testMode.value,
     testCount: testCount.value,
     testQueue: testQueue.value,
@@ -375,6 +444,8 @@ async function restoreTestSession() {
     if (!Array.isArray(payload.testQueue) || !payload.testQueue.length) return
     levelFilter.value = Array.isArray(payload.levelFilter) ? payload.levelFilter : []
     tagFilter.value = Array.isArray(payload.tagFilter) ? payload.tagFilter : []
+    wrongCountMin.value = payload.wrongCountMin !== undefined && payload.wrongCountMin !== null ? Number(payload.wrongCountMin) : null
+    wrongCountMax.value = payload.wrongCountMax !== undefined && payload.wrongCountMax !== null ? Number(payload.wrongCountMax) : null
     testMode.value = payload.testMode === 'sound' ? 'sound' : 'meaning'
     testCount.value = payload.testCount !== null && payload.testCount !== undefined ? Math.max(1, Number(payload.testCount) || 1) : null
     testQueue.value = payload.testQueue
@@ -524,39 +595,44 @@ function paginateWrongWordPages(items) {
   let currentPage = []
   let usedHeight = 0
 
-  for (const item of items) {
-    const itemHeight = estimateWrongItemHeight(item, contentWidth, ctx)
-    if (currentPage.length && usedHeight + itemHeight > availableHeight) {
+  for (let i = 0; i < items.length; i += WRONG_COLUMNS) {
+    const rowItems = items.slice(i, i + WRONG_COLUMNS)
+    const rowHeight = estimateWrongRowHeight(rowItems, contentWidth, ctx)
+    if (currentPage.length && usedHeight + rowHeight > availableHeight) {
       pages.push(currentPage)
       currentPage = []
       usedHeight = 0
     }
-    currentPage.push(item)
-    usedHeight += itemHeight + WRONG_PAGE_GAP
+    currentPage.push(rowItems)
+    usedHeight += rowHeight + WRONG_PAGE_GAP
   }
 
   if (currentPage.length) pages.push(currentPage)
   return pages
 }
 
-function estimateWrongItemHeight(item, contentWidth, ctx) {
-  ctx.font = WRONG_WORD_FONT
-  const wordHeight = 24
-  const statWidth = 58
-  const wordWidth = contentWidth - statWidth - 12
-  const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1).length || 1
-  ctx.font = WRONG_META_FONT
-  const phoneticHeight = (item.phonetic ? 18 : 0)
-  ctx.font = WRONG_ANSWER_FONT
-  const answerHeight = 18
-  ctx.font = WRONG_MEANING_FONT
-  const meaning = cleanMeaning(item.meaning) || '暂无释义'
-  const meaningLines = wrapLines(meaning, contentWidth, ctx, 4).length || 1
-  const meaningHeight = meaningLines * 18
-  return Math.max(wordHeight * wordLines, 24) + phoneticHeight + answerHeight + meaningHeight + 20
+function estimateWrongRowHeight(rowItems, contentWidth, ctx) {
+  const itemWidth = (contentWidth - WRONG_COL_GAP * (WRONG_COLUMNS - 1)) / WRONG_COLUMNS
+  let maxHeight = 0
+  for (const item of rowItems) {
+    ctx.font = WRONG_WORD_FONT
+    const statWidth = 40
+    const wordWidth = itemWidth - statWidth - 4
+    const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1).length || 1
+    const wordHeight = Math.max(wordLines * 24, 24)
+    ctx.font = WRONG_META_FONT
+    const phoneticHeight = item.phonetic ? 18 : 0
+    ctx.font = WRONG_MEANING_FONT
+    const meaning = cleanMeaning(item.meaning) || '暂无释义'
+    const meaningLines = wrapLines(meaning, itemWidth, ctx, 3).length || 1
+    const meaningHeight = meaningLines * 18
+    const itemHeight = wordHeight + phoneticHeight + meaningHeight + 14
+    if (itemHeight > maxHeight) maxHeight = itemHeight
+  }
+  return maxHeight
 }
 
-function renderWrongWordPageToJpeg(pageItems, pageIndex, totalPages) {
+function renderWrongWordPageToJpeg(pageRows, pageIndex, totalPages) {
   const scale = Math.max(2, window.devicePixelRatio || 1)
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(A4_WIDTH_PX * scale)
@@ -585,49 +661,66 @@ function renderWrongWordPageToJpeg(pageItems, pageIndex, totalPages) {
   ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, bodyTop - 12)
   ctx.stroke()
 
-  pageItems.forEach((item) => {
-    const statWidth = 58
-    const gap = 12
-    const wordWidth = contentWidth - statWidth - gap
-    const meaning = cleanMeaning(item.meaning) || '暂无释义'
+  const itemWidth = (contentWidth - WRONG_COL_GAP * (WRONG_COLUMNS - 1)) / WRONG_COLUMNS
 
-    ctx.fillStyle = '#ef4444'
-    ctx.font = WRONG_WORD_FONT
-    const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1)
-    drawLines(ctx, wordLines, WRONG_PAGE_PADDING_X, y, 24)
+  pageRows.forEach((rowItems) => {
+    let rowHeight = 0
 
-    ctx.fillStyle = '#9ca3af'
-    ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
-    const statText = `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
-    ctx.fillText(statText, WRONG_PAGE_PADDING_X + contentWidth - ctx.measureText(statText).width, y + 6)
+    rowItems.forEach((item, colIndex) => {
+      const x = WRONG_PAGE_PADDING_X + colIndex * (itemWidth + WRONG_COL_GAP)
+      const statWidth = 40
+      const gap = 4
+      const wordWidth = itemWidth - statWidth - gap
+      const meaning = cleanMeaning(item.meaning) || '暂无释义'
+      let itemBottom = y
 
-    let lineY = y + 28
-    if (item.phonetic) {
-      ctx.fillStyle = '#6b7280'
-      ctx.font = WRONG_META_FONT
-      drawLines(ctx, [item.phonetic], WRONG_PAGE_PADDING_X, lineY, 18)
-      lineY += 20
-    }
+      ctx.fillStyle = '#ef4444'
+      ctx.font = WRONG_WORD_FONT
+      const wordLines = wrapLines(item.word || '', wordWidth, ctx, 1)
+      drawLines(ctx, wordLines, x, y, 24)
 
-    ctx.fillStyle = '#dc2626'
-    ctx.font = WRONG_ANSWER_FONT
-    drawLines(ctx, [`你的答案：${item.answer || '-'}`], WRONG_PAGE_PADDING_X, lineY, 17)
-    lineY += 20
+      ctx.fillStyle = '#9ca3af'
+      ctx.font = '600 12px -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif'
+      const statText = `${Number(item.testCorrectCount) || 0}/${Number(item.testTotalCount) || 0}`
+      ctx.fillText(statText, x + itemWidth - ctx.measureText(statText).width, y + 6)
 
-    ctx.fillStyle = '#333'
-    ctx.font = WRONG_MEANING_FONT
-    const meaningLines = wrapLines(meaning, contentWidth, ctx, 4)
-    drawLines(ctx, meaningLines.length ? meaningLines : ['暂无释义'], WRONG_PAGE_PADDING_X, lineY, 18)
-    lineY += Math.max(meaningLines.length, 1) * 18 + 10
+      let lineY = y + 28
+      if (item.phonetic) {
+        ctx.fillStyle = '#6b7280'
+        ctx.font = WRONG_META_FONT
+        drawLines(ctx, [item.phonetic], x, lineY, 18)
+        lineY += 20
+      }
+
+      ctx.fillStyle = '#333'
+      ctx.font = WRONG_MEANING_FONT
+      const meaningLines = wrapLines(meaning, itemWidth, ctx, 3)
+      drawLines(ctx, meaningLines.length ? meaningLines : ['暂无释义'], x, lineY, 18)
+      lineY += Math.max(meaningLines.length, 1) * 18
+      lineY += 10
+
+      if (lineY > itemBottom) itemBottom = lineY
+      if ((itemBottom - y) > rowHeight) rowHeight = itemBottom - y
+    })
+
+    const rowTop = y
+    y += rowHeight
 
     ctx.strokeStyle = '#e5e7eb'
     ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(WRONG_PAGE_PADDING_X, lineY)
-    ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, lineY)
-    ctx.stroke()
+    for (let c = 1; c < WRONG_COLUMNS; c += 1) {
+      const vx = WRONG_PAGE_PADDING_X + c * itemWidth + (c - 0.5) * WRONG_COL_GAP
+      ctx.beginPath()
+      ctx.moveTo(vx, rowTop)
+      ctx.lineTo(vx, y)
+      ctx.stroke()
+    }
 
-    y = lineY + 12
+    ctx.beginPath()
+    ctx.moveTo(WRONG_PAGE_PADDING_X, y)
+    ctx.lineTo(WRONG_PAGE_PADDING_X + contentWidth, y)
+    ctx.stroke()
+    y += WRONG_PAGE_GAP
   })
 
   return {
@@ -845,9 +938,46 @@ async function handleErrorClose() {
   await goNextQuestion()
 }
 
+function confirmMarkCorrect(item) {
+  if (!settingsStore.testEnableMarkCorrect) return
+  markCorrectItem.value = { ...item }
+  markCorrectDialogVisible.value = true
+}
+
+async function handleMarkCorrect() {
+  const item = markCorrectItem.value
+  if (!item.word || submitting.value) return
+  submitting.value = true
+  try {
+    const wrongIndex = wrongResults.value.findIndex(w => w.word === item.word && w.answer === item.answer)
+    if (wrongIndex === -1) {
+      markCorrectDialogVisible.value = false
+      ElMessage.warning('未找到对应的错误记录')
+      return
+    }
+    wrongResults.value.splice(wrongIndex, 1)
+    const updatedEntry = await vocabularyStore.recordTestResult(item.word, true, 'default')
+    const result = {
+      word: updatedEntry.word,
+      meaning: updatedEntry.meaning,
+      phonetic: updatedEntry.phonetic,
+      testTotalCount: updatedEntry.testTotalCount,
+      testCorrectCount: updatedEntry.testCorrectCount,
+      answer: item.answer
+    }
+    correctResults.value.push(result)
+    markCorrectDialogVisible.value = false
+    saveTestSession()
+    ElMessage.success('已标记为正确')
+  } finally {
+    submitting.value = false
+  }
+}
+
 async function skipWord() {
   const entry = currentWord.value
-  if (!entry) return
+  if (!entry || submitting.value) return
+  submitting.value = true
   const updatedEntry = await vocabularyStore.recordTestResult(entry.word, false, 'default') || entry
   const result = {
     word: updatedEntry.word,
@@ -859,16 +989,18 @@ async function skipWord() {
   }
   wrongResults.value.push(result)
   goNextQuestion()
+  submitting.value = false
 }
 
 async function submitAnswer() {
   const entry = currentWord.value
-  if (!entry) return
+  if (!entry || submitting.value) return
   const answer = answerText.value.trim().toLowerCase()
   if (!answer) {
     ElMessage.warning('请输入单词')
     return
   }
+  submitting.value = true
   const normalizedWord = entry.word.toLowerCase().replace(/\s*\([^)]+\)/g, '')
   const isCorrect = answer === entry.word.toLowerCase() || answer === normalizedWord
   const updatedEntry = await vocabularyStore.recordTestResult(entry.word, isCorrect, 'default') || entry
@@ -886,6 +1018,7 @@ async function submitAnswer() {
     setTimeout(() => {
       showCorrectToast.value = false
       goNextQuestion()
+      submitting.value = false
     }, 1200)
   } else {
     wrongResults.value.push(result)
@@ -896,6 +1029,7 @@ async function submitAnswer() {
       answer: answer
     }
     errorDialogVisible.value = true
+    submitting.value = false
   }
 }
 
@@ -908,6 +1042,7 @@ watch(availableWords, (words) => {
 }, { immediate: true })
 
 onMounted(() => {
+  settingsStore.ensureLoaded()
   restoreTestSession()
 })
 </script>
@@ -915,7 +1050,7 @@ onMounted(() => {
 <style scoped>
 .vocab-test-page {
   /* 测试页对齐 token：修改时只改这里 */
-  --test-max: 1200px;
+  --test-max: 1400px;
   --test-border: 1px;
 
   min-height: 100vh;
@@ -948,6 +1083,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 14px;
+}
+
+.test-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .test-title {
@@ -986,6 +1127,44 @@ onMounted(() => {
 
 .test-control {
   width: 190px;
+}
+
+.wrong-count-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.wrong-count-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #63706d;
+  white-space: nowrap;
+}
+
+.wrong-count-input {
+  width: 60px;
+}
+
+.wrong-count-input :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.wrong-count-input :deep(.el-input__inner) {
+  font-size: 13px;
+  text-align: center;
+}
+
+.wrong-count-sep {
+  color: #999;
+  font-size: 13px;
 }
 
 .test-count {
@@ -1442,6 +1621,36 @@ onMounted(() => {
   color: #e5484d;
 }
 
+.result-actions-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.mark-correct-btn {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: #c97b00;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+}
+
+.mark-correct-btn:hover {
+  color: #f59e0b;
+}
+
+.mark-correct-btn svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
 .result-empty {
   color: #8c9996;
   font-size: 13px;
@@ -1554,19 +1763,30 @@ onMounted(() => {
 
 .history-wrong-item {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   padding: 8px 12px;
   background: #fff;
   border-radius: 6px;
   border-left: 3px solid #dc2626;
 }
 
+.history-wrong-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .history-wrong-word {
+  display: inline-block;
+  min-width: 150px;
   font-size: 16px;
   font-weight: 700;
   color: #dc2626;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-wrong-phonetic {
@@ -1576,13 +1796,20 @@ onMounted(() => {
 
 .history-wrong-answer {
   font-size: 14px;
-  color: #666;
+  color: #999;
+  text-decoration: line-through;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .history-wrong-meaning {
   font-size: 14px;
-  color: #333;
+  color: #dc2626;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .history-sound-btn {
@@ -1607,6 +1834,57 @@ onMounted(() => {
 
 .history-sound-btn:hover {
   background: #d4e8e1;
+}
+
+:global(.mark-correct-dialog) {
+  border-radius: 12px;
+}
+
+:global(.mark-correct-dialog .el-dialog__header) {
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 12px;
+}
+
+.mark-correct-title {
+  color: #19a974;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.mark-correct-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.mark-correct-content p {
+  margin: 0;
+  color: #333;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.mark-correct-content strong {
+  color: #e5484d;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.mark-correct-hint {
+  color: #666 !important;
+  font-size: 14px !important;
+}
+
+.mark-correct-tip {
+  color: #999 !important;
+  font-size: 13px !important;
+}
+
+.mark-correct-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
 .history-record-footer {

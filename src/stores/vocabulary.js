@@ -8,6 +8,14 @@ function generateBookId() {
   return 'book_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 }
 
+function generateWordId() {
+  return 'word_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+function generateTagId() {
+  return 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+}
+
 function normalizeWord(word) {
   return String(word || '').trim().toLowerCase();
 }
@@ -16,10 +24,6 @@ function normalizePhonetic(value) {
   const text = String(value || '').trim();
   if (!text) return '';
   return text.startsWith('/') ? text : `/${text}/`;
-}
-
-function generateTagId() {
-  return 'tag_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 }
 
 function normalizeTagName(name) {
@@ -64,6 +68,7 @@ function normalizeEntry(entry) {
   const level = isValidLevel ? entry.level : 'unknown';
   const now = Date.now();
   return {
+    id: String(entry?.id || generateWordId()),
     word,
     phonetic: normalizePhonetic(entry?.phonetic),
     meaning: String(entry?.meaning || '').trim(),
@@ -82,6 +87,17 @@ function sortByAlphabet(entries) {
   return [...entries].sort((a, b) => a.word.localeCompare(b.word, 'en', { sensitivity: 'base' }));
 }
 
+function sortTags(tags) {
+  return [...tags].sort((a, b) => {
+    const nameA = a.name || '';
+    const nameB = b.name || '';
+    const numA = parseInt(nameA.match(/\d+/)?.[0] || '0', 10);
+    const numB = parseInt(nameB.match(/\d+/)?.[0] || '0', 10);
+    if (numA !== numB) return numA - numB;
+    return nameA.localeCompare(nameB, 'zh');
+  });
+}
+
 function normalizeBook(book, fallbackName = '默认生词本') {
   const now = Date.now();
   const name = normalizeBookName(book?.name) || fallbackName;
@@ -92,7 +108,7 @@ function normalizeBook(book, fallbackName = '默认生词本') {
       ? sortByAlphabet(book.words.map(normalizeEntry).filter(Boolean))
       : [],
     tags: Array.isArray(book?.tags)
-      ? book.tags.map(normalizeTag).filter(Boolean)
+      ? sortTags(book.tags.map(normalizeTag).filter(Boolean))
       : [],
     createdAt: Number(book?.createdAt) || now,
     updatedAt: Number(book?.updatedAt) || now
@@ -120,7 +136,8 @@ export function useVocabularyStore(options) {
       memory: true,
       tags: true,
       level: true,
-      note: false
+      note: false,
+      testStats: false
     },
     _loaded: false,
 
@@ -296,7 +313,8 @@ export function useVocabularyStore(options) {
         memory: Boolean(columns?.memory) !== false,
         tags: Boolean(columns?.tags) !== false,
         level: Boolean(columns?.level) !== false,
-        note: Boolean(columns?.note) !== false
+        note: Boolean(columns?.note) !== false,
+        testStats: Boolean(columns?.testStats) === true
       };
       await this.save();
     },
@@ -307,14 +325,25 @@ export function useVocabularyStore(options) {
       const book = this.getTargetBook(target);
       if (!book) return null;
 
-      const index = book.words.findIndex(item => item.word === normalized.word);
+      const existingId = entry?.id ? String(entry.id) : null;
+      let index = existingId ? book.words.findIndex(item => item.id === existingId) : -1;
+      if (index === -1) {
+        index = book.words.findIndex(item => item.word === normalized.word);
+      }
+
       if (index >= 0) {
+        const existing = book.words[index];
         book.words[index] = {
-          ...book.words[index],
-          phonetic: normalized.phonetic || book.words[index].phonetic,
-          meaning: normalized.meaning || book.words[index].meaning,
-          tagIds: normalized.tagIds.length ? normalized.tagIds : (book.words[index].tagIds || []),
-          memoryParts: normalized.memoryParts.length ? normalized.memoryParts : (book.words[index].memoryParts || []),
+          ...existing,
+          ...normalized,
+          id: existing.id,
+          phonetic: normalized.phonetic || existing.phonetic,
+          meaning: normalized.meaning || existing.meaning,
+          tagIds: normalized.tagIds.length ? normalized.tagIds : (existing.tagIds || []),
+          memoryParts: normalized.memoryParts.length ? normalized.memoryParts : (existing.memoryParts || []),
+          testTotalCount: existing.testTotalCount || 0,
+          testCorrectCount: existing.testCorrectCount || 0,
+          createdAt: existing.createdAt,
           updatedAt: Date.now()
         };
       } else {
@@ -391,8 +420,12 @@ export function useVocabularyStore(options) {
       const book = this.getActiveBook();
       if (!book) return null;
       const key = normalizeWord(word);
-      const entry = book.words.find(item => item.word === key);
+      let entry = book.words.find(item => item.word === key);
+      if (!entry && typeof word === 'string' && word.startsWith('word_')) {
+        entry = book.words.find(item => item.id === word);
+      }
       if (!entry) return null;
+      if (typeof updates.word === 'string') entry.word = normalizeWord(updates.word);
       if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
       if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
       if (typeof updates.note === 'string') entry.note = updates.note.trim();
@@ -420,6 +453,7 @@ export function useVocabularyStore(options) {
       if (existing) return existing;
       const tag = normalizeTag({ name: normalizedName });
       book.tags.push(tag);
+      book.tags = sortTags(book.tags);
       book.updatedAt = Date.now();
       this.syncActiveBook();
       await this.save();
@@ -537,6 +571,7 @@ export function useVocabularyStore(options) {
           count += 1;
         }
       });
+      book.tags = sortTags(book.tags);
       book.updatedAt = Date.now();
       this.syncActiveBook();
       await this.save();

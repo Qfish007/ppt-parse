@@ -8,6 +8,7 @@ const VocabularyView = () => import('../pages/vocabulary/vocabulary.vue')
 const VocabularySettingsView = () => import('../pages/vocabulary/setting.vue')
 const VocabularyDetailView = () => import('../pages/vocabulary/detail.vue')
 const VocabularyTestView = () => import('../pages/vocabulary/test.vue')
+const VocabularyTestSettingView = () => import('../pages/vocabulary/test_setting.vue')
 const VocabularyPrintView = () => import('../pages/vocabulary/print.vue')
 
 const routes = [
@@ -69,6 +70,11 @@ const routes = [
     path: '/vocabulary/test',
     name: 'VocabularyTest',
     component: VocabularyTestView
+  },
+  {
+    path: '/vocabulary/test/setting',
+    name: 'VocabularyTestSetting',
+    component: VocabularyTestSettingView
   },
   {
     path: '/vocabulary/print',

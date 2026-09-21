@@ -40,6 +40,11 @@
               @change="value => updateVisibleColumn('level', value)" />
           </div>
           <div class="column-setting-row">
+            <span class="column-name">测试次数</span>
+            <el-switch :model-value="vocabularyStore.visibleColumns.testStats"
+              @change="value => updateVisibleColumn('testStats', value)" />
+          </div>
+          <div class="column-setting-row">
             <span class="column-name">备注</span>
             <el-switch :model-value="vocabularyStore.visibleColumns.note"
               @change="value => updateVisibleColumn('note', value)" />
@@ -255,7 +260,7 @@ async function removeTag(tag) {
 
 .settings-header,
 .settings-card {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 

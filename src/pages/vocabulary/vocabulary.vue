@@ -88,6 +88,14 @@
         placeholder="按标签筛选">
         <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
       </el-select>
+      <div class="wrong-count-filter">
+        <span class="wrong-count-label">错误次数</span>
+        <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
+          class="wrong-count-input" />
+        <span class="wrong-count-sep">~</span>
+        <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
+          class="wrong-count-input" />
+      </div>
       <el-segmented v-model="sortMode" :options="sortOptions" class="vocab-sort" />
     </section>
 
@@ -102,6 +110,7 @@
         <span>中文</span>
         <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
         <span v-if="vocabularyStore.visibleColumns.level" class="vocab-level-head">掌握水平</span>
+        <span v-if="vocabularyStore.visibleColumns.testStats" class="vocab-teststats-head">测试次数</span>
         <span v-if="vocabularyStore.visibleColumns.note" class="vocab-note-head">备注</span>
         <span class="vocab-action-head">操作</span>
       </div>
@@ -163,6 +172,11 @@
               <el-option v-for="level in VOCABULARY_LEVELS" :key="level.value" :class="levelClass(level.value)"
                 :label="level.label" :value="level.value" />
             </el-select>
+          </div>
+          <div v-if="vocabularyStore.visibleColumns.testStats" class="vocab-teststats">
+            <span class="vocab-teststats-correct">正确{{ Number(entry.testCorrectCount) || 0 }}次</span>
+            <span class="vocab-teststats-wrong">错误{{ Math.max(0, (Number(entry.testTotalCount) || 0) -
+              (Number(entry.testCorrectCount) || 0)) }}次</span>
           </div>
           <div v-if="vocabularyStore.visibleColumns.note" class="vocab-note">
             {{ entry.note || '-' }}
@@ -343,6 +357,8 @@ const searchText = ref(router.currentRoute.value.query.searchText || '')
 const searchMode = ref(router.currentRoute.value.query.searchMode || 'word')
 const levelFilter = ref((router.currentRoute.value.query.levelFilter || '').split(',').filter(Boolean))
 const tagFilter = ref((router.currentRoute.value.query.tagFilter || '').split(',').filter(Boolean))
+const wrongCountMin = ref(null)
+const wrongCountMax = ref(null)
 const sortMode = ref(router.currentRoute.value.query.sortMode || 'alphabet')
 
 // —— 批量选择状态 ——
@@ -361,6 +377,8 @@ const batchDialog = reactive({
 // —— 筛选 + 排序结果（后续所有 computed/watch 依赖它，必须最早就绪） ——
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim().toLowerCase()
+  const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
+  const max = wrongCountMax.value !== null ? Number(wrongCountMax.value) : null
   let words = vocabularyStore.words.filter(entry => {
     let matchKeyword = !keyword
     if (keyword) {
@@ -374,7 +392,10 @@ const filteredWords = computed(() => {
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
     const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
-    return matchKeyword && matchLevel && matchTags
+    const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
+    const matchMin = min === null || wrongCount >= min
+    const matchMax = max === null || wrongCount <= max
+    return matchKeyword && matchLevel && matchTags && matchMin && matchMax
   })
   if (sortMode.value === 'createdAt') {
     words = [...words].sort((a, b) => b.createdAt - a.createdAt)
@@ -390,20 +411,29 @@ const gridTemplateColumns = computed(() => {
   if (vocabularyStore.visibleColumns.memory) cols.push('130px')
   cols.push('1fr')
   if (vocabularyStore.visibleColumns.tags) cols.push('100px')
-  if (vocabularyStore.visibleColumns.level) cols.push('80px')
+  if (vocabularyStore.visibleColumns.level) cols.push('56px')
+  if (vocabularyStore.visibleColumns.testStats) cols.push('90px')
   if (vocabularyStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
-  cols.push('60px')
+  cols.push('56px')
   return cols.join(' ')
 })
 
 const listMinWidth = computed(() => {
-  let width = 48 + 150 + 220 + 60
+  let width = 48 + 150 + 220 + 56
   if (vocabularyStore.visibleColumns.pronunciation) width += 150
   if (vocabularyStore.visibleColumns.memory) width += 130
   if (vocabularyStore.visibleColumns.tags) width += 100
-  if (vocabularyStore.visibleColumns.level) width += 80
+  if (vocabularyStore.visibleColumns.level) width += 56
+  if (vocabularyStore.visibleColumns.testStats) width += 90
   if (vocabularyStore.visibleColumns.note) width += 60
-  width += 12 * (8 - (!vocabularyStore.visibleColumns.pronunciation) - (!vocabularyStore.visibleColumns.memory) - (!vocabularyStore.visibleColumns.tags) - (!vocabularyStore.visibleColumns.level) - (!vocabularyStore.visibleColumns.note))
+  const colCount = 6
+    + (vocabularyStore.visibleColumns.pronunciation ? 1 : 0)
+    + (vocabularyStore.visibleColumns.memory ? 1 : 0)
+    + (vocabularyStore.visibleColumns.tags ? 1 : 0)
+    + (vocabularyStore.visibleColumns.level ? 1 : 0)
+    + (vocabularyStore.visibleColumns.testStats ? 1 : 0)
+    + (vocabularyStore.visibleColumns.note ? 1 : 0)
+  width += 12 * (colCount - 1)
   return `${width}px`
 })
 
@@ -442,7 +472,7 @@ function onPageSizeChange(size) {
 }
 
 // —— 筛选/排序变化 → 回到第一页 ——
-watch([searchText, levelFilter, tagFilter, sortMode], () => {
+watch([searchText, levelFilter, tagFilter, wrongCountMin, wrongCountMax, sortMode], () => {
   page.value = 1
   updateRouteQuery()
 })
@@ -1111,7 +1141,7 @@ async function handleImport(event) {
 
 .vocab-page {
   /* 生词本三大区域统一宽度/间距 token：修改时只改这里 */
-  --section-max: 1200px;
+  --section-max: 1400px;
   --section-hpad: 16px;
   /* 页面级视觉衬垫：三块共同的水平外边距 */
   --section-border: 1px;
@@ -1266,6 +1296,44 @@ async function handleImport(event) {
 
 .vocab-tag-filter {
   width: 190px;
+}
+
+.wrong-count-filter {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.wrong-count-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #63706d;
+  white-space: nowrap;
+}
+
+.wrong-count-input {
+  width: 60px;
+}
+
+.wrong-count-input :deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.wrong-count-input :deep(.el-input__inner) {
+  font-size: 13px;
+  text-align: center;
+}
+
+.wrong-count-sep {
+  color: #999;
+  font-size: 13px;
 }
 
 .vocab-sort {
@@ -1431,6 +1499,28 @@ async function handleImport(event) {
 
 .vocab-level-head {
   text-align: center;
+}
+
+.vocab-teststats-head {
+  text-align: center;
+  font-size: 12px;
+}
+
+.vocab-teststats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.vocab-teststats-correct {
+  color: #16a34a;
+}
+
+.vocab-teststats-wrong {
+  color: #dc2626;
 }
 
 .vocab-note-head {

@@ -33,7 +33,9 @@ export const STORAGE_KEYS = {
     VOCABULARY_BOOKS: 'bilingual-reader-vocabulary-books',
     VOCABULARY_ACTIVE_BOOK: 'bilingual-reader-active-vocabulary-book',
     VOCABULARY_DEFAULT_BOOK: 'bilingual-reader-default-vocabulary-book',
-    VOCABULARY_STATS_VISIBLE: 'bilingual-reader-vocabulary-stats-visible'
+    VOCABULARY_STATS_VISIBLE: 'bilingual-reader-vocabulary-stats-visible',
+    TEST_ENABLE_MARK_CORRECT: 'bilingual-reader-test-enable-mark-correct',
+    TEST_SHOW_PRONUNCIATION: 'bilingual-reader-test-show-pronunciation'
 };
 
 export const ROUTE_NAMES = {
