@@ -75,7 +75,7 @@
                   <div>• row：中文占几行高度（每行一组汉字格子）</div>
                   <div>• show：是否显示中文文字（0/1，不影响 grid 格子）</div>
                   <div>• pos：显示顺序（数字小的在上）</div>
-                  <div>• grid：格子类型（0无/1米/2田/3口/4横线/5三横线）</div>
+                  <div>• grid：格子类型（0无/1米/2田/3口/4横线/5三横线/6四横线）</div>
                   <div class="cn-help-section"><b>拼音设置</b></div>
                   <div>• font：拼音字号（px）</div>
                   <div>• row：拼音占几行高度</div>
@@ -91,7 +91,7 @@
                   <div>• h-space：单词之间的水平间距（px）</div>
                   <div>• v-space：换行后单词之间的垂直间距（px）</div>
                   <div class="cn-help-tip">流式排版：单词按内容宽度排列，末尾放不下时自动换行</div>
-                  <div class="cn-help-tip">grid 可用数字 0-5 或名称：无/米/田/口/横/三</div>
+                  <div class="cn-help-tip">grid 可用数字 0-6 或名称：无/米/田/口/横/三/四</div>
                 </div>
               </template>
               <el-icon class="cn-help-icon">
@@ -140,6 +140,8 @@
                       <span class="cn-gl cn-gl-d2"></span>
                       <span class="cn-gl cn-gl-h13"></span>
                       <span class="cn-gl cn-gl-h23"></span>
+                      <span class="cn-gl cn-gl-h14"></span>
+                      <span class="cn-gl cn-gl-h34"></span>
                       <span v-if="safeChineseShow" class="cn-char-text" :style="{ fontSize: safeChineseFont + 'px' }">{{
                         char }}</span>
                     </div>
@@ -220,11 +222,11 @@ const RANGES = {
   chineseFont: { min: 6, max: 80 },
   chineseRow: { min: 1, max: 10 },
   chinesePos: { min: 0, max: 99 },
-  chineseGrid: { min: 0, max: 5 },
+  chineseGrid: { min: 0, max: 6 },
   pinyinFont: { min: 6, max: 80 },
   pinyinRow: { min: 1, max: 10 },
   pinyinPos: { min: 0, max: 99 },
-  pinyinGrid: { min: 0, max: 5 },
+  pinyinGrid: { min: 0, max: 6 },
   cellPaddingTop: { min: 0, max: 100 },
   cellPaddingLeft: { min: 0, max: 100 },
   cellPaddingRight: { min: 0, max: 100 },
@@ -246,6 +248,7 @@ const GRID_NAMES = {
   '口': 3, 'kou': 3,
   '横': 4, 'heng': 4, 'line': 4,
   '三': 5, 'san': 5, 'three': 5,
+  '四': 6, 'si': 6, 'four': 6,
 }
 
 const SECTION_ALIASES = {
@@ -302,7 +305,7 @@ function parseGrid(val) {
   const v = String(val).trim().toLowerCase()
   if (GRID_NAMES[v] !== undefined) return GRID_NAMES[v]
   const n = Number(v)
-  if (Number.isFinite(n) && n >= 0 && n <= 5) return n
+  if (Number.isFinite(n) && n >= 0 && n <= 6) return n
   return null
 }
 
@@ -997,6 +1000,24 @@ onMounted(() => {
   display: block;
 }
 
+/* grid-6：四横线（上下实线 + 1/4、1/2、3/4 三条虚线，四等分） */
+.cn-char-cell.grid-6 {
+  border-top: 1px solid var(--cn-grid-color);
+  border-bottom: 1px solid var(--cn-grid-color);
+}
+
+.cn-char-cell.grid-6 .cn-gl-h14 {
+  display: block;
+}
+
+.cn-char-cell.grid-6 .cn-gl-h {
+  display: block;
+}
+
+.cn-char-cell.grid-6 .cn-gl-h34 {
+  display: block;
+}
+
 /* 横线（居中虚线） */
 .cn-gl-h {
   left: 0;
@@ -1044,6 +1065,22 @@ onMounted(() => {
   left: 0;
   right: 0;
   top: 66.67%;
+  border-top: 1px dashed var(--cn-grid-color);
+}
+
+/* 1/4 横线 */
+.cn-gl-h14 {
+  left: 0;
+  right: 0;
+  top: 25%;
+  border-top: 1px dashed var(--cn-grid-color);
+}
+
+/* 3/4 横线 */
+.cn-gl-h34 {
+  left: 0;
+  right: 0;
+  top: 75%;
   border-top: 1px dashed var(--cn-grid-color);
 }
 
@@ -1135,6 +1172,19 @@ onMounted(() => {
   right: 0;
   top: 50%;
   border-top: 1px dashed var(--cn-grid-color);
+}
+
+/* pgrid-6：四横线（上下实线 + 1/4、1/2、3/4 三条虚线，伪元素不够用，改用三层渐变背景） */
+.cn-pinyin-row.pgrid-6 {
+  border-top: 1px solid var(--cn-grid-color);
+  border-bottom: 1px solid var(--cn-grid-color);
+  background-image:
+    repeating-linear-gradient(to right, var(--cn-grid-color) 0 4px, transparent 4px 9px),
+    repeating-linear-gradient(to right, var(--cn-grid-color) 0 4px, transparent 4px 9px),
+    repeating-linear-gradient(to right, var(--cn-grid-color) 0 4px, transparent 4px 9px);
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 25%, 0 50%, 0 75%;
 }
 
 .cn-pinyin-text {
