@@ -562,7 +562,7 @@ function gridCellStyle(item) {
 const subtitleModeHint = computed(() => {
   const m = safePrintMode.value
   if (m === 1) return `练字模式：每行 1 个词组 + 空格填充（${availableWords.value.length} 个词组）`
-  if (m === 2) return '自由模式：整页共边空白字帖（无拼音无间距）'
+  if (m === 2) return '自由模式：整页空白字帖（横向共边铺满，行距受 v-space 控制）'
   return `可打印 ${availableWords.value.length} 个词条 · 流式排版`
 })
 
@@ -670,14 +670,15 @@ const printPages = computed(() => {
       lines.push(line)
     }
   } else {
-    // 自由模式：整页空白临摹字帖——只输出共边 grid，无拼音、无内边距、无间距，整行铺满
+    // 自由模式：整页空白临摹字帖——横向共边铺满、无拼音；行距由单词设置 v-space 控制
     if (safeChineseGrid.value === 0) return []
     // 列数按字号格子宽度取整，实际格子宽度等分整行，保证正方形且铺满
     const nCols = Math.max(1, Math.round(contentW / charGridSize))
     const cellSize = contentW / nCols
     modeLineH = cellSize
-    modeVGap = 0
-    const nRows = Math.max(1, Math.floor(bodyH / cellSize))
+    modeVGap = vGap
+    // 行数需扣除行与行之间的 v-space
+    const nRows = Math.max(1, Math.floor((bodyH + vGap) / (cellSize + vGap)))
     for (let r = 0; r < nRows; r++) {
       lines.push([{ type: 'empty', width: contentW, charCount: nCols, gridSize: cellSize, fill: true }])
     }
@@ -1049,10 +1050,11 @@ onMounted(() => {
   margin-top: calc(-1 * var(--cn-v-gap, 20px));
 }
 
-/* ===== 自由模式（mode=2）：整页共边空白临摹字帖 ===== */
+/* ===== 自由模式（mode=2）：整页空白临摹字帖（横向共边，行距受 v-space 控制） ===== */
 .cn-print-mode-2 .cn-a4-body {
   column-gap: 0;
-  row-gap: 0;
+  /* 上下行距使用单词设置 v-space（--cn-v-gap） */
+  row-gap: var(--cn-v-gap, 20px);
 }
 
 .cn-print-mode-2 .cn-word-cell {
@@ -1079,13 +1081,9 @@ onMounted(() => {
   min-width: 0;
 }
 
-/* 相邻格子边框重叠为 1px（横、竖方向都共边） */
+/* 相邻格子边框重叠为 1px（仅横向共边；行距交给 v-space） */
 .cn-print-mode-2 .cn-char-cell.is-fill+.cn-char-cell.is-fill {
   margin-left: -1px;
-}
-
-.cn-print-mode-2 .cn-word-cell+.cn-word-cell {
-  margin-top: -1px;
 }
 
 /* ===== 中文 block ===== */
