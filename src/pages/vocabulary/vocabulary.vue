@@ -8,7 +8,7 @@
           </el-icon>
           返回
         </el-button>
-        <h2 class="vocab-title">生词本 · {{ activeBookName }}</h2>
+        <h2 class="vocab-title">英文生词本 · {{ activeBookName }}</h2>
       </div>
       <div class="vocab-actions">
         <el-dropdown>
