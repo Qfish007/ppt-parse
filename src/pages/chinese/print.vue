@@ -63,11 +63,15 @@
           <div class="cn-filter-item cn-filter-item-full">
             <span class="cn-filter-label">打印模式：</span>
             <el-segmented :model-value="safePrintMode" :options="printModeOptions" @update:model-value="setPrintMode" />
+            <span v-if="safePrintMode === 0" class="cn-detail-config-toggle">
+              <span class="cn-detail-config-label">详细配置</span>
+              <el-switch v-model="showDetailConfig" size="small" />
+            </span>
           </div>
         </div>
       </div>
 
-      <div class="cn-panel-section">
+      <div v-if="safePrintMode === 0 && showDetailConfig" class="cn-panel-section">
         <!-- <h3 class="cn-panel-section-title">布局设置</h3> -->
         <div class="cn-config-row">
           <div class="cn-config-label">
@@ -193,7 +197,7 @@
                           <span class="cn-gl cn-gl-h14"></span>
                           <span class="cn-gl cn-gl-h34"></span>
                           <span class="cn-char-text cn-trace-text" :style="{ fontSize: safeChineseFont + 'px' }">{{ char
-                          }}</span>
+                            }}</span>
                         </div>
                       </template>
                       <!-- 其他模式：空格子 -->
@@ -492,6 +496,7 @@ function applyPair(result, section, pairStr) {
 }
 
 const configText = ref(DEFAULT_CONFIG_TEXT)
+const showDetailConfig = ref(false)
 const parsedConfig = computed(() => parseConfig(configText.value))
 
 // 安全值
@@ -1004,6 +1009,20 @@ onMounted(() => {
   display: flex;
   align-items: flex-start;
   gap: 8px;
+}
+
+.cn-detail-config-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.cn-detail-config-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #364844;
+  white-space: nowrap;
 }
 
 .cn-config-label {

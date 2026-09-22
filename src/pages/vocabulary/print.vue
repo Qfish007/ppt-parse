@@ -72,8 +72,12 @@
           <div class="layout-item print-mode-row">
             <div class="layout-label">打印模式：</div>
             <el-segmented v-model="printMode" :options="MODE_OPTIONS" @change="setPrintMode" />
+            <span v-if="printMode === 0" class="detail-config-toggle">
+              <span class="detail-config-label">详细配置</span>
+              <el-switch v-model="showDetailConfig" size="small" />
+            </span>
           </div>
-          <div class="layout-item config-row">
+          <div v-if="printMode === 0 && showDetailConfig" class="layout-item config-row">
             <div class="layout-label">
 
               <el-tooltip placement="right" effect="light">
@@ -433,6 +437,7 @@ function alignToJustify(align) {
 const printWords = ref([])
 const exportingPdf = ref(false)
 const printMode = ref(0)
+const showDetailConfig = ref(false)
 
 function setPrintMode(val) {
   printMode.value = val
@@ -1163,6 +1168,21 @@ onMounted(() => {
 
 .print-mode-row {
   grid-column: 1 / -1;
+  gap: 12px;
+}
+
+.detail-config-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.detail-config-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #364844;
+  white-space: nowrap;
 }
 
 .config-wrap {
