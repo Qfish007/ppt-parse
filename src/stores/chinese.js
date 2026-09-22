@@ -146,6 +146,8 @@ export function useChineseStore(options) {
       level: true,
       note: false
     },
+    // 多标签筛选关系：'and'（同时满足全部标签）/ 'or'（满足任一标签）
+    tagFilterRelation: 'and',
     _loaded: false,
 
     async load() {
@@ -203,6 +205,7 @@ export function useChineseStore(options) {
         : this.defaultBookId;
       this.statsVisible = await chineseRepository.getStatsVisible();
       this.visibleColumns = await chineseRepository.getVisibleColumns();
+      this.tagFilterRelation = await chineseRepository.getTagFilterRelation();
       this.syncActiveBook();
       this._loaded = true;
     },
@@ -220,6 +223,7 @@ export function useChineseStore(options) {
       await chineseRepository.setDefaultBookId(this.defaultBookId);
       await chineseRepository.setStatsVisible(this.statsVisible);
       await chineseRepository.setVisibleColumns(this.visibleColumns);
+      await chineseRepository.setTagFilterRelation(this.tagFilterRelation);
     },
 
     syncActiveBook() {
@@ -322,6 +326,11 @@ export function useChineseStore(options) {
         level: Boolean(columns?.level) !== false,
         note: Boolean(columns?.note) === true
       };
+      await this.save();
+    },
+
+    async setTagFilterRelation(relation) {
+      this.tagFilterRelation = relation === 'or' ? 'or' : 'and';
       await this.save();
     },
 

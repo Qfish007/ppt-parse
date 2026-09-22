@@ -139,6 +139,8 @@ export function useVocabularyStore(options) {
       note: false,
       testStats: false
     },
+    // 多标签筛选关系：'and'（同时满足全部标签）/ 'or'（满足任一标签）
+    tagFilterRelation: 'and',
     _loaded: false,
 
     async load() {
@@ -195,6 +197,7 @@ export function useVocabularyStore(options) {
         : this.defaultBookId;
       this.statsVisible = await vocabularyRepository.getStatsVisible();
       this.visibleColumns = await vocabularyRepository.getVisibleColumns();
+      this.tagFilterRelation = await vocabularyRepository.getTagFilterRelation();
       this.syncActiveBook();
       this._loaded = true;
     },
@@ -212,6 +215,7 @@ export function useVocabularyStore(options) {
       await vocabularyRepository.setDefaultBookId(this.defaultBookId);
       await vocabularyRepository.setStatsVisible(this.statsVisible);
       await vocabularyRepository.setVisibleColumns(this.visibleColumns);
+      await vocabularyRepository.setTagFilterRelation(this.tagFilterRelation);
     },
 
     syncActiveBook() {
@@ -316,6 +320,11 @@ export function useVocabularyStore(options) {
         note: Boolean(columns?.note) !== false,
         testStats: Boolean(columns?.testStats) === true
       };
+      await this.save();
+    },
+
+    async setTagFilterRelation(relation) {
+      this.tagFilterRelation = relation === 'or' ? 'or' : 'and';
       await this.save();
     },
 

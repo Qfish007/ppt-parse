@@ -136,4 +136,14 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
   async setVisibleColumns(columns) {
     await db.settings.put({ key: 'vocabularyVisibleColumns', value: JSON.stringify(columns) });
   }
+
+  async getTagFilterRelation() {
+    const result = await db.settings.get('vocabularyTagFilterRelation');
+    return result?.value === 'or' ? 'or' : 'and';
+  }
+
+  async setTagFilterRelation(relation) {
+    const value = relation === 'or' ? 'or' : 'and';
+    await db.settings.put({ key: 'vocabularyTagFilterRelation', value });
+  }
 }

@@ -145,6 +145,16 @@ export class DexieChineseRepository extends IChineseRepository {
     await db.settings.put({ key: 'chineseVisibleColumns', value: JSON.stringify(columns) });
   }
 
+  async getTagFilterRelation() {
+    const result = await db.settings.get('chineseTagFilterRelation');
+    return result?.value === 'or' ? 'or' : 'and';
+  }
+
+  async setTagFilterRelation(relation) {
+    const value = relation === 'or' ? 'or' : 'and';
+    await db.settings.put({ key: 'chineseTagFilterRelation', value });
+  }
+
   // 百度汉语抓取结果缓存层（避免重复 puppeteer 渲染）
   async getHanyuCache(word) {
     return await db.chineseHanyuCache.get(word);

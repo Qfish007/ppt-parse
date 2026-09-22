@@ -15,4 +15,7 @@ export class IVocabularyRepository {
   async setDefaultBookId(id) { throw new Error('Not implemented'); }
   async getStatsVisible() { throw new Error('Not implemented'); }
   async setStatsVisible(visible) { throw new Error('Not implemented'); }
+  // 多标签筛选关系：'and'（同时满足全部）/ 'or'（满足任一）
+  async getTagFilterRelation() { throw new Error('Not implemented'); }
+  async setTagFilterRelation(relation) { throw new Error('Not implemented'); }
 }

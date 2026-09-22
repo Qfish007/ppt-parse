@@ -77,6 +77,9 @@
         placeholder="按标签筛选">
         <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
       </el-select>
+      <div v-if="tagFilter.length > 1" class="cn-tag-relation-hint" @click="goSettings">
+        {{ chineseStore.tagFilterRelation === 'or' ? '或' : '且' }}
+      </div>
       <el-segmented v-model="sortMode" :options="sortOptions" class="cn-sort" />
     </section>
 
@@ -319,6 +322,7 @@ import { CHINESE_LEVELS } from '../../types/index.js'
 import { getChineseFormatList, getChineseFormat, parseTagText } from '../../utils/chineseFormats.js'
 import { toPinyin } from '../../utils/chinesePinyin.js'
 import { clampPage, slicePage } from '../../utils/pagination.js'
+import { matchTagFilter } from '../../utils/tagFilter.js'
 import { playChineseAudio } from '../../api/hanyu/index.js'
 
 const router = useRouter()
@@ -364,7 +368,7 @@ const filteredWords = computed(() => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
-    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
+    const matchTags = matchTagFilter(entry.tagIds, selectedTags, chineseStore.tagFilterRelation)
     return matchKeyword && matchLevel && matchTags
   })
   if (sortMode.value === 'createdAt') {
@@ -984,6 +988,24 @@ function doExport(formatId) {
 .cn-filter,
 .cn-tag-filter {
   width: 160px;
+}
+
+.cn-tag-relation-hint {
+  font-size: 12px;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 15px;
+  background: #b8480f;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }
 
 .cn-sort {

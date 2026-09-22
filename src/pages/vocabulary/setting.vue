@@ -54,6 +54,18 @@
             <el-switch :model-value="vocabularyStore.statsVisible" @change="toggleStatsVisible" />
           </div>
         </div>
+        <div class="tag-relation">
+          <div class="tag-relation-head">
+            <span class="tag-relation-name">标签关系</span>
+            <el-radio-group :model-value="vocabularyStore.tagFilterRelation" @change="updateTagFilterRelation">
+              <el-radio label="and" value="and">且（同时满足全部标签）</el-radio>
+              <el-radio label="or" value="or">或（满足任一标签即可）</el-radio>
+            </el-radio-group>
+          </div>
+          <div class="setting-desc tag-relation-desc">
+            在生词本列表、测试和打印页面同时选择多个标签筛选时生效：选「且」单词必须同时拥有全部所选标签；选「或」只要拥有其中一个标签就会出现。
+          </div>
+        </div>
       </div>
     </section>
 
@@ -148,6 +160,11 @@ function updateVisibleColumn(column, value) {
     ...vocabularyStore.visibleColumns,
     [column]: value
   })
+}
+
+async function updateTagFilterRelation(relation) {
+  await vocabularyStore.setTagFilterRelation(relation)
+  ElMessage.success(relation === 'or' ? '标签关系已切换为「或」' : '标签关系已切换为「且」')
 }
 
 function addBook() {
@@ -481,6 +498,31 @@ async function removeTag(tag) {
   color: #16201f;
   font-size: 14px;
   font-weight: 600;
+}
+
+.tag-relation {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid #edf1ef;
+  border-radius: 8px;
+  background: #fbfdfc;
+}
+
+.tag-relation-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.tag-relation-name {
+  color: #16201f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tag-relation-desc {
+  margin-top: 8px;
 }
 
 @media (max-width: 720px) {

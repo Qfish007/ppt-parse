@@ -88,6 +88,9 @@
         placeholder="按标签筛选">
         <el-option v-for="tag in vocabularyStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
       </el-select>
+      <div v-if="tagFilter.length > 1" class="vocab-tag-relation-hint" @click="goSettings">
+        {{ vocabularyStore.tagFilterRelation === 'or' ? '或' : '且' }}
+      </div>
       <div class="wrong-count-filter">
         <span class="wrong-count-label">错误次数</span>
         <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
@@ -326,6 +329,7 @@ import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
 import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
 import { clampPage, slicePage, totalPagesOf } from '../../utils/pagination.js'
+import { matchTagFilter } from '../../utils/tagFilter.js'
 import WordEditDialog from '../../components/WordEditDialog.vue'
 
 const router = useRouter()
@@ -391,7 +395,7 @@ const filteredWords = computed(() => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
-    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
+    const matchTags = matchTagFilter(entry.tagIds, selectedTags, vocabularyStore.tagFilterRelation)
     const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
     const matchMin = min === null || wrongCount >= min
     const matchMax = max === null || wrongCount <= max
@@ -1297,6 +1301,27 @@ async function handleImport(event) {
 .vocab-tag-filter {
   width: 190px;
 }
+
+.vocab-tag-relation-hint {
+
+  font-size: 12px;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 15px;
+  background: #609d80;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+
 
 .wrong-count-filter {
   display: flex;

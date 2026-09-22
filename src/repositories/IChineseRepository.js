@@ -18,6 +18,9 @@ export class IChineseRepository {
   async setStatsVisible(visible) { throw new Error('Not implemented'); }
   async getVisibleColumns() { throw new Error('Not implemented'); }
   async setVisibleColumns(columns) { throw new Error('Not implemented'); }
+  // 多标签筛选关系：'and'（同时满足全部）/ 'or'（满足任一）
+  async getTagFilterRelation() { throw new Error('Not implemented'); }
+  async setTagFilterRelation(relation) { throw new Error('Not implemented'); }
   // 百度汉语抓取结果缓存
   async getHanyuCache(word) { throw new Error('Not implemented'); }
   async setHanyuCache(cache) { throw new Error('Not implemented'); }

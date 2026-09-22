@@ -2,7 +2,9 @@
   <div class="cn-settings-page">
     <header class="cn-settings-header">
       <el-button type="primary" @click="goBack">
-        <el-icon><ArrowLeft /></el-icon>
+        <el-icon>
+          <ArrowLeft />
+        </el-icon>
         返回
       </el-button>
       <h2 class="cn-settings-title">中文生词本设置</h2>
@@ -39,6 +41,18 @@
             <el-switch :model-value="chineseStore.statsVisible" @change="toggleStatsVisible" />
           </div>
         </div>
+        <div class="cn-tag-relation">
+          <div class="cn-tag-relation-head">
+            <span class="cn-tag-relation-name">标签关系</span>
+            <el-radio-group :model-value="chineseStore.tagFilterRelation" @change="updateTagFilterRelation">
+              <el-radio label="and" value="and">且（同时满足全部标签）</el-radio>
+              <el-radio label="or" value="or">或（满足任一标签即可）</el-radio>
+            </el-radio-group>
+          </div>
+          <p class="cn-setting-desc cn-tag-relation-desc">
+            在列表页和打印页同时选择多个标签筛选时生效：选「且」词条必须同时拥有全部所选标签；选「或」只要拥有其中一个标签就会显示。
+          </p>
+        </div>
       </div>
     </section>
 
@@ -47,8 +61,7 @@
       <div class="cn-card-header">生词本管理</div>
       <div class="cn-card-body">
         <div class="cn-input-row">
-          <el-input v-model="bookName" clearable placeholder="例如：一年级上册、成语专项、易错字"
-            @keyup.enter="addBook" />
+          <el-input v-model="bookName" clearable placeholder="例如：一年级上册、成语专项、易错字" @keyup.enter="addBook" />
           <el-button type="primary" @click="addBook">添加生词本</el-button>
         </div>
 
@@ -81,8 +94,7 @@
       </div>
       <div class="cn-card-body">
         <div class="cn-input-row">
-          <el-input v-model="tagName" clearable placeholder="例如：第1页、本周、成语"
-            @keyup.enter="addTag" />
+          <el-input v-model="tagName" clearable placeholder="例如：第1页、本周、成语" @keyup.enter="addTag" />
           <el-button type="primary" @click="addTag">添加</el-button>
         </div>
 
@@ -152,6 +164,11 @@ function updateVisibleColumn(column, value) {
     ...chineseStore.visibleColumns,
     [column]: value
   })
+}
+
+async function updateTagFilterRelation(relation) {
+  await chineseStore.setTagFilterRelation(relation)
+  ElMessage.success(relation === 'or' ? '标签关系已切换为「或」' : '标签关系已切换为「且」')
 }
 
 async function addBook() {
@@ -369,6 +386,31 @@ function clearMemoCache() {
   color: #1c1408;
   font-size: 14px;
   font-weight: 600;
+}
+
+.cn-tag-relation {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #f7e8d6;
+  border-radius: 10px;
+  background: #fff9f2;
+}
+
+.cn-tag-relation-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cn-tag-relation-name {
+  color: #1c1408;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cn-tag-relation-desc {
+  margin: 8px 0 0;
 }
 
 .cn-input-row {

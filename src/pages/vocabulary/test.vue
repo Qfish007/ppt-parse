@@ -43,6 +43,9 @@
           placeholder="按标签筛选">
           <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
         </el-select>
+        <div v-if="tagFilter.length > 1" class="test-tag-relation-hint" @click="goVocabularySettings">
+          {{ vocabularyStore.tagFilterRelation === 'or' ? '或' : '且' }}
+        </div>
         <div class="wrong-count-filter">
           <span class="wrong-count-label">错误次数</span>
           <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
@@ -63,6 +66,7 @@
       </div>
       <div class="test-meta">
         当前可测试 {{ availableWords.length }} 个单词，将随机抽取 {{ normalizedTestCount }} 个。
+
       </div>
     </section>
 
@@ -296,6 +300,7 @@ import { speak } from '../../api/voice/index.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { useSettingsStore } from '../../stores/settings.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
+import { matchTagFilter } from '../../utils/tagFilter.js'
 
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
@@ -352,7 +357,7 @@ const availableWords = computed(() => {
   return defaultWords.value.filter(entry => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
-    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
+    const matchTags = matchTagFilter(entry.tagIds, selectedTags, vocabularyStore.tagFilterRelation)
     const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
     const matchMin = min === null || wrongCount >= min
     const matchMax = max === null || wrongCount <= max
@@ -406,6 +411,10 @@ function goBack() {
 
 function goTestSetting() {
   router.push('/vocabulary/test/setting')
+}
+
+function goVocabularySettings() {
+  router.push('/vocabulary/settings')
 }
 
 function onTestCountChange() {
@@ -1189,6 +1198,25 @@ onMounted(() => {
   font-size: 13px;
   font-weight: 700;
 }
+
+.test-tag-relation-hint {
+  font-size: 12px;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 15px;
+  background: #609d80;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
 
 .test-card {
   padding: 28px;

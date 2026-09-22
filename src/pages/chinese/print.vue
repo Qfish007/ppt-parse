@@ -35,11 +35,16 @@
             </el-select>
           </div>
           <div class="cn-filter-item">
+
             <span class="cn-filter-label">词条标签：</span>
             <el-select v-model="tagFilter" multiple collapse-tags collapse-tags-tooltip clearable placeholder="全部标签">
               <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
             </el-select>
+            <div v-if="tagFilter.length > 1" class="cn-tag-relation-text" @click="goSettings">
+              {{ chineseStore.tagFilterRelation === 'or' ? '或' : '且' }}
+            </div>
           </div>
+
           <div class="cn-filter-item">
             <span class="cn-filter-label">排序方式：</span>
             <el-select v-model="printOrder" placeholder="排序">
@@ -126,7 +131,8 @@
           <span class="cn-a4-title">{{ headerTitle }}</span>
           <span class="cn-a4-info">生词本：{{ activeBookName }}</span>
           <span class="cn-a4-info">模式：【{{ modeName }}】</span>
-          <span class="cn-a4-info">标签：【{{ selectedTagNames }}】</span>
+          <span class="cn-a4-info">标签：【{{ selectedTagNames }}】<template v-if="tagFilter.length > 1">（{{
+            chineseStore.tagFilterRelation === 'or' ? '或' : '且' }}）</template></span>
           <span class="cn-a4-info">水平：【{{ selectedLevelLabels }}】</span>
           <span class="cn-a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
         </div>
@@ -228,6 +234,7 @@ import { useRouter } from 'vue-router'
 import { ArrowLeft, Download, QuestionFilled } from '@element-plus/icons-vue'
 import { useChineseStore } from '../../stores/chinese.js'
 import { CHINESE_LEVELS } from '../../types/index.js'
+import { matchTagFilter } from '../../utils/tagFilter.js'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 
@@ -537,7 +544,7 @@ const availableWords = computed(() => {
   const tags = Array.isArray(tagFilter.value) ? tagFilter.value : []
   return activeWords.value.filter(entry => {
     const matchLevel = !levels.length || levels.includes(entry.level)
-    const matchTags = !tags.length || tags.every(id => (entry.tagIds || []).includes(id))
+    const matchTags = matchTagFilter(entry.tagIds, tags, chineseStore.tagFilterRelation)
     return matchLevel && matchTags
   })
 })
@@ -809,6 +816,10 @@ function goBack() {
   }
 }
 
+function goSettings() {
+  router.push('/chinese/settings')
+}
+
 async function doExportPdf() {
   if (!printPages.value.length) return
   const container = document.getElementById('cnPrintContent')
@@ -929,6 +940,35 @@ onMounted(() => {
 .cn-filter-item-full {
   grid-column: 1 / -1;
 }
+
+.cn-tag-relation-row {
+  gap: 8px;
+}
+
+.cn-tag-relation-text {
+  font-size: 12px;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 15px;
+  background: #b8480f;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+/* .cn-tag-relation-text :deep(.el-button) {
+  font-size: 12px;
+  padding: 0;
+  height: auto;
+  vertical-align: baseline;
+} */
 
 .cn-filter-label {
   font-size: 13px;

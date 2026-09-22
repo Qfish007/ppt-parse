@@ -43,6 +43,9 @@
             <el-select v-model="tagFilter" multiple collapse-tags collapse-tags-tooltip clearable placeholder="按标签筛选">
               <el-option v-for="tag in defaultTags" :key="tag.id" :label="tag.name" :value="tag.id" />
             </el-select>
+            <div v-if="tagFilter.length > 1" class="tag-relation-line" @click="goVocabularySettings">
+              {{ vocabularyStore.tagFilterRelation === 'or' ? '或' : '且' }}
+            </div>
           </div>
           <div class="filter-item">
             <span class="filter-label">错误次数：</span>
@@ -59,6 +62,7 @@
               <el-option label="随机" :value="true" />
             </el-select>
           </div>
+
         </div>
       </div>
 
@@ -130,7 +134,8 @@
           <div class="a4-page-header">
             <span class="a4-page-title">单词默写练习</span>
             <span class="a4-page-info">单词本：{{ defaultBook?.name || '默认生词本' }}</span>
-            <span class="a4-page-info">标签：【{{ selectedTagNames }}】</span>
+            <span class="a4-page-info">标签：【{{ selectedTagNames }}】<template v-if="tagFilter.length > 1">{{
+              tagFilterRelationLabel }}</template></span>
             <span class="a4-page-info">掌握水平：【{{ selectedLevelLabels }}】</span>
             <span class="a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
           </div>
@@ -162,6 +167,7 @@ import { ElMessage } from 'element-plus'
 import { ArrowLeft, Printer, QuestionFilled } from '@element-plus/icons-vue'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
+import { matchTagFilter } from '../../utils/tagFilter.js'
 
 const router = useRouter()
 const vocabularyStore = useVocabularyStore()
@@ -417,7 +423,7 @@ const availableWords = computed(() => {
   return defaultWords.value.filter(entry => {
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
-    const matchTags = !selectedTags.length || selectedTags.every(tagId => (entry.tagIds || []).includes(tagId))
+    const matchTags = matchTagFilter(entry.tagIds, selectedTags, vocabularyStore.tagFilterRelation)
     const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
     const matchMin = min === null || wrongCount >= min
     const matchMax = max === null || wrongCount <= max
@@ -447,6 +453,12 @@ const selectedTagNames = computed(() => {
   }).filter(Boolean)
   return names.length ? names.join('，') : '全部'
 })
+
+function goVocabularySettings() {
+  router.push('/vocabulary/settings')
+}
+
+const tagFilterRelationLabel = computed(() => vocabularyStore.tagFilterRelation === 'or' ? '（或）' : '（且）')
 
 const selectedLevelLabels = computed(() => {
   const vals = Array.isArray(levelFilter.value) ? levelFilter.value : []
@@ -507,6 +519,10 @@ function goBack() {
   } else {
     router.push('/vocabulary/test')
   }
+}
+
+function goSettings() {
+  router.push('/vocabulary/settings')
 }
 
 function shuffleWords(words) {
@@ -616,7 +632,7 @@ function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
   const headerItems = [
     { text: '单词默写练习', bold: true, color: '#111827', size: HEADER_FONT_SIZE },
     { text: `单词本：${defaultBook.value?.name || '默认生词本'}`, bold: false, color: '#374151', size: HEADER_FONT_SIZE },
-    { text: `标签：【${selectedTagNames.value}】`, bold: false, color: '#374151', size: HEADER_FONT_SIZE },
+    { text: `标签：【${selectedTagNames.value}】${tagFilter.value.length > 1 ? tagFilterRelationLabel.value : ''}`, bold: false, color: '#374151', size: HEADER_FONT_SIZE },
     { text: `掌握水平：【${selectedLevelLabels.value}】`, bold: false, color: '#374151', size: HEADER_FONT_SIZE }
   ]
   let curX = padH
@@ -954,6 +970,39 @@ onMounted(() => {
   grid-template-columns: repeat(4, 1fr);
   gap: 12px 20px;
   align-items: center;
+}
+
+.tag-relation-line {
+  font-size: 12px;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  border-radius: 15px;
+  background: #609d80;
+
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+
+
+.tag-relation-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: #609d80;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tag-relation-link:hover {
+  text-decoration: underline;
 }
 
 .filter-item {
