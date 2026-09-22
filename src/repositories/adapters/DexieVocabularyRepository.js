@@ -139,7 +139,7 @@ export class DexieVocabularyRepository extends IVocabularyRepository {
 
   async getTagFilterRelation() {
     const result = await db.settings.get('vocabularyTagFilterRelation');
-    return result?.value === 'or' ? 'or' : 'and';
+    return result?.value === 'and' ? 'and' : 'or';
   }
 
   async setTagFilterRelation(relation) {

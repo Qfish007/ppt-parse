@@ -68,7 +68,7 @@
       </div>
 
       <div class="cn-panel-section">
-        <h3 class="cn-panel-section-title">布局设置</h3>
+        <!-- <h3 class="cn-panel-section-title">布局设置</h3> -->
         <div class="cn-config-row">
           <div class="cn-config-label">
             <el-tooltip placement="right" effect="light">
@@ -193,7 +193,7 @@
                           <span class="cn-gl cn-gl-h14"></span>
                           <span class="cn-gl cn-gl-h34"></span>
                           <span class="cn-char-text cn-trace-text" :style="{ fontSize: safeChineseFont + 'px' }">{{ char
-                            }}</span>
+                          }}</span>
                         </div>
                       </template>
                       <!-- 其他模式：空格子 -->

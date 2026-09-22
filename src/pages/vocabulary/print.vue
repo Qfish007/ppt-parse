@@ -67,8 +67,12 @@
       </div>
 
       <div class="panel-section">
-        <h3 class="panel-section-title">布局设置</h3>
+        <!-- <h3 class="panel-section-title">布局设置</h3> -->
         <div class="layout-grid">
+          <div class="layout-item print-mode-row">
+            <div class="layout-label">打印模式：</div>
+            <el-segmented v-model="printMode" :options="MODE_OPTIONS" @change="setPrintMode" />
+          </div>
           <div class="layout-item config-row">
             <div class="layout-label">
 
@@ -102,6 +106,7 @@
                     <div>• top/left/right/bottom：单元格内边距（px）</div>
                     <div>• align：内容对齐方式（top/bottom/center）</div>
                     <div>• background：单元格背景色（#ffffff）</div>
+                    <div>• v-space：英文和中文内容之间的垂直间距（px）</div>
                     <div class="help-tip">值无效或缺失时回退默认值；;可分隔章节和键值对</div>
                   </div>
                 </template>
@@ -182,10 +187,32 @@ const printOrder = ref(false)
 // 配置文本框：所有数值型布局参数集中在此
 const DEFAULT_CONFIG_TEXT = `页面设置:H=20,V=30;
 表格设置:row=10;col=4;show-border=0;border-width=1
-中文设置:font=16;row=2;show=1;pos=1
+中文设置:font=16;row=2;show=1;pos=3
 英文设置:font=16;row=1;show=1;pos=2
 下划线设置:height=1;bottom=5;show=true
-单元格设置:top=10,left=10,right=10,bottom=0;align:top;background:#ffffff`
+单元格设置:top=10,left=10,right=10,bottom=0;align:top;background:#ffffff;v-space=5`
+
+// 打印模式：三种模式仅默认配置不同，切换后整体替换 configText
+const MODE_CONFIGS = {
+  0: DEFAULT_CONFIG_TEXT,
+  1: `页面设置:H=20,V=30;
+表格设置:row=10;col=4;show-border=0;border-width=1
+中文设置:font=16;row=2;show=1;pos=1
+英文设置:font=16;row=1;show=0;pos=2
+下划线设置:height=1;bottom=5;show=true
+单元格设置:top=10,left=10,right=10,bottom=0;align:top;background:#ffffff;v-space=5`,
+  2: `页面设置:H=20,V=30;
+表格设置:row=10;col=4;show-border=0;border-width=1
+中文设置:font=16;row=2;show=0;pos=1
+英文设置:font=16;row=1;show=1;pos=2
+下划线设置:height=1;bottom=5;show=true
+单元格设置:top=10,left=10,right=10,bottom=0;align:top;background:#ffffff;v-space=5`,
+}
+const MODE_OPTIONS = [
+  { label: '默认模式', value: 0 },
+  { label: '中译英模式', value: 1 },
+  { label: '英译中模式', value: 2 },
+]
 
 const DEFAULTS = {
   pagePaddingH: 20,
@@ -211,6 +238,7 @@ const DEFAULTS = {
   cellPaddingBottom: 0,
   cellAlign: 'top',
   cellBackground: '#ffffff',
+  cellVSpace: 5,
 }
 
 const RANGES = {
@@ -231,6 +259,7 @@ const RANGES = {
   cellPaddingLeft: { min: 0, max: 100 },
   cellPaddingRight: { min: 0, max: 100 },
   cellPaddingBottom: { min: 0, max: 100 },
+  cellVSpace: { min: 0, max: 100 },
 }
 
 const VALID_ALIGNS = ['top', 'bottom', 'center']
@@ -278,6 +307,7 @@ const KEY_ALIASES = {
     'right': 'cellPaddingRight', 'bottom': 'cellPaddingBottom',
     'align': 'cellAlign', '对齐': 'cellAlign', '对齐方式': 'cellAlign',
     'background': 'cellBackground', 'bg': 'cellBackground', '背景': 'cellBackground',
+    'v-space': 'cellVSpace', 'vspace': 'cellVSpace', '垂直间距': 'cellVSpace',
   },
 }
 
@@ -378,6 +408,7 @@ const safeCellPaddingRight = computed(() => parsedConfig.value.cellPaddingRight)
 const safeCellPaddingBottom = computed(() => parsedConfig.value.cellPaddingBottom)
 const safeCellAlign = computed(() => parsedConfig.value.cellAlign)
 const safeCellBackground = computed(() => parsedConfig.value.cellBackground)
+const safeCellVSpace = computed(() => parsedConfig.value.cellVSpace)
 const safePagePaddingH = computed(() => parsedConfig.value.pagePaddingH)
 const safePagePaddingV = computed(() => parsedConfig.value.pagePaddingV)
 
@@ -401,6 +432,14 @@ function alignToJustify(align) {
 
 const printWords = ref([])
 const exportingPdf = ref(false)
+const printMode = ref(0)
+
+function setPrintMode(val) {
+  printMode.value = val
+  if (MODE_CONFIGS[val] != null) {
+    configText.value = MODE_CONFIGS[val]
+  }
+}
 
 const A4_WIDTH_PX = 794
 const A4_HEIGHT_PX = 1123
@@ -495,7 +534,8 @@ function getPageStyle() {
     '--cell-padding-right': `${safeCellPaddingRight.value}px`,
     '--cell-padding-bottom': `${safeCellPaddingBottom.value}px`,
     '--cell-align-justify': alignToJustify(safeCellAlign.value),
-    '--cell-background': safeCellBackground.value
+    '--cell-background': safeCellBackground.value,
+    '--cell-vspace': `${safeCellVSpace.value}px`,
   }
 }
 
@@ -519,10 +559,6 @@ function goBack() {
   } else {
     router.push('/vocabulary/test')
   }
-}
-
-function goSettings() {
-  router.push('/vocabulary/settings')
 }
 
 function shuffleWords(words) {
@@ -624,6 +660,7 @@ function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
   const cellPadRight = safeCellPaddingRight.value
   const cellPadBottom = safeCellPaddingBottom.value
   const cellAlign = safeCellAlign.value
+  const cellVSpace = safeCellVSpace.value
 
   const contentWidth = A4_WIDTH_PX - padH * 2
   ctx.textBaseline = 'top'
@@ -709,6 +746,7 @@ function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
     let totalH = 0
     if (safeEnglishShow.value) totalH += enBlockH
     if (safeChineseShow.value) totalH += zhBlockH
+    if (safeEnglishShow.value && safeChineseShow.value) totalH += cellVSpace
 
     let contentStartY
     if (cellAlign === 'bottom') {
@@ -749,9 +787,10 @@ function renderVocabPageToJpeg(pageEntries, pageIndex, totalPages) {
       curY += zhBlockH
     }
 
-    orderedBlocks.value.forEach(block => {
+    orderedBlocks.value.forEach((block, index) => {
       if (block.type === 'en') drawEn()
       else if (block.type === 'zh') drawZh()
+      if (index < orderedBlocks.value.length - 1) curY += cellVSpace
     })
   })
 
@@ -1122,6 +1161,10 @@ onMounted(() => {
   align-items: flex-start;
 }
 
+.print-mode-row {
+  grid-column: 1 / -1;
+}
+
 .config-wrap {
   flex: 1;
   min-width: 0;
@@ -1300,6 +1343,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   justify-content: var(--cell-align-justify);
+  gap: var(--cell-vspace, 0px);
   min-height: 0;
 }
 

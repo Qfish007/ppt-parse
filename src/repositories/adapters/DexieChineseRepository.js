@@ -147,7 +147,7 @@ export class DexieChineseRepository extends IChineseRepository {
 
   async getTagFilterRelation() {
     const result = await db.settings.get('chineseTagFilterRelation');
-    return result?.value === 'or' ? 'or' : 'and';
+    return result?.value === 'and' ? 'and' : 'or';
   }
 
   async setTagFilterRelation(relation) {

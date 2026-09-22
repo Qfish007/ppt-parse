@@ -147,7 +147,7 @@ export function useChineseStore(options) {
       note: false
     },
     // 多标签筛选关系：'and'（同时满足全部标签）/ 'or'（满足任一标签）
-    tagFilterRelation: 'and',
+    tagFilterRelation: 'or',
     _loaded: false,
 
     async load() {
