@@ -67,12 +67,7 @@
     </header>
 
     <section class="cn-toolbar">
-      <el-select v-model="searchMode" class="cn-search-mode" placeholder="搜词">
-        <el-option label="搜中文" value="word" />
-        <el-option label="搜释义" value="meaning" />
-      </el-select>
-      <el-input v-model="searchText" clearable :placeholder="searchMode === 'word' ? '搜索中文词' : '搜索释义'"
-        class="cn-search" />
+      <el-input v-model="searchText" clearable placeholder="搜索中文词" class="cn-search" />
       <el-select v-model="levelFilter" class="cn-filter" popper-class="cn-level-popper" multiple collapse-tags
         collapse-tags-tooltip clearable placeholder="按水平筛选">
         <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :class="levelClass(level.value)"
@@ -124,11 +119,15 @@
             <el-checkbox v-model="selectedWords" :value="entry.word" />
           </span>
           <span class="cn-idx">{{ indexOfWord(entry) }}</span>
-          <button class="cn-word" :class="{ 'cn-word-empty': !entry.pinyin && !entry.meaning }"
-            @click="openWordDetail(entry.word)">{{ entry.word }}</button>
+          <button class="cn-word" :class="{ 'cn-word-empty': !entry.pinyin }" @click="openWordDetail(entry.word)">{{
+            entry.word }}</button>
           <div class="cn-sound">
-            <button class="cn-sound-btn" :disabled="!entry.word" @click="playWord(entry)" title="发音">
-              <svg viewBox="0 0 24 24" width="16" height="16">
+            <button class="cn-sound-btn" :disabled="!entry.word || playingWord === entry.word" @click="playWord(entry)"
+              :title="playingWord === entry.word ? '正在获取发音…' : '发音'">
+              <el-icon v-if="playingWord === entry.word" class="is-loading cn-sound-loading">
+                <Loading />
+              </el-icon>
+              <svg v-else viewBox="0 0 24 24" width="16" height="16">
                 <path d="M8 5v14l11-7z" fill="currentColor" />
               </svg>
             </button>
@@ -170,23 +169,24 @@
         @current-change="onPageChange" />
     </section>
 
-    <!-- 手动录入弹窗：逗号分隔 -->
-    <el-dialog v-model="manualDialog.visible" title="录入词条" width="460px" class="cn-manual-dialog"
+    <!-- 手动录入弹窗：格式1逗号间隔 / 格式2标签+文本 -->
+    <el-dialog v-model="manualDialog.visible" title="录入词条" width="480px" class="cn-manual-dialog"
       :close-on-click-modal="!manualDialog.loading" :close-on-press-escape="!manualDialog.loading">
       <el-form @submit.prevent="submitManualWord" :label-width="'80px'">
         <el-form-item label="录入格式">
           <el-select v-model="manualDialog.format" size="small" :disabled="manualDialog.loading">
-            <el-option label="逗号分隔" value="comma" />
-            <el-option label="格式1(标签+文本)" value="tag" />
+            <el-option label="格式1：逗号间隔" value="comma" />
+            <el-option label="格式2：标签+文本" value="tag" />
           </el-select>
         </el-form-item>
         <el-form-item label="内容">
-          <el-input type="textarea" ref="manualInputRef" v-model="manualDialog.word"
-            :placeholder="manualDialog.format === 'comma' ? '输入中文词，用逗号分隔，支持多行；录入后会自动从百度汉语补全拼音/释义/组词/例句等字段。示例：项目,守株待兔,快乐' : '[标签1,标签2]\\n词:释义\\n词2:释义2'"
-            :rows="5" clearable :disabled="manualDialog.loading" />
+          <el-input type="textarea" ref="manualInputRef" v-model="manualDialog.word" :placeholder="manualDialog.format === 'comma'
+            ? '单词之间用逗号隔开，支持多行；录入时本地自动补全拼音。示例：蝴蝶,蜻蜓,蚂蚁'
+            : '[第2单元]\n蝴蝶:hú dié\n蜻蜓:qīng tíng\n\n标签写在方括号内，词组与拼音用冒号隔开；自带拼音直接入库，不再联网检索'" :rows="7" clearable
+            :disabled="manualDialog.loading" />
         </el-form-item>
         <el-form-item v-if="manualDialog.format === 'comma'" label="标签">
-          <el-select v-model="manualDialog.tagIds" multiple size="small" placeholder="选择标签">
+          <el-select v-model="manualDialog.tagIds" multiple size="small" placeholder="选择标签（可选）">
             <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
           </el-select>
           <div v-if="!chineseStore.tags.length" class="cn-tag-dialog-empty">暂无标签</div>
@@ -200,22 +200,20 @@
       </template>
     </el-dialog>
 
-    <input ref="importInputRef" type="file" accept=".json,.txt,.csv,.jsonl,application/json,text/plain"
-      class="hidden-input" @change="handleImport" />
+    <input ref="importInputRef" type="file" accept=".txt,.csv,text/plain" class="hidden-input" @change="handleImport" />
 
     <!-- 格式选择弹窗（导入/导出前必弹） -->
     <el-dialog v-model="formatDialog.visible" :title="formatDialog.mode === 'export' ? '选择导出格式' : '选择导入格式'"
       width="460px" class="cn-format-dialog" :close-on-click-modal="true">
       <div class="cn-format-dialog-body">
-        <el-radio-group v-model="formatDialog.selectedId">
-          <div v-for="fmt in chineseFormatList" :key="fmt.id" class="cn-format-option"
-            :class="{ 'is-selected': formatDialog.selectedId === fmt.id }" @click="formatDialog.selectedId = fmt.id">
-            <el-radio :label="fmt.id" :value="fmt.id" class="cn-format-option-radio">
-              <span class="cn-format-option-name">{{ fmt.name }}</span>
-            </el-radio>
-            <p v-if="fmt.desc" class="cn-format-option-desc">{{ fmt.desc }}</p>
+        <div v-for="fmt in chineseFormatList" :key="fmt.id" class="cn-format-option"
+          :class="{ 'is-selected': formatDialog.selectedId === fmt.id }" @click="formatDialog.selectedId = fmt.id">
+          <div class="cn-format-option-head">
+            <span class="cn-format-option-dot"></span>
+            <span class="cn-format-option-name">{{ fmt.name }}</span>
           </div>
-        </el-radio-group>
+          <p v-if="fmt.desc" class="cn-format-option-desc">{{ fmt.desc }}</p>
+        </div>
       </div>
       <template #footer>
         <el-button @click="formatDialog.visible = false">取消</el-button>
@@ -283,7 +281,7 @@
       </template>
     </el-dialog>
 
-    <!-- 统计浮窗 -->
+    <!-- 统计浮窗（和 vocabulary 页保持一致） -->
     <div v-if="chineseStore.statsVisible" ref="statsBarRef" class="cn-stats-bar"
       :class="{ 'is-dragging': statsDrag.dragging }" :style="statsBarStyle" aria-label="词条统计"
       @pointerdown="startStatsDrag">
@@ -315,12 +313,13 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { ArrowLeft, Edit, Upload, Download, Printer, List } from '@element-plus/icons-vue'
+import { ArrowLeft, Edit, Upload, Download, Printer, List, Loading } from '@element-plus/icons-vue'
 import { useChineseStore } from '../../stores/chinese.js'
 import { CHINESE_LEVELS } from '../../types/index.js'
-import { getChineseFormatList, getChineseFormat } from '../../utils/chineseFormats.js'
+import { getChineseFormatList, getChineseFormat, parseTagText } from '../../utils/chineseFormats.js'
+import { toPinyin } from '../../utils/chinesePinyin.js'
 import { clampPage, slicePage } from '../../utils/pagination.js'
-import { fetchHanyuDetail, playChineseAudio } from '../../api/hanyu/index.js'
+import { playChineseAudio } from '../../api/hanyu/index.js'
 
 const router = useRouter()
 // 懒加载：先构造 reactive 空壳，骨架渲染后再加载昂贵数据
@@ -342,7 +341,6 @@ async function runWithListLoading(fn) {
 
 // ========================== 筛选 / 排序状态 ==========================
 const searchText = ref(router.currentRoute.value.query.searchText || '')
-const searchMode = ref(router.currentRoute.value.query.searchMode || 'word')
 const levelFilter = ref((router.currentRoute.value.query.levelFilter || '').split(',').filter(Boolean))
 const tagFilter = ref((router.currentRoute.value.query.tagFilter || '').split(',').filter(Boolean))
 const sortMode = ref(router.currentRoute.value.query.sortMode || 'pinyin')
@@ -362,14 +360,7 @@ const batchDialog = reactive({
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim()
   let words = chineseStore.words.filter(entry => {
-    let matchKeyword = !keyword
-    if (keyword) {
-      if (searchMode.value === 'word') {
-        matchKeyword = entry.word.includes(keyword)
-      } else {
-        matchKeyword = String(entry.meaning || '').includes(keyword)
-      }
-    }
+    const matchKeyword = !keyword || entry.word.includes(keyword)
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
@@ -393,11 +384,10 @@ const filteredWords = computed(() => {
 })
 
 const gridTemplateColumns = computed(() => {
-  // 中文列/拼音列加宽，标签列缩窄
-  const cols = ['48px', '48px', '180px', '50px']
-  if (chineseStore.visibleColumns.pinyin) cols.push('160px')
-  cols.push('1fr') // 词条空白列以填充
-  if (chineseStore.visibleColumns.tags) cols.push('80px')
+  // 发音固定 100px，标签固定 150px，中文和拼音平分剩余
+  const cols = ['48px', '48px', '1fr', '100px']
+  if (chineseStore.visibleColumns.pinyin) cols.push('1fr')
+  if (chineseStore.visibleColumns.tags) cols.push('150px')
   if (chineseStore.visibleColumns.level) cols.push('96px')
   if (chineseStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
   cols.push('56px')
@@ -420,7 +410,6 @@ function updateRouteQuery() {
       page: page.value,
       pageSize: pageSize.value,
       searchText: searchText.value,
-      searchMode: searchMode.value,
       levelFilter: levelFilter.value.join(','),
       tagFilter: tagFilter.value.join(','),
       sortMode: sortMode.value
@@ -457,8 +446,8 @@ watch(() => chineseStore.activeBookId, (newId, oldId) => {
 
 onMounted(() => {
   runWithListLoading(() => chineseStore.ensureLoaded()).then(() => {
-    // 后台补全缺拼音的存量词条，不阻塞列表
-    backfillMissingEntries()
+    // 本地拼音库补全缺拼音的存量词条（纯本地计算，不联网、不抓详情）
+    backfillMissingPinyin()
   })
 })
 
@@ -483,7 +472,7 @@ const manualDialog = ref({
 const formatDialog = ref({
   visible: false,
   mode: 'import',
-  selectedId: 'default'
+  selectedId: 'comma'
 })
 const tagDialog = ref({
   visible: false,
@@ -565,9 +554,19 @@ function indexOfWord(entry) {
   return idx >= 0 ? idx + 1 : ''
 }
 
+// 列表播放：只检索发音（TTS）并朗读，不抓取释义等其他数据
+const playingWord = ref('')
+
 async function playWord(entry) {
-  if (!entry?.word) return
-  await playChineseAudio(entry.word)
+  if (!entry?.word || playingWord.value) return
+  playingWord.value = entry.word
+  try {
+    await playChineseAudio(entry.word)
+  } catch {
+    // 发音失败静默处理（playChineseAudio 内部已有兜底）
+  } finally {
+    playingWord.value = ''
+  }
 }
 
 function openWordDetail(word) {
@@ -659,90 +658,46 @@ async function submitManualWord() {
     return
   }
 
+  // 统一解析为 { word, pinyin, tagIds }
   let wordEntries = []
   if (manualDialog.value.format === 'comma') {
-    // 中文逗号或英文逗号或换行分隔
+    // 格式1：逗号间隔（兼容中文逗号与换行），无拼音，本地即时补全
     const words = input.split(/[,，\n\r]+/).map(w => String(w || '').trim()).filter(Boolean)
     if (!words.length) {
-      ElMessage.warning('没有有效的词条，请输入中文词，用逗号分隔')
+      ElMessage.warning('没有有效的词条，请输入中文词，用逗号隔开')
       return
     }
-    // 去重
     const seen = new Set()
-    wordEntries = words.filter(w => {
-      if (seen.has(w)) return false
-      seen.add(w)
-      return true
-    }).map(word => ({ word, tagIds: manualDialog.value.tagIds }))
+    for (const word of words) {
+      if (seen.has(word)) continue
+      seen.add(word)
+      wordEntries.push({
+        word,
+        pinyin: toPinyin(word), // 只检索拼音，释义/组词/例句等其他数据一律不检索
+        tagIds: [...manualDialog.value.tagIds]
+      })
+    }
   } else {
-    // 标签+文本格式：[标签1,标签2]\n词:释义
-    wordEntries = await parseTagTextFormat(input)
+    // 格式2：[标签]\n词组:拼音 —— 自带拼音直接入库，不做任何检索（即使没拼音也不检索）
+    wordEntries = await resolveTagTextEntries(input)
     if (!wordEntries.length) {
-      ElMessage.warning('未解析到有效的词条，请使用 [标签1,标签2]\\n词:释义 格式')
+      ElMessage.warning('未解析到有效的词条，请使用 [标签]\\n词组:拼音 格式')
       return
     }
   }
 
   manualDialog.value.loading = true
+  let successCount = 0
+  let failedCount = 0
   try {
-    let successCount = 0
-    let partialCount = 0  // 入库但百度汉语查不到，字段留空
-    let failedCount = 0
     for (const entry of wordEntries) {
       try {
-        // 先入库（保证用户输入的词被记录，即使百度汉语查不到）
         await chineseStore.addWord({
           word: entry.word,
-          meaning: entry.meaning || '',
-          tagIds: entry.tagIds.length ? entry.tagIds : manualDialog.value.tagIds
+          pinyin: entry.pinyin || '',
+          tagIds: entry.tagIds
         })
-
-        // 检查缓存
-        const cached = await chineseStore.getHanyuCache(entry.word)
-        if (cached && (cached.pinyin || cached.meaning)) {
-          await chineseStore.updateWord(entry.word, {
-            pinyin: cached.pinyin,
-            meaning: cached.meaning,
-            cihui: cached.cihui,
-            liju: cached.liju,
-            idiomStory: cached.idiomStory,
-            synonyms: cached.synonyms,
-            antonyms: cached.antonyms,
-            sameMeaningDiffForm: cached.sameMeaningDiffForm,
-            chuchu: cached.chuchu,
-            yinzhen: cached.yinzhen
-          })
-          successCount++
-          continue
-        }
-
-        // 调用百度汉语补全字段
-        try {
-          const data = await fetchHanyuDetail(entry.word)
-          if (data) {
-            await chineseStore.updateWord(entry.word, {
-              pinyin: data.pinyin || '',
-              meaning: data.meaning || '',
-              cihui: data.cihui || '',
-              liju: data.liju || '',
-              idiomStory: data.idiomStory || '',
-              synonyms: data.synonyms || '',
-              antonyms: data.antonyms || '',
-              sameMeaningDiffForm: data.sameMeaningDiffForm || '',
-              chuchu: data.chuchu || '',
-              yinzhen: data.yinzhen || ''
-            })
-            // 写入缓存表
-            await chineseStore.setHanyuCache({ word: entry.word, ...data })
-            successCount++
-          } else {
-            // 百度汉语查不到该词，仍然入库但字段留空
-            partialCount++
-          }
-        } catch (err) {
-          console.warn(`抓取词条「${entry.word}」失败:`, err)
-          partialCount++
-        }
+        successCount++
       } catch (err) {
         console.warn(`录入词条「${entry.word}」失败:`, err)
         failedCount++
@@ -750,16 +705,10 @@ async function submitManualWord() {
     }
 
     manualDialog.value.visible = false
-    const parts = []
-    if (successCount) parts.push(`已补全 ${successCount} 个`)
-    if (partialCount) parts.push(`${partialCount} 个待补全`)
-    if (failedCount) parts.push(`${failedCount} 个失败`)
-    if (parts.length === 1 && successCount === wordEntries.length) {
+    if (failedCount === 0) {
       ElMessage.success(`已录入 ${successCount} 个词条`)
-    } else if (parts.length) {
-      ElMessage.success(`录入完成：${parts.join('，')}`)
     } else {
-      ElMessage.error('所有词条录入失败')
+      ElMessage.success(`录入完成：成功 ${successCount} 个，失败 ${failedCount} 个`)
     }
   } catch (error) {
     ElMessage.error(`录入失败：${error.message || '请稍后重试'}`)
@@ -768,41 +717,19 @@ async function submitManualWord() {
   }
 }
 
-async function parseTagTextFormat(text) {
-  const lines = text.split(/\r?\n/)
-  const entries = []
-  const tagNameMap = new Map()
-  let currentTagIds = []
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) continue
-
-    const tagMatch = trimmed.match(/^\[(.+)\]$/)
-    if (tagMatch) {
-      const tagNames = tagMatch[1].split(',').map(n => n.trim()).filter(Boolean)
-      currentTagIds = []
-      for (const tagName of tagNames) {
-        if (!tagNameMap.has(tagName)) {
-          const tag = await chineseStore.addTag(tagName)
-          if (tag) tagNameMap.set(tagName, tag.id)
-        }
-        const tagId = tagNameMap.get(tagName)
-        if (tagId) currentTagIds.push(tagId)
-      }
-      continue
-    }
-
-    const colonIdx = trimmed.indexOf(':')
-    if (colonIdx > 0) {
-      const word = String(trimmed.substring(0, colonIdx)).trim()
-      const meaning = String(trimmed.substring(colonIdx + 1)).trim()
-      if (word) {
-        entries.push({ word, meaning, tagIds: [...currentTagIds] })
-      }
-    }
+// 将「标签+文本」解析结果中的标签名解析为当前生词本的真实标签 id
+async function resolveTagTextEntries(text) {
+  const { words, tagNames } = parseTagText(text)
+  const tagNameToId = new Map()
+  for (const name of tagNames) {
+    const tag = await chineseStore.addTag(name)
+    if (tag) tagNameToId.set(name, tag.id)
   }
-  return entries
+  return words.map(item => ({
+    word: item.word,
+    pinyin: item.pinyin,
+    tagIds: item.tagNames.map(name => tagNameToId.get(name)).filter(Boolean)
+  }))
 }
 
 // ========================== 批量 ==========================
@@ -898,7 +825,7 @@ function openFormatDialog(mode) {
   formatDialog.value = {
     visible: true,
     mode,
-    selectedId: 'default'
+    selectedId: 'comma'
   }
 }
 
@@ -930,17 +857,24 @@ async function handleImport(event) {
     const text = await file.text()
     const { words, tags } = fmt.deserialize(text)
 
-    // 先导入标签，拿到 tagIdMap
+    // 先导入标签，拿到 tagIdMap（格式2 标签在文本内）
     let tagIdMap = new Map()
     if (Array.isArray(tags) && tags.length) {
       const r = await chineseStore.importTags(tags)
       tagIdMap = r.tagIdMap
     }
     const count = await chineseStore.importWords(words, 'active', tagIdMap)
-    ElMessage.success(`已导入 ${count} 个词条，正在后台补全拼音释义…`)
 
-    // 后台补全缺拼音的词条（带 skip 机制，不阻塞 UI）
-    backfillMissingEntries()
+    // 格式1：没有拼音，本地拼音库批量补全（不联网、不抓其他数据）
+    // 格式2：自带拼音直接使用，即使没有拼音也不检索
+    if (fmt.id === 'comma') {
+      const items = words
+        .map(w => ({ word: w.word, pinyin: toPinyin(w.word) }))
+        .filter(item => item.pinyin)
+      await chineseStore.batchFillPinyin(items)
+    }
+
+    ElMessage.success(`已导入 ${count} 个词条`)
   } catch (err) {
     ElMessage.error(`导入失败：${err.message || '请检查文件格式'}`)
   } finally {
@@ -949,64 +883,17 @@ async function handleImport(event) {
   }
 }
 
-// 用百度汉语（优先本地缓存）补全单个词条字段，返回是否补全成功
-async function fillEntryFromHanyu(entry) {
-  const cached = await chineseStore.getHanyuCache(entry.word)
-  if (cached && (cached.pinyin || cached.meaning)) {
-    await chineseStore.updateWord(entry.word, {
-      pinyin: cached.pinyin,
-      meaning: cached.meaning,
-      cihui: cached.cihui,
-      liju: cached.liju,
-      idiomStory: cached.idiomStory,
-      synonyms: cached.synonyms,
-      antonyms: cached.antonyms,
-      sameMeaningDiffForm: cached.sameMeaningDiffForm,
-      chuchu: cached.chuchu,
-      yinzhen: cached.yinzhen
-    })
-    return true
-  }
-  const data = await fetchHanyuDetail(entry.word)
-  if (!data) return false
-  await chineseStore.updateWord(entry.word, {
-    pinyin: data.pinyin || '',
-    meaning: data.meaning || '',
-    cihui: data.cihui || '',
-    liju: data.liju || '',
-    idiomStory: data.idiomStory || '',
-    synonyms: data.synonyms || '',
-    antonyms: data.antonyms || '',
-    sameMeaningDiffForm: data.sameMeaningDiffForm || '',
-    chuchu: data.chuchu || '',
-    yinzhen: data.yinzhen || ''
-  })
-  await chineseStore.setHanyuCache({ word: entry.word, ...data })
-  return true
-}
-
-// 列表加载后自动补全缺拼音的存量词条；
-// 每个词条每个浏览器会话最多尝试一次，百度汉语确实查不到的词不反复打扰后端
-const HANYU_SKIP_KEY = 'cn-hanyu-backfill-skipped'
-
-async function backfillMissingEntries() {
-  let skipped = []
-  try { skipped = JSON.parse(sessionStorage.getItem(HANYU_SKIP_KEY) || '[]') } catch { skipped = [] }
-  const skipSet = new Set(Array.isArray(skipped) ? skipped : [])
-  const entries = chineseStore.words.filter(w => !w.pinyin && !skipSet.has(w.word))
-  for (const entry of entries) {
-    let ok = false
-    try {
-      ok = await fillEntryFromHanyu(entry)
-    } catch (err) {
-      console.warn(`自动补全词条「${entry.word}」失败:`, err)
-    }
-    if (ok) {
-      skipSet.delete(entry.word)
-    } else {
-      skipSet.add(entry.word)
-    }
-    try { sessionStorage.setItem(HANYU_SKIP_KEY, JSON.stringify([...skipSet])) } catch { /* ignore */ }
+// 本地拼音库补全缺拼音的存量词条（含历史数据）；纯本地计算，单次落库，不联网、不抓详情
+async function backfillMissingPinyin() {
+  const items = chineseStore.words
+    .filter(w => !w.pinyin)
+    .map(w => ({ word: w.word, pinyin: toPinyin(w.word) }))
+    .filter(item => item.pinyin)
+  if (!items.length) return
+  try {
+    await chineseStore.batchFillPinyin(items)
+  } catch (err) {
+    console.warn('本地补全拼音失败：', err)
   }
 }
 
@@ -1197,6 +1084,11 @@ function doExport(formatId) {
   cursor: not-allowed;
 }
 
+.cn-sound-loading {
+  font-size: 16px;
+  color: #b8480f;
+}
+
 .cn-pinyin-head,
 .cn-pinyin {
   font-size: 14px;
@@ -1342,13 +1234,23 @@ function doExport(formatId) {
 }
 
 /* 格式选择弹窗 */
+.cn-format-dialog-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .cn-format-option {
-  padding: 12px 14px;
-  border: 1px solid #f0d8b8;
+  padding: 14px 16px;
+  border: 1px solid #e5d5bd;
   border-radius: 10px;
-  margin-bottom: 8px;
+  background: #fffdfa;
   cursor: pointer;
   transition: all 160ms ease;
+}
+
+.cn-format-option:hover {
+  border-color: #d9a667;
 }
 
 .cn-format-option.is-selected {
@@ -1356,15 +1258,43 @@ function doExport(formatId) {
   background: #fef6ec;
 }
 
+.cn-format-option-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cn-format-option-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #c9a478;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.cn-format-option.is-selected .cn-format-option-dot {
+  border-color: #d97706;
+}
+
+.cn-format-option.is-selected .cn-format-option-dot::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border-radius: 50%;
+  background: #d97706;
+}
+
 .cn-format-option-name {
   font-weight: 700;
   color: #1c1408;
+  font-size: 14px;
 }
 
 .cn-format-option-desc {
   font-size: 12px;
   color: #8b6645;
-  margin: 4px 0 0;
+  margin: 6px 0 0 24px;
 }
 
 /* 批量弹窗 */
@@ -1414,66 +1344,96 @@ function doExport(formatId) {
   font-weight: 700;
 }
 
-/* 统计浮窗 */
+/* 统计浮窗（与 vocabulary 页完全一致） */
 .cn-stats-bar {
   position: fixed;
-  right: 24px;
-  bottom: 24px;
+  top: 50%;
+  right: 18px;
+  z-index: 1200;
   display: flex;
-  gap: 14px;
-  padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #f0d8b8;
-  border-radius: 14px;
-  box-shadow: 0 10px 30px rgba(184, 72, 15, 0.18);
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  max-width: calc(100vw - 24px);
+  padding: 7px;
+  border: 1px solid rgba(207, 217, 214, 0.85);
+  border-radius: 15px;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 12px 32px rgba(22, 32, 31, 0.18);
+  backdrop-filter: blur(16px);
+  color: #40504c;
   cursor: grab;
+  text-align: center;
+  transform: translateY(-50%);
   user-select: none;
-  z-index: 100;
+  touch-action: none;
 }
 
 .cn-stats-bar.is-dragging {
   cursor: grabbing;
-  box-shadow: 0 14px 36px rgba(184, 72, 15, 0.28);
+  box-shadow: 0 22px 60px rgba(22, 32, 31, 0.26);
 }
 
 .cn-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  min-width: 44px;
+  --stat-color: #40504c;
+  --stat-bg: #f4f7f6;
+  --stat-border: #d7dfdc;
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 5px;
+  min-width: 48px;
+  padding: 7px 7px 6px;
+  border: 1px solid var(--stat-border);
+  border-radius: 11px;
+  background: linear-gradient(180deg, #ffffff 0%, var(--stat-bg) 100%);
+  box-shadow: 0 5px 13px rgba(22, 32, 31, 0.08);
+  color: var(--stat-color) !important;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .cn-stat-label {
-  font-size: 11px;
-  color: #8b6645;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
 }
 
 .cn-stat-value {
-  font-size: 20px;
+  display: grid;
+  place-items: center;
+  min-width: 32px;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--stat-color);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+  color: #fff;
+  font-size: 16px;
   font-weight: 900;
-  color: #1c1408;
 }
 
-.cn-stat.cn-stat-total .cn-stat-value {
-  color: #b8480f;
+.cn-stat.cn-stat-total {
+  --stat-color: #16201f;
+  --stat-bg: #eef2f1;
+  --stat-border: #cfd9d6;
+  color: #16201f;
 }
 
-.cn-stat.level-unknown .cn-stat-value {
-  color: #f56c6c;
+.cn-stat.level-unknown {
+  --stat-color: #f56c6c;
 }
 
-.cn-stat.level-learning .cn-stat-value {
-  color: #409eff;
+.cn-stat.level-learning {
+  --stat-color: #409eff;
 }
 
-.cn-stat.level-mastered .cn-stat-value {
-  color: #e6a23c;
+.cn-stat.level-mastered {
+  --stat-color: #e6a23c;
 }
 
-.cn-stat.level-familiar .cn-stat-value {
-  color: #67c23a;
+.cn-stat.level-familiar {
+  --stat-color: #67c23a;
 }
 
 .hidden-input {
@@ -1486,7 +1446,6 @@ function doExport(formatId) {
     align-items: stretch;
   }
 
-  .cn-search-mode,
   .cn-filter,
   .cn-tag-filter,
   .cn-sort {
@@ -1495,6 +1454,24 @@ function doExport(formatId) {
 
   .cn-title {
     font-size: 18px;
+  }
+
+  .cn-stats-bar {
+    right: 12px;
+    gap: 5px;
+    padding: 5px;
+    border-radius: 12px;
+  }
+
+  .cn-stat {
+    min-width: 40px;
+    padding: 5px;
+  }
+
+  .cn-stat-value {
+    min-width: 28px;
+    min-height: 18px;
+    font-size: 14px;
   }
 }
 </style>

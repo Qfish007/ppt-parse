@@ -38,7 +38,7 @@
           </div>
           <div v-if="chineseStore.visibleColumns.pinyin" class="cn-hero-pinyin">
             <span class="cn-hero-pinyin-label">拼音</span>
-            <span class="cn-hero-pinyin-text">{{ entry.pinyin || '暂无拼音' }}</span>
+            <span class="cn-hero-pinyin-text">{{ heroPinyin || '暂无拼音' }}</span>
             <span class="cn-hero-pinyin-hint">（可在右侧编辑修改）</span>
           </div>
           <div class="cn-hero-thirdparty">
@@ -92,18 +92,21 @@
         </div>
       </section>
 
-      <!-- 百度汉语全字段 -->
+      <!-- 百度汉语全字段：仅在点击播放/刷新后实时抓取，不做本地缓存 -->
       <div v-if="refreshing" class="cn-fetch-hint">
         <el-icon class="is-loading">
           <Loading />
         </el-icon>
-        正在从百度汉语抓取最新数据，请稍候…
+        正在从百度汉语抓取发音与完整数据，请稍候…
+      </div>
+      <div v-else-if="!remoteDetail" class="cn-fetch-hint cn-fetch-idle">
+        点击上方播放或刷新按钮，从百度汉语获取发音与释义、组词、例句等完整数据（详情数据不做本地缓存）。
       </div>
 
       <section class="cn-detail-grid">
         <div class="cn-card cn-section cn-section-meaning">
           <div class="cn-section-title">基本释义</div>
-          <div class="cn-section-content cn-meaning-text">{{ entry.meaning || '暂无基本释义，可点击右上角刷新按钮重新抓取。' }}</div>
+          <div class="cn-section-content cn-meaning-text">{{ view.meaning || '暂无基本释义，点击上方播放或刷新按钮从百度汉语获取。' }}</div>
         </div>
 
         <div class="cn-card cn-section">
@@ -134,38 +137,38 @@
           </div>
         </div>
 
-        <div v-if="entry.idiomStory" class="cn-card cn-section cn-section-story">
+        <div v-if="view.idiomStory" class="cn-card cn-section cn-section-story">
           <div class="cn-section-title">成语故事</div>
-          <div class="cn-section-content cn-paragraph">{{ entry.idiomStory }}</div>
+          <div class="cn-section-content cn-paragraph">{{ view.idiomStory }}</div>
         </div>
 
-        <div v-if="entry.synonyms || entry.antonyms" class="cn-card cn-section cn-section-syn">
+        <div v-if="view.synonyms || view.antonyms" class="cn-card cn-section cn-section-syn">
           <div class="cn-section-title">近反义词</div>
           <div class="cn-section-content cn-syn-grid">
             <div class="cn-syn-row">
               <span class="cn-syn-label cn-syn-label-syn">近义词</span>
-              <span class="cn-syn-text">{{ entry.synonyms || '—' }}</span>
+              <span class="cn-syn-text">{{ view.synonyms || '—' }}</span>
             </div>
             <div class="cn-syn-row">
               <span class="cn-syn-label cn-syn-label-ant">反义词</span>
-              <span class="cn-syn-text">{{ entry.antonyms || '—' }}</span>
+              <span class="cn-syn-text">{{ view.antonyms || '—' }}</span>
             </div>
           </div>
         </div>
 
-        <div v-if="entry.sameMeaningDiffForm" class="cn-card cn-section">
+        <div v-if="view.sameMeaningDiffForm" class="cn-card cn-section">
           <div class="cn-section-title">同义异形</div>
-          <div class="cn-section-content cn-paragraph">{{ entry.sameMeaningDiffForm }}</div>
+          <div class="cn-section-content cn-paragraph">{{ view.sameMeaningDiffForm }}</div>
         </div>
 
-        <div v-if="entry.chuchu || entry.yinzhen" class="cn-card cn-section cn-section-source">
-          <div v-if="entry.chuchu" class="cn-source-block">
+        <div v-if="view.chuchu || view.yinzhen" class="cn-card cn-section cn-section-source">
+          <div v-if="view.chuchu" class="cn-source-block">
             <div class="cn-section-title cn-section-title-sm">出处</div>
-            <div class="cn-section-content cn-paragraph">{{ entry.chuchu }}</div>
+            <div class="cn-section-content cn-paragraph">{{ view.chuchu }}</div>
           </div>
-          <div v-if="entry.yinzhen" class="cn-source-block">
+          <div v-if="view.yinzhen" class="cn-source-block">
             <div class="cn-section-title cn-section-title-sm">引证</div>
-            <div class="cn-section-content cn-paragraph">{{ entry.yinzhen }}</div>
+            <div class="cn-section-content cn-paragraph">{{ view.yinzhen }}</div>
           </div>
         </div>
       </section>
@@ -202,6 +205,24 @@ const entry = computed(() =>
   chineseStore.words.find(item => item.word === word.value) || null
 )
 
+// 百度汉语完整数据：仅在点击播放/刷新后实时抓取，只保存在组件内存中，不做本地缓存
+const remoteDetail = ref(null)
+
+// 展示数据：远程实时数据覆盖本地字段（本地仅长期保存 word/pinyin/标签/水平/备注）
+const view = computed(() => {
+  if (!entry.value) return null
+  return { ...entry.value, ...(remoteDetail.value || {}) }
+})
+
+const heroPinyin = computed(
+  () => remoteDetail.value?.pinyin || entry.value?.pinyin || ''
+)
+
+// 切换词条时丢弃上一个词的实时数据，重新抓取
+watch(word, () => {
+  remoteDetail.value = null
+})
+
 const entryTags = computed(() => {
   if (!entry.value?.tagIds?.length) return []
   return chineseStore.tags.filter(tag => entry.value.tagIds.includes(tag.id))
@@ -233,14 +254,14 @@ watch(entry, (val) => {
 }, { immediate: true })
 
 const cihuiList = computed(() =>
-  String(entry.value?.cihui || '')
+  String(view.value?.cihui || '')
     .split(/[、；;]+/)
     .map(s => s.trim())
     .filter(Boolean)
 )
 
 const lijuList = computed(() =>
-  String(entry.value?.liju || '')
+  String(view.value?.liju || '')
     .split(/\r?\n+/)
     .map(s => s.trim())
     .filter(Boolean)
@@ -258,8 +279,17 @@ function goBack() {
   }
 }
 
+// 详情页播放：先检索发音与其他所有数据（本会话已抓取过则直接朗读），然后朗读
 async function playWord() {
-  if (!entry.value?.word) return
+  if (!entry.value?.word || refreshing.value) return
+  if (!remoteDetail.value) {
+    const ok = await loadFullDetail()
+    if (!ok) {
+      // 百度汉语未收录也不影响 TTS 朗读
+      await playChineseAudio(entry.value.word)
+      return
+    }
+  }
   await playChineseAudio(entry.value.word)
 }
 
@@ -285,29 +315,33 @@ async function saveEdit() {
 
 async function refreshFromHanyu() {
   if (!entry.value?.word || refreshing.value) return
+  await loadFullDetail({ force: true })
+}
+
+/**
+ * 从百度汉语抓取发音对应的完整词条数据
+ * - 每次点击播放/刷新都实时抓取，不读缓存、不写缓存
+ * - 拼音是本地核心字段（列表排序/打印依赖），抓取后更新本地
+ * - 释义/组词/例句/成语故事/近反义词/出处/引证等其他数据仅放在组件内存展示，不做本地缓存
+ */
+async function loadFullDetail() {
   refreshing.value = true
   try {
     const data = await fetchHanyuDetail(entry.value.word, { force: true })
     if (!data) {
-      ElMessage.warning('百度汉语暂未收录该词，字段保持原样')
-      return
+      ElMessage.warning('百度汉语暂未收录该词，无法获取完整数据')
+      return false
     }
-    await chineseStore.updateWord(entry.value.word, {
-      pinyin: data.pinyin || '',
-      meaning: data.meaning || '',
-      cihui: data.cihui || '',
-      liju: data.liju || '',
-      idiomStory: data.idiomStory || '',
-      synonyms: data.synonyms || '',
-      antonyms: data.antonyms || '',
-      sameMeaningDiffForm: data.sameMeaningDiffForm || '',
-      chuchu: data.chuchu || '',
-      yinzhen: data.yinzhen || ''
-    })
-    await chineseStore.setHanyuCache({ word: entry.value.word, ...data })
-    ElMessage.success('已从百度汉语更新词条数据')
+    remoteDetail.value = data
+    if (data.pinyin && data.pinyin !== entry.value.pinyin) {
+      await chineseStore.updateWord(entry.value.word, { pinyin: data.pinyin })
+      editPinyin.value = data.pinyin
+    }
+    ElMessage.success('已从百度汉语获取完整数据')
+    return true
   } catch (err) {
     ElMessage.error(`抓取失败：${err.message || '请稍后重试'}`)
+    return false
   } finally {
     refreshing.value = false
   }
@@ -361,6 +395,12 @@ async function refreshFromHanyu() {
   border-radius: 12px;
   color: #b8480f;
   font-size: 14px;
+}
+
+.cn-fetch-idle {
+  background: #faf6f0;
+  border-color: #e8dccb;
+  color: #8b6645;
 }
 
 .cn-detail-loading {

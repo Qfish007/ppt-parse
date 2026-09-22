@@ -535,6 +535,37 @@ export function useChineseStore(options) {
       return count;
     },
 
+    // 本地拼音库批量补拼音：只更新拼音字段，单次落库（供格式1录入/导入后调用）
+    async batchFillPinyin(items) {
+      const book = this.getActiveBook();
+      if (!book) return 0;
+      const pinyinMap = new Map();
+      for (const item of (Array.isArray(items) ? items : [])) {
+        const word = normalizeWord(item?.word);
+        const pinyin = normalizePinyin(item?.pinyin);
+        if (word && pinyin) pinyinMap.set(word, pinyin);
+      }
+      if (!pinyinMap.size) return 0;
+
+      let changed = 0;
+      const now = Date.now();
+      for (const entry of book.words) {
+        const pinyin = pinyinMap.get(entry.word);
+        if (pinyin && pinyin !== entry.pinyin) {
+          entry.pinyin = pinyin;
+          entry.updatedAt = now;
+          changed += 1;
+        }
+      }
+      if (changed > 0) {
+        book.updatedAt = now;
+        book.words = sortByPinyin(book.words);
+        this.syncActiveBook();
+        await this.save();
+      }
+      return changed;
+    },
+
     async importTags(tags) {
       const book = this.getActiveBook();
       if (!book) return { count: 0, tagIdMap: new Map() };

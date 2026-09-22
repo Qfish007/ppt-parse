@@ -11,16 +11,15 @@
         <div>
           <h2 class="cn-print-title">中文练习打印</h2>
           <p class="cn-print-subtitle">
-            {{ activeBookName }} · 可打印 {{ availableWords.length }} 个词条 ·
-            流式排版 · 共 {{ printPages.length }} 页
+            {{ activeBookName }} · {{ subtitleModeHint }} · 共 {{ printPages.length }} 页
           </p>
         </div>
       </div>
-      <el-button type="primary" :disabled="!printPages.length" class="cn-print-do" @click="doPrint">
+      <el-button type="primary" :disabled="!printPages.length" class="cn-print-do" @click="doExportPdf">
         <el-icon>
-          <Printer />
+          <Download />
         </el-icon>
-        打印 / 导出PDF
+        导出PDF
       </el-button>
     </header>
 
@@ -90,6 +89,7 @@
                   <div>• space：中文与拼音的上下间距（px）</div>
                   <div>• h-space：单词之间的水平间距（px）</div>
                   <div>• v-space：换行后单词之间的垂直间距（px）</div>
+                  <div>• mode：打印模式（0默认/1练字/2自由）</div>
                   <div class="cn-help-tip">流式排版：单词按内容宽度排列，末尾放不下时自动换行</div>
                   <div class="cn-help-tip">grid 可用数字 0-6 或名称：无/米/田/口/横/三/四</div>
                 </div>
@@ -116,48 +116,82 @@
 
     <!-- 打印内容区：A4 分页 -->
     <div v-else id="cnPrintContent">
-      <div v-for="(page, pageIdx) in printPages" :key="pageIdx" class="cn-a4-page" :style="pageStyle">
+      <div v-for="(page, pageIdx) in printPages" :key="pageIdx" class="cn-a4-page"
+        :class="'cn-print-mode-' + safePrintMode" :style="pageStyle">
         <div class="cn-a4-header">
           <span class="cn-a4-title">{{ headerTitle }}</span>
           <span class="cn-a4-info">生词本：{{ activeBookName }}</span>
+          <span class="cn-a4-info">模式：【{{ modeName }}】</span>
           <span class="cn-a4-info">标签：【{{ selectedTagNames }}】</span>
           <span class="cn-a4-info">水平：【{{ selectedLevelLabels }}】</span>
           <span class="cn-a4-page-no">第 {{ pageIdx + 1 }} / {{ printPages.length }} 页</span>
         </div>
         <div class="cn-a4-body">
-          <div v-for="item in page" :key="item.idx" class="cn-word-cell" :style="{ width: item.width + 'px' }">
-            <div class="cn-cell-content" :style="contentAlignStyle">
-              <template v-for="block in orderedBlocks" :key="block.type">
-                <!-- 中文 block：只显示一遍 -->
-                <div v-if="block.type === 'zh'" class="cn-block cn-block-zh">
-                  <div class="cn-zh-row" :style="{ height: layout.charGridSize + 'px' }">
-                    <div v-for="(char, ci) in charsOf(item.entry)" :key="ci" class="cn-char-cell"
-                      :class="'grid-' + safeChineseGrid"
-                      :style="{ width: layout.charGridSize + 'px', height: layout.charGridSize + 'px' }">
-                      <span class="cn-gl cn-gl-h"></span>
-                      <span class="cn-gl cn-gl-v"></span>
-                      <span class="cn-gl cn-gl-d1"></span>
-                      <span class="cn-gl cn-gl-d2"></span>
-                      <span class="cn-gl cn-gl-h13"></span>
-                      <span class="cn-gl cn-gl-h23"></span>
-                      <span class="cn-gl cn-gl-h14"></span>
-                      <span class="cn-gl cn-gl-h34"></span>
-                      <span v-if="safeChineseShow" class="cn-char-text" :style="{ fontSize: safeChineseFont + 'px' }">{{
-                        char }}</span>
+          <!-- 真实单词 cell（默认模式 / 练字模式的第 1 个） -->
+          <template v-for="(item, i) in page" :key="(item.type || 'word') + '-' + (item.idx ?? i)">
+            <div v-if="item.type === 'word'" class="cn-word-cell" :style="{ width: item.width + 'px' }">
+              <div class="cn-cell-content" :style="contentAlignStyle">
+                <template v-for="block in printBlocks" :key="block.type">
+                  <!-- 中文 block：只显示一遍 -->
+                  <div v-if="block.type === 'zh'" class="cn-block cn-block-zh">
+                    <div class="cn-zh-row" :style="{ height: gridSizeOf(item) + 'px' }">
+                      <div v-for="(char, ci) in charsOf(item.entry)" :key="ci" class="cn-char-cell"
+                        :class="'grid-' + safeChineseGrid" :style="gridCellStyle(item)">
+                        <span class="cn-gl cn-gl-h"></span>
+                        <span class="cn-gl cn-gl-v"></span>
+                        <span class="cn-gl cn-gl-d1"></span>
+                        <span class="cn-gl cn-gl-d2"></span>
+                        <span class="cn-gl cn-gl-h13"></span>
+                        <span class="cn-gl cn-gl-h23"></span>
+                        <span class="cn-gl cn-gl-h14"></span>
+                        <span class="cn-gl cn-gl-h34"></span>
+                        <span v-if="safeChineseShow" class="cn-char-text"
+                          :style="{ fontSize: safeChineseFont + 'px' }">{{
+                            char }}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-                <!-- 拼音 block：只显示一遍 -->
-                <div v-else-if="block.type === 'pinyin'" class="cn-block cn-block-pinyin">
-                  <div class="cn-pinyin-row" :class="'pgrid-' + safePinyinGrid"
-                    :style="{ height: layout.pinyinLineH + 'px' }">
-                    <span v-if="safePinyinShow" class="cn-pinyin-text" :style="{ fontSize: safePinyinFont + 'px' }">{{
-                      item.entry.pinyin || '' }}</span>
+                  <!-- 拼音 block：只显示一遍 -->
+                  <div v-else-if="block.type === 'pinyin'" class="cn-block cn-block-pinyin">
+                    <div class="cn-pinyin-row" :class="'pgrid-' + safePinyinGrid"
+                      :style="{ height: layout.pinyinLineH + 'px' }">
+                      <span v-if="safePinyinShow" class="cn-pinyin-text" :style="{ fontSize: safePinyinFont + 'px' }">{{
+                        item.entry.pinyin || '' }}</span>
+                    </div>
                   </div>
-                </div>
-              </template>
+                </template>
+              </div>
             </div>
-          </div>
+            <!-- 空 cell：练字模式=与例词同字数的空格组；自由模式=整行共边空格 -->
+            <div v-else-if="item.type === 'empty'" class="cn-word-cell cn-empty-cell"
+              :class="{ 'is-fill-row': item.fill }" :style="{ width: item.width + 'px' }">
+              <div class="cn-cell-content" :style="contentAlignStyle">
+                <template v-for="block in printBlocks" :key="'e-' + block.type">
+                  <div v-if="block.type === 'zh'" class="cn-block cn-block-zh">
+                    <div class="cn-zh-row" :style="{ height: gridSizeOf(item) + 'px' }">
+                      <div v-for="n in (item.charCount || 1)" :key="n" class="cn-char-cell"
+                        :class="['grid-' + safeChineseGrid, { 'is-fill': item.fill }]" :style="gridCellStyle(item)">
+                        <span class="cn-gl cn-gl-h"></span>
+                        <span class="cn-gl cn-gl-v"></span>
+                        <span class="cn-gl cn-gl-d1"></span>
+                        <span class="cn-gl cn-gl-d2"></span>
+                        <span class="cn-gl cn-gl-h13"></span>
+                        <span class="cn-gl cn-gl-h23"></span>
+                        <span class="cn-gl cn-gl-h14"></span>
+                        <span class="cn-gl cn-gl-h34"></span>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else-if="block.type === 'pinyin'" class="cn-block cn-block-pinyin">
+                    <div class="cn-pinyin-row" :class="'pgrid-' + safePinyinGrid"
+                      :style="{ height: layout.pinyinLineH + 'px' }"></div>
+                  </div>
+                </template>
+              </div>
+            </div>
+            <!-- 逻辑行强制换行（练字模式） -->
+            <div v-else class="cn-line-break" aria-hidden="true"></div>
+          </template>
         </div>
       </div>
     </div>
@@ -167,9 +201,11 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Printer, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowLeft, Download, QuestionFilled } from '@element-plus/icons-vue'
 import { useChineseStore } from '../../stores/chinese.js'
 import { CHINESE_LEVELS } from '../../types/index.js'
+import html2canvas from 'html2canvas'
+import jsPDF from 'jspdf'
 
 const router = useRouter()
 const chineseStore = useChineseStore({ lazy: true })
@@ -189,7 +225,7 @@ const presetColors = ['#d4a0a0', '#4a90d9', '#8a8a8a', '#d97706']
 const DEFAULT_CONFIG_TEXT = `页面设置:H=20,V=30;
 中文设置:font=22;row=2;show=1;pos=3;grid=1
 拼音设置:font=18;row=1;show=1;pos=2;grid=0
-单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:50;v-space:20`
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:50;v-space:20;mode=0`
 
 const DEFAULTS = {
   pagePaddingH: 20,
@@ -214,6 +250,7 @@ const DEFAULTS = {
   cellSpace: 10,
   wordHSpace: 50,
   wordVSpace: 20,
+  printMode: 0,
 }
 
 const RANGES = {
@@ -234,6 +271,7 @@ const RANGES = {
   cellSpace: { min: 0, max: 100 },
   wordHSpace: { min: 0, max: 200 },
   wordVSpace: { min: 0, max: 200 },
+  printMode: { min: 0, max: 2 },
 }
 
 const VALID_ALIGNS = ['top', 'bottom', 'center']
@@ -291,6 +329,7 @@ const KEY_ALIASES = {
     '水平间距': 'wordHSpace', '横向间距': 'wordHSpace',
     'v-space': 'wordVSpace', 'vspace': 'wordVSpace', 'vSpace': 'wordVSpace',
     '垂直间距': 'wordVSpace', '纵向间距': 'wordVSpace',
+    'mode': 'printMode', '打印模式': 'printMode',
   },
 }
 
@@ -409,6 +448,7 @@ const safeCellBackground = computed(() => parsedConfig.value.cellBackground)
 const safeCellSpace = computed(() => parsedConfig.value.cellSpace)
 const safeWordHSpace = computed(() => parsedConfig.value.wordHSpace)
 const safeWordVSpace = computed(() => parsedConfig.value.wordVSpace)
+const safePrintMode = computed(() => parsedConfig.value.printMode || 0)
 
 // 内容块是否渲染：show 只控制文字显隐；只要 grid>0（有格子线），即使 show=0 也必须保留整个块
 const zhBlockVisible = computed(() => safeChineseShow.value || safeChineseGrid.value > 0)
@@ -485,10 +525,45 @@ const selectedLevelLabels = computed(() => {
 })
 
 const headerTitle = computed(() => {
+  const mode = safePrintMode.value
+  if (mode === 1) return '练字模式'
+  if (mode === 2) return '自由练字'
   if (!safeChineseShow.value && safePinyinShow.value) return '看拼音写词语练习'
   if (safeChineseShow.value && !safePinyinShow.value) return '汉字书写练习'
   if (!safeChineseShow.value && !safePinyinShow.value) return '词语练习'
   return '看拼音写词语练习'
+})
+
+const modeName = computed(() => {
+  const m = safePrintMode.value
+  return m === 1 ? '练字模式' : m === 2 ? '自由模式' : '默认模式'
+})
+
+// 实际参与渲染的内容块：自由模式只保留中文 grid，不输出拼音行
+const printBlocks = computed(() => {
+  if (safePrintMode.value === 2) {
+    return safeChineseGrid.value > 0 ? [{ type: 'zh', pos: 0 }] : []
+  }
+  return orderedBlocks.value
+})
+
+// 空格子尺寸：自由模式使用等分整行后的尺寸
+function gridSizeOf(item) {
+  return item?.gridSize || layout.value.charGridSize
+}
+function gridCellStyle(item) {
+  const size = gridSizeOf(item)
+  return {
+    height: `${size}px`,
+    width: item?.fill ? undefined : `${size}px`
+  }
+}
+
+const subtitleModeHint = computed(() => {
+  const m = safePrintMode.value
+  if (m === 1) return `练字模式：每行 1 个词组 + 空格填充（${availableWords.value.length} 个词组）`
+  if (m === 2) return '自由模式：整页共边空白字帖（无拼音无间距）'
+  return `可打印 ${availableWords.value.length} 个词条 · 流式排版`
 })
 
 // ===== 拆字 =====
@@ -547,35 +622,71 @@ const laidItems = computed(() => (printWords.value || []).map((entry, idx) => {
   return { entry, idx, width }
 }))
 
-// 流式分页：先按宽度贪心换行，再按行高切页
+// 流式分页：先按模式装箱（mode=0 贪心、mode=1 每行一词+同字数空组、mode=2 全页共边空字帖），再按行高切页
 const printPages = computed(() => {
-  const items = laidItems.value
-  if (!items.length) return []
-  const { contentW, bodyH, lineH } = layout.value
+  const mode = safePrintMode.value
+  const { contentW, bodyH, lineH, charGridSize } = layout.value
   const hGap = safeWordHSpace.value
   const vGap = safeWordVSpace.value
 
-  // 1) 横向贪心装箱：当前行剩余宽度放不下时，整个单词移到下一行
-  const lines = []
-  let line = []
-  let usedW = 0
-  for (const item of items) {
-    if (!line.length) {
-      line.push(item)
-      usedW = item.width
-    } else if (usedW + hGap + item.width <= contentW) {
-      line.push(item)
-      usedW += hGap + item.width
-    } else {
+  let lines = []
+  let modeLineH = lineH
+  let modeVGap = vGap
+
+  if (mode === 0) {
+    // 默认模式：横向贪心装箱（不改现有逻辑）
+    if (!laidItems.value.length) return []
+    let line = []
+    let usedW = 0
+    for (const item of laidItems.value) {
+      if (!line.length) {
+        line.push({ type: 'word', ...item })
+        usedW = item.width
+      } else if (usedW + hGap + item.width <= contentW) {
+        line.push({ type: 'word', ...item })
+        usedW += hGap + item.width
+      } else {
+        lines.push(line)
+        line = [{ type: 'word', ...item }]
+        usedW = item.width
+      }
+    }
+    if (line.length) lines.push(line)
+  } else if (mode === 1) {
+    // 练字模式：每行 1 个真实词组，后面按该词字数成组填空，只放完整组（放不下不显示）
+    if (!laidItems.value.length) return []
+    for (const item of laidItems.value) {
+      const groupW = item.width
+      const charCount = charsOf(item.entry).length
+      // 剩余空间能放几个完整组（每组前都有 h-space 间隔，放不下整组就不显示）
+      const remain = contentW - item.width
+      const emptyCount = Math.max(0, Math.floor(remain / (groupW + hGap)))
+      const line = [{ type: 'word', ...item }]
+      for (let i = 0; i < emptyCount; i++) {
+        line.push({ type: 'empty', width: groupW, charCount })
+      }
+      // 强制换行，防止下一个词挤入本行剩余空间
+      line.push({ type: 'break' })
       lines.push(line)
-      line = [item]
-      usedW = item.width
+    }
+  } else {
+    // 自由模式：整页空白临摹字帖——只输出共边 grid，无拼音、无内边距、无间距，整行铺满
+    if (safeChineseGrid.value === 0) return []
+    // 列数按字号格子宽度取整，实际格子宽度等分整行，保证正方形且铺满
+    const nCols = Math.max(1, Math.round(contentW / charGridSize))
+    const cellSize = contentW / nCols
+    modeLineH = cellSize
+    modeVGap = 0
+    const nRows = Math.max(1, Math.floor(bodyH / cellSize))
+    for (let r = 0; r < nRows; r++) {
+      lines.push([{ type: 'empty', width: contentW, charCount: nCols, gridSize: cellSize, fill: true }])
     }
   }
-  if (line.length) lines.push(line)
 
-  // 2) 纵向分页：每页可容纳的行数（行与行之间有 v-space）
-  const linesPerPage = Math.max(1, Math.floor((bodyH + vGap) / (lineH + vGap)))
+  if (!lines.length) return []
+
+  // 纵向分页
+  const linesPerPage = Math.max(1, Math.floor((bodyH + modeVGap) / (modeLineH + modeVGap)))
   const pages = []
   for (let i = 0; i < lines.length; i += linesPerPage) {
     pages.push(lines.slice(i, i + linesPerPage).flat())
@@ -626,10 +737,37 @@ function goBack() {
   }
 }
 
-async function doPrint() {
+async function doExportPdf() {
   if (!printPages.value.length) return
-  await new Promise(resolve => setTimeout(resolve, 60))
-  window.print()
+  const container = document.getElementById('cnPrintContent')
+  if (!container) return
+  const pages = container.querySelectorAll('.cn-a4-page')
+  if (!pages.length) return
+
+  const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'p' })
+  const pageWmm = 210
+  const pageHmm = 297
+
+  for (let i = 0; i < pages.length; i++) {
+    if (i > 0) pdf.addPage()
+    const canvas = await html2canvas(pages[i], {
+      backgroundColor: '#ffffff',
+      scale: 2,
+      useCORS: true
+    })
+    const imgData = canvas.toDataURL('image/jpeg', 0.92)
+    // 等比缩放贴满 A4
+    const ratio = Math.min(pageWmm / canvas.width, pageHmm / canvas.height)
+    const w = canvas.width * ratio
+    const h = canvas.height * ratio
+    const x = (pageWmm - w) / 2
+    const y = (pageHmm - h) / 2
+    pdf.addImage(imgData, 'JPEG', x, y, w, h)
+  }
+
+  const bookName = chineseStore.getActiveBook()?.name || '中文生词本'
+  const stamp = new Date().toISOString().slice(0, 10)
+  pdf.save(`${bookName}-${stamp}.pdf`)
 }
 
 onMounted(() => {
@@ -898,6 +1036,56 @@ onMounted(() => {
   flex-direction: column;
   gap: var(--cn-block-gap, 0);
   min-height: 0;
+}
+
+/* ===== 练字模式（mode=1）：逻辑行强制换行标记 ===== */
+.cn-line-break {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 0;
+  padding: 0;
+  border: 0;
+  /* 抵消自身产生的额外行间距，保持正常 v-space */
+  margin-top: calc(-1 * var(--cn-v-gap, 20px));
+}
+
+/* ===== 自由模式（mode=2）：整页共边空白临摹字帖 ===== */
+.cn-print-mode-2 .cn-a4-body {
+  column-gap: 0;
+  row-gap: 0;
+}
+
+.cn-print-mode-2 .cn-word-cell {
+  padding: 0;
+  height: auto;
+}
+
+.cn-print-mode-2 .cn-cell-content {
+  gap: 0;
+}
+
+.cn-print-mode-2 .cn-block-zh {
+  gap: 0;
+}
+
+.cn-print-mode-2 .cn-zh-row {
+  flex-wrap: nowrap;
+  row-gap: 0;
+}
+
+/* 格子等分铺满整行 */
+.cn-print-mode-2 .cn-char-cell.is-fill {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* 相邻格子边框重叠为 1px（横、竖方向都共边） */
+.cn-print-mode-2 .cn-char-cell.is-fill+.cn-char-cell.is-fill {
+  margin-left: -1px;
+}
+
+.cn-print-mode-2 .cn-word-cell+.cn-word-cell {
+  margin-top: -1px;
 }
 
 /* ===== 中文 block ===== */
