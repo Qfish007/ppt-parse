@@ -55,6 +55,10 @@
                 @click="gridColor = c" />
             </div>
           </div>
+          <div class="cn-filter-item cn-filter-item-full">
+            <span class="cn-filter-label">打印模式：</span>
+            <el-segmented :model-value="safePrintMode" :options="printModeOptions" @update:model-value="setPrintMode" />
+          </div>
         </div>
       </div>
 
@@ -145,7 +149,7 @@
                         <span class="cn-gl cn-gl-h23"></span>
                         <span class="cn-gl cn-gl-h14"></span>
                         <span class="cn-gl cn-gl-h34"></span>
-                        <span v-if="safeChineseShow" class="cn-char-text"
+                        <span v-if="safeChineseShow || safePrintMode === 3" class="cn-char-text"
                           :style="{ fontSize: safeChineseFont + 'px' }">{{
                             char }}</span>
                       </div>
@@ -162,24 +166,44 @@
                 </template>
               </div>
             </div>
-            <!-- 空 cell：练字模式=与例词同字数的空格组；自由模式=整行共边空格 -->
+            <!-- 空 cell：练字模式=与例词同字数的空格组；自由模式=整行共边空格；临摹模式=同字浅色描红 -->
             <div v-else-if="item.type === 'empty'" class="cn-word-cell cn-empty-cell"
-              :class="{ 'is-fill-row': item.fill }" :style="{ width: item.width + 'px' }">
+              :class="['cn-print-mode-empty', { 'is-fill-row': item.fill, 'is-trace': safePrintMode === 3 }]"
+              :style="{ width: item.width + 'px' }">
               <div class="cn-cell-content" :style="contentAlignStyle">
                 <template v-for="block in printBlocks" :key="'e-' + block.type">
                   <div v-if="block.type === 'zh'" class="cn-block cn-block-zh">
                     <div class="cn-zh-row" :style="{ height: gridSizeOf(item) + 'px' }">
-                      <div v-for="n in (item.charCount || 1)" :key="n" class="cn-char-cell"
-                        :class="['grid-' + safeChineseGrid, { 'is-fill': item.fill }]" :style="gridCellStyle(item)">
-                        <span class="cn-gl cn-gl-h"></span>
-                        <span class="cn-gl cn-gl-v"></span>
-                        <span class="cn-gl cn-gl-d1"></span>
-                        <span class="cn-gl cn-gl-d2"></span>
-                        <span class="cn-gl cn-gl-h13"></span>
-                        <span class="cn-gl cn-gl-h23"></span>
-                        <span class="cn-gl cn-gl-h14"></span>
-                        <span class="cn-gl cn-gl-h34"></span>
-                      </div>
+                      <!-- 临摹模式：同字浅色描红 -->
+                      <template v-if="safePrintMode === 3 && item.entry">
+                        <div v-for="(char, ci) in charsOf(item.entry)" :key="ci" class="cn-char-cell"
+                          :class="['grid-' + safeChineseGrid, { 'is-fill': item.fill }]" :style="gridCellStyle(item)">
+                          <span class="cn-gl cn-gl-h"></span>
+                          <span class="cn-gl cn-gl-v"></span>
+                          <span class="cn-gl cn-gl-d1"></span>
+                          <span class="cn-gl cn-gl-d2"></span>
+                          <span class="cn-gl cn-gl-h13"></span>
+                          <span class="cn-gl cn-gl-h23"></span>
+                          <span class="cn-gl cn-gl-h14"></span>
+                          <span class="cn-gl cn-gl-h34"></span>
+                          <span class="cn-char-text cn-trace-text" :style="{ fontSize: safeChineseFont + 'px' }">{{ char
+                            }}</span>
+                        </div>
+                      </template>
+                      <!-- 其他模式：空格子 -->
+                      <template v-else>
+                        <div v-for="n in (item.charCount || 1)" :key="n" class="cn-char-cell"
+                          :class="['grid-' + safeChineseGrid, { 'is-fill': item.fill }]" :style="gridCellStyle(item)">
+                          <span class="cn-gl cn-gl-h"></span>
+                          <span class="cn-gl cn-gl-v"></span>
+                          <span class="cn-gl cn-gl-d1"></span>
+                          <span class="cn-gl cn-gl-d2"></span>
+                          <span class="cn-gl cn-gl-h13"></span>
+                          <span class="cn-gl cn-gl-h23"></span>
+                          <span class="cn-gl cn-gl-h14"></span>
+                          <span class="cn-gl cn-gl-h34"></span>
+                        </div>
+                      </template>
                     </div>
                   </div>
                   <div v-else-if="block.type === 'pinyin'" class="cn-block cn-block-pinyin">
@@ -221,21 +245,57 @@ const printOrder = ref(false)
 const gridColor = ref('#d4a0a0')
 const presetColors = ['#d4a0a0', '#4a90d9', '#8a8a8a', '#d97706']
 
-// ===== 配置文本框（参照 vocabulary/print） =====
-const DEFAULT_CONFIG_TEXT = `页面设置:H=20,V=30;
-中文设置:font=22;row=2;show=1;pos=3;grid=1
-拼音设置:font=18;row=1;show=1;pos=2;grid=0
-单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:50;v-space:20;mode=0`
+// 打印模式各自的完整默认配置：分段选择器点击时整段替换 configText
+// 注意：默写逻辑和默认完全相同（贪心流），只是配置 show=0 + grid=1
+// mode 值必须与分段选择器 value 一致，否则分段激活态会错位
+const MODE_CONFIGS = {
+  0: `页面设置:H=20,V=30;
+中文设置:font=25;row=2;show=1;pos=3;grid=2
+拼音设置:font=20;row=1;show=1;pos=2;grid=0
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:20;v-space:10;mode=0`,
+  1: `页面设置:H=20,V=30;
+中文设置:font=25;row=2;show=1;pos=3;grid=1
+拼音设置:font=20;row=1;show=1;pos=2;grid=0
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:10;v-space:8;mode=1`,
+  2: `页面设置:H=20,V=30;
+中文设置:font=25;row=2;show=1;pos=3;grid=2
+拼音设置:font=20;row=1;show=1;pos=2;grid=0
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:10;v-space:5;mode=2`,
+  3: `页面设置:H=20,V=30;
+中文设置:font=25;row=2;show=1;pos=3;grid=2
+拼音设置:font=20;row=1;show=1;pos=2;grid=0
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:10;v-space:8;mode=3`,
+  4: `页面设置:H=20,V=30;
+中文设置:font=25;row=2;show=0;pos=3;grid=1
+拼音设置:font=20;row=1;show=1;pos=2;grid=0
+单词设置:top=10,left=2,right=2,bottom=0;align:top;background:#ffffff;text-align:left;h-space:20;v-space:10;mode=4`,
+}
+
+const printModeOptions = [
+  { label: '默认', value: 0 },
+  { label: '练字', value: 1 },
+  { label: '自由', value: 2 },
+  { label: '临摹', value: 3 },
+  { label: '默写', value: 4 },
+]
+
+// 分段选择器点击：整段替换为该模式的预设配置
+function setPrintMode(val) {
+  configText.value = MODE_CONFIGS[val] || MODE_CONFIGS[0]
+}
+
+// ===== 配置文本框 =====
+const DEFAULT_CONFIG_TEXT = MODE_CONFIGS[0]
 
 const DEFAULTS = {
   pagePaddingH: 20,
   pagePaddingV: 30,
-  chineseFont: 22,
+  chineseFont: 25,
   chineseRow: 2,
   chineseShow: true,
   chinesePos: 3,
-  chineseGrid: 1,
-  pinyinFont: 18,
+  chineseGrid: 2,
+  pinyinFont: 20,
   pinyinRow: 1,
   pinyinShow: true,
   pinyinPos: 2,
@@ -248,8 +308,8 @@ const DEFAULTS = {
   cellBackground: '#ffffff',
   cellTextAlign: 'left',
   cellSpace: 10,
-  wordHSpace: 50,
-  wordVSpace: 20,
+  wordHSpace: 20,
+  wordVSpace: 10,
   printMode: 0,
 }
 
@@ -271,7 +331,7 @@ const RANGES = {
   cellSpace: { min: 0, max: 100 },
   wordHSpace: { min: 0, max: 200 },
   wordVSpace: { min: 0, max: 200 },
-  printMode: { min: 0, max: 2 },
+  printMode: { min: 0, max: 4 },
 }
 
 const VALID_ALIGNS = ['top', 'bottom', 'center']
@@ -528,6 +588,8 @@ const headerTitle = computed(() => {
   const mode = safePrintMode.value
   if (mode === 1) return '练字模式'
   if (mode === 2) return '自由练字'
+  if (mode === 3) return '临摹模式'
+  if (mode === 4) return '默写模式'
   if (!safeChineseShow.value && safePinyinShow.value) return '看拼音写词语练习'
   if (safeChineseShow.value && !safePinyinShow.value) return '汉字书写练习'
   if (!safeChineseShow.value && !safePinyinShow.value) return '词语练习'
@@ -536,7 +598,11 @@ const headerTitle = computed(() => {
 
 const modeName = computed(() => {
   const m = safePrintMode.value
-  return m === 1 ? '练字模式' : m === 2 ? '自由模式' : '默认模式'
+  if (m === 1) return '练字模式'
+  if (m === 2) return '自由模式'
+  if (m === 3) return '临摹模式'
+  if (m === 4) return '默写模式'
+  return '默认模式'
 })
 
 // 实际参与渲染的内容块：自由模式只保留中文 grid，不输出拼音行
@@ -563,6 +629,8 @@ const subtitleModeHint = computed(() => {
   const m = safePrintMode.value
   if (m === 1) return `练字模式：每行 1 个词组 + 空格填充（${availableWords.value.length} 个词组）`
   if (m === 2) return '自由模式：整页空白字帖（横向共边铺满，行距受 v-space 控制）'
+  if (m === 3) return `临摹模式：每行 1 个词组 + 浅色描红（${availableWords.value.length} 个词组）`
+  if (m === 4) return `默写模式：看拼音写词语（${availableWords.value.length} 个词条 · 流式排版）`
   return `可打印 ${availableWords.value.length} 个词条 · 流式排版`
 })
 
@@ -633,8 +701,8 @@ const printPages = computed(() => {
   let modeLineH = lineH
   let modeVGap = vGap
 
-  if (mode === 0) {
-    // 默认模式：横向贪心装箱（不改现有逻辑）
+  if (mode === 0 || mode === 4) {
+    // 默认模式 / 默写模式：横向贪心装箱（默写配置 show=0 隐藏汉字，但布局和默认一致）
     if (!laidItems.value.length) return []
     let line = []
     let usedW = 0
@@ -652,8 +720,9 @@ const printPages = computed(() => {
       }
     }
     if (line.length) lines.push(line)
-  } else if (mode === 1) {
-    // 练字模式：每行 1 个真实词组，后面按该词字数成组填空，只放完整组（放不下不显示）
+  } else if (mode === 1 || mode === 3) {
+    // 练字/临摹模式：每行 1 个真实词组，后面按该词字数成组填空，只放完整组（放不下不显示）
+    // mode=3（临摹）的空组额外带 entry，模板渲染浅色汉字
     if (!laidItems.value.length) return []
     for (const item of laidItems.value) {
       const groupW = item.width
@@ -663,7 +732,9 @@ const printPages = computed(() => {
       const emptyCount = Math.max(0, Math.floor(remain / (groupW + hGap)))
       const line = [{ type: 'word', ...item }]
       for (let i = 0; i < emptyCount; i++) {
-        line.push({ type: 'empty', width: groupW, charCount })
+        const empty = { type: 'empty', width: groupW, charCount }
+        if (mode === 3) empty.entry = item.entry  // 临摹模式带原词，供模板渲染浅色汉字
+        line.push(empty)
       }
       // 强制换行，防止下一个词挤入本行剩余空间
       line.push({ type: 'break' })
@@ -853,6 +924,10 @@ onMounted(() => {
   flex-direction: row;
   align-items: center;
   gap: 8px;
+}
+
+.cn-filter-item-full {
+  grid-column: 1 / -1;
 }
 
 .cn-filter-label {
@@ -1278,6 +1353,12 @@ onMounted(() => {
   font-weight: 600;
   color: #1c1408;
   line-height: 1;
+}
+
+/* 临摹模式浅汉字：淡灰色，供描红 */
+.cn-trace-text {
+  color: #c5c5c5;
+  font-weight: 500;
 }
 
 /* ===== 拼音 block ===== */
