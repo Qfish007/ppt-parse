@@ -72,12 +72,12 @@
           <div class="layout-item print-mode-row">
             <div class="layout-label">打印模式：</div>
             <el-segmented v-model="printMode" :options="MODE_OPTIONS" @change="setPrintMode" />
-            <span v-if="printMode === 0" class="detail-config-toggle">
+            <span class="detail-config-toggle">
               <span class="detail-config-label">详细配置</span>
               <el-switch v-model="showDetailConfig" size="small" />
             </span>
           </div>
-          <div v-if="printMode === 0 && showDetailConfig" class="layout-item config-row">
+          <div v-if="showDetailConfig" class="layout-item config-row">
             <div class="layout-label">
 
               <el-tooltip placement="right" effect="light">
