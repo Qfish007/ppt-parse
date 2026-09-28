@@ -18,7 +18,7 @@
           </div>
           <div class="word-edit-field word-edit-field--full word-edit-field--top">
             <div class="word-edit-label">中文释义</div>
-            <el-input v-model="formData.meaning" type="textarea" :rows="2" class="word-edit-control"
+            <el-input v-model="formData.meaning" type="textarea" :rows="4" class="word-edit-control"
               placeholder="输入中文释义" />
           </div>
           <div class="word-edit-field">
@@ -302,7 +302,7 @@ async function removeWord() {
 }
 
 .word-edit-empty {
-  position: absolute;
+  /* position: absolute; */
   bottom: -20px;
   left: 0;
   font-size: 12px;
@@ -318,8 +318,10 @@ async function removeWord() {
 }
 
 .word-edit-test-input {
-  width: 140px;
+  /* width: fit-content; */
   flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .word-edit-test-input :deep(.el-input-group__prepend) {
