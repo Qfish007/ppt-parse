@@ -151,7 +151,7 @@ export class SqliteChineseRepository extends IChineseRepository {
     if (row?.value) {
       try { return JSON.parse(row.value) } catch { /* ignore */ }
     }
-    return { pinyin: true, tags: true, level: true, note: false, testStats: false }
+    return { pinyin: true, tags: true, level: true, note: false, testStats: true }
   }
 
   async setVisibleColumns(columns) {

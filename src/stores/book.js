@@ -1,35 +1,13 @@
 /**
- * 书籍数据 Store
- * 使用 Vue3 reactive 模拟 Pinia，管理书籍、词典和编辑状态
+ * 单词翻译/查词 Store（原 book store 的子集，已剥离书籍朗读相关功能）
+ * 仅保留 vocabulary 模块依赖的：词义/音标查词、翻译、缓存读写
  */
 import { reactive } from 'vue';
-import { wordCacheRepository, bookEditsRepository } from '../repositories/index.js';
+import { wordCacheRepository } from '../repositories/index.js';
 
 let bookStoreInstance = null;
 
 const WORD_FALLBACK_MEANING = '释义待补充，可以继续点喇叭听发音。';
-
-const sampleBook = {
-  title: '示例内容',
-  pages: [
-    {
-      page: 1,
-      image: '',
-      lines: [
-        { en: 'Good morning, everyone.', zh: '大家早上好。' },
-        { en: "Let's read and listen together.", zh: '我们一起读、一起听。' }
-      ]
-    },
-    {
-      page: 2,
-      image: '',
-      lines: [
-        { en: 'Point to a word to hear it.', zh: '点击一个单词来听它的读音。' },
-        { en: 'Use the page button to read everything on this page.', zh: '使用本页朗读按钮朗读整页内容。' }
-      ]
-    }
-  ]
-};
 
 const defaultDictionary = {
   a: '一个；一件',
@@ -94,11 +72,6 @@ const defaultDictionary = {
   world: '世界'
 };
 
-function lineLooksLikeHeading(text) {
-  const value = String(text || '').trim();
-  return value.length <= 34 && !/[.!?。！？]$/.test(value);
-}
-
 export function useBookStore() {
   if (bookStoreInstance) return bookStoreInstance;
 
@@ -106,8 +79,6 @@ export function useBookStore() {
   const phonetics = reactive({ side: '/saɪd/' });
 
   const store = reactive({
-    book: null,
-    currentIndex: 0,
     dictionary,
     phonetics,
     WORD_FALLBACK_MEANING,
@@ -128,56 +99,8 @@ export function useBookStore() {
           }
         });
       } catch {
-        console.warn('Failed to load word cache from Dexie');
+        console.warn('Failed to load word cache from SQLite');
       }
-    },
-
-    async loadBook() {
-      await this.loadWordCache();
-      this.loadEdits();
-
-      try {
-        const response = await fetch('/parse/ocr/demo001/content.json');
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.pages?.length) {
-            this.book = this.normalizeBook(data);
-            this.loadEdits();
-            return;
-          }
-        }
-      } catch {
-      }
-
-      try {
-        const mod = await import('../data/content.generated.js');
-        if (mod?.default && mod.default.pages?.length) {
-          this.book = this.normalizeBook(mod.default);
-          this.loadEdits();
-          return;
-        }
-      } catch {
-      }
-
-      this.book = this.normalizeBook(sampleBook);
-    },
-
-    normalizeBook(raw) {
-      const pages = Array.isArray(raw.pages) ? raw.pages : [];
-      return {
-        title: String(raw.title || '未命名内容'),
-        pages: pages.map((page, index) => ({
-          page: Number(page.page || index + 1),
-          image: typeof page.image === 'string' ? page.image : '',
-          lines: Array.isArray(page.lines)
-            ? page.lines.map((line) => ({
-                en: String(line.en || '').trim(),
-                zh: String(line.zh || '').trim(),
-                breakAfter: Boolean(line.breakAfter)
-              })).filter((line) => line.en || line.zh)
-            : []
-        })).filter((page) => page.lines.length || page.image)
-      };
     },
 
     lookupWord(word) {
@@ -200,68 +123,6 @@ export function useBookStore() {
       if (phoneticValue) phonetics[key] = phoneticValue;
 
       await wordCacheRepository.saveTranslation(key, value, phoneticValue);
-    },
-
-    async saveEdits() {
-      try {
-        await bookEditsRepository.saveEdits(this.book);
-      } catch {
-      }
-    },
-
-    async loadEdits() {
-      if (!this.book) return;
-      try {
-        const saved = await bookEditsRepository.getEdits(this.book.title);
-        if (saved && saved.title === this.book.title && Array.isArray(saved.pages) && saved.pages.length === this.book.pages.length) {
-          this.book = this.normalizeBook(saved);
-        }
-      } catch {
-      }
-    },
-
-    tokenize(text) {
-      return text.match(/[A-Za-z]+(?:'[A-Za-z]+)?|[0-9]+|[^\sA-Za-z0-9]/g) || [];
-    },
-
-    groupLines(lines) {
-      const groups = [];
-      let current = [];
-
-      function pushCurrent() {
-        if (!current.length) return;
-        groups.push({
-          en: current.map((line) => line.en).filter(Boolean).join(' '),
-          zh: current.map((line) => line.zh).filter(Boolean).join('\n'),
-          sourceLines: current
-        });
-        current = [];
-      }
-
-      lines.forEach((line, index) => {
-        const text = line.en.trim();
-        if (!text && !line.zh) return;
-
-        if (current.length && lineLooksLikeHeading(text)) {
-          pushCurrent();
-        }
-
-        current.push(line);
-
-        const joined = current.map((item) => item.en).join(' ');
-        const endOfThought = /[.!?。！？]"?$/.test(text);
-        const next = lines[index + 1]?.en || '';
-        const nextLooksNew = lineLooksLikeHeading(next);
-
-        if (line.zh || current.length >= 5 || (endOfThought && joined.length > 120) || (endOfThought && nextLooksNew)) {
-          pushCurrent();
-        } else if (line.breakAfter) {
-          pushCurrent();
-        }
-      });
-
-      pushCurrent();
-      return groups;
     },
 
     async translateWordToChinese(word, voiceMode = 'youdao') {
@@ -291,6 +152,9 @@ export function useBookStore() {
       return String(translation || '').trim();
     }
   });
+
+  // 单例首次构造时异步加载缓存（不阻塞 UI）
+  store.loadWordCache();
 
   bookStoreInstance = store;
   return store;

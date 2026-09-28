@@ -175,7 +175,6 @@
           </div>
           <div class="cn-action">
             <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
-            <el-button size="small" plain @click="openTestDialog(entry)">测试</el-button>
           </div>
         </div>
       </template>
@@ -278,8 +277,8 @@
       </template>
     </el-dialog>
 
-    <!-- 设置标签弹窗 -->
-    <el-dialog v-model="tagDialog.visible" title="设置标签" width="460px" class="cn-tag-dialog"
+    <!-- 设置弹窗（标签 + 测试次数） -->
+    <el-dialog v-model="tagDialog.visible" title="设置" width="460px" class="cn-tag-dialog"
       :close-on-click-modal="true">
       <div class="cn-tag-dialog-body">
         <div class="cn-tag-dialog-word">词条：{{ tagDialog.word }}</div>
@@ -292,6 +291,18 @@
           <el-select v-model="tagDialog.tagIds" multiple clearable placeholder="选择标签">
             <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
           </el-select>
+        </div>
+        <div class="cn-tag-dialog-field">
+          <div class="cn-tag-dialog-label">正确次数</div>
+          <el-input-number v-model="tagDialog.correct" :min="0" :controls="false" />
+        </div>
+        <div class="cn-tag-dialog-field">
+          <div class="cn-tag-dialog-label">错误次数</div>
+          <el-input-number v-model="tagDialog.wrong" :min="0" :controls="false" />
+        </div>
+        <div class="cn-tag-dialog-field">
+          <div class="cn-tag-dialog-label">总次数</div>
+          <span class="cn-tag-dialog-total">{{ (Number(tagDialog.correct) || 0) + (Number(tagDialog.wrong) || 0) }} 次</span>
         </div>
       </div>
       <template #footer>
@@ -326,25 +337,6 @@
       </span>
     </div>
 
-    <!-- 测试次数手动设置弹窗 -->
-    <el-dialog v-model="testDialog.visible" title="设置测试次数" width="360px" class="cn-test-dialog"
-      :close-on-click-modal="true">
-      <el-form @submit.prevent="submitTestCount" :label-width="'80px'">
-        <el-form-item label="正确次数">
-          <el-input-number v-model="testDialog.correct" :min="0" :controls="false" />
-        </el-form-item>
-        <el-form-item label="错误次数">
-          <el-input-number v-model="testDialog.wrong" :min="0" :controls="false" />
-        </el-form-item>
-        <el-form-item label="总次数">
-          <span>{{ (Number(testDialog.correct) || 0) + (Number(testDialog.wrong) || 0) }} 次</span>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="testDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="submitTestCount">保存</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -396,13 +388,6 @@ const batchDialog = reactive({
   loading: false,
   level: '',
   tagIds: []
-})
-
-const testDialog = reactive({
-  visible: false,
-  word: '',
-  correct: 0,
-  wrong: 0
 })
 
 // ========================== 筛选 + 排序结果 ==========================
@@ -535,7 +520,9 @@ const tagDialog = ref({
   visible: false,
   word: '',
   tagIds: [],
-  pinyin: ''
+  pinyin: '',
+  correct: 0,
+  wrong: 0
 })
 const chineseFormatList = getChineseFormatList()
 
@@ -836,13 +823,17 @@ async function deleteSelectedWords() {
   }
 }
 
-// ========================== 单词标签设置 ==========================
+// ========================== 单词设置（标签 + 测试次数） ==========================
 function openTagDialog(entry) {
+  const total = Number(entry.testTotalCount) || 0
+  const correct = Number(entry.testCorrectCount) || 0
   tagDialog.value = {
     visible: true,
     word: entry.word,
     tagIds: [...(entry.tagIds || [])],
-    pinyin: entry.pinyin || ''
+    pinyin: entry.pinyin || '',
+    correct,
+    wrong: Math.max(0, total - correct)
   }
 }
 
@@ -852,6 +843,7 @@ async function saveWordTags() {
     pinyin: tagDialog.value.pinyin,
     tagIds: tagDialog.value.tagIds
   })
+  await chineseStore.setTestCount(tagDialog.value.word, tagDialog.value.correct, tagDialog.value.wrong)
   ElMessage.success('已保存')
   tagDialog.value.visible = false
 }
@@ -875,23 +867,6 @@ function onLevelVisibleChange(word, visible) {
 
 async function updateLevel(word, level) {
   await chineseStore.updateLevel(word, level)
-}
-
-// ========================== 测试次数手动设置 ==========================
-function openTestDialog(entry) {
-  const total = Number(entry.testTotalCount) || 0
-  const correct = Number(entry.testCorrectCount) || 0
-  testDialog.word = entry.word
-  testDialog.correct = correct
-  testDialog.wrong = Math.max(0, total - correct)
-  testDialog.visible = true
-}
-
-async function submitTestCount() {
-  if (!testDialog.word) return
-  await chineseStore.setTestCount(testDialog.word, testDialog.correct, testDialog.wrong)
-  ElMessage.success('已保存')
-  testDialog.visible = false
 }
 
 // ========================== 导入 / 导出 ==========================
@@ -1470,6 +1445,16 @@ function doExport(formatId) {
   color: #7a563a;
   margin-bottom: 6px;
   font-weight: 700;
+}
+
+.cn-tag-dialog-field {
+  margin-bottom: 14px;
+}
+
+.cn-tag-dialog-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1c1408;
 }
 
 /* 统计浮窗（与 vocabulary 页完全一致） */

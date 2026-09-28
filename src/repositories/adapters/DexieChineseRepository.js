@@ -137,7 +137,8 @@ export class DexieChineseRepository extends IChineseRepository {
       pinyin: true,
       tags: true,
       level: true,
-      note: false
+      note: false,
+      testStats: true
     };
   }
 

@@ -47,31 +47,14 @@
           <span class="home-card-action">进入中文生词本 →</span>
         </div>
       </article>
-
-      <article class="home-card home-card--books" @click="goBooks">
-        <div class="home-card-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-            stroke-linejoin="round">
-            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-          </svg>
-        </div>
-        <div class="home-card-body">
-          <h2 class="home-card-title">我的书籍</h2>
-          <p class="home-card-desc">上传书籍、逐页朗读、中英对照学习</p>
-          <span class="home-card-action">进入书籍 →</span>
-        </div>
-      </article>
     </section>
   </div>
 </template>
 
 <script setup>
 import { useRouter } from 'vue-router'
-import { useProjectsStore } from '../../stores/projects.js'
 
 const router = useRouter()
-const projectsStore = useProjectsStore()
 
 function goVocabulary() {
   router.push('/vocabulary')
@@ -79,13 +62,6 @@ function goVocabulary() {
 
 function goChinese() {
   router.push('/chinese')
-}
-
-function goBooks() {
-  const active = projectsStore.getActiveProject()
-  const first = (projectsStore.projects && projectsStore.projects[0]) || null
-  const target = active?.index || first?.index || '001'
-  router.push(`/books/${target}`)
 }
 
 function goSetting() {
@@ -198,11 +174,6 @@ function goSetting() {
   height: 28px;
 }
 
-.home-card--books .home-card-icon {
-  background: #eef1f8;
-  color: #304b7d;
-}
-
 .home-card--chinese .home-card-icon {
   background: #fbeee6;
   color: #b8480f;
@@ -244,10 +215,6 @@ function goSetting() {
   color: #fff;
   font-size: 14px;
   font-weight: 800;
-}
-
-.home-card--books .home-card-action {
-  background: #4c6ef5;
 }
 
 @media (max-width: 720px) {

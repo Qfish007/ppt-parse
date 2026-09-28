@@ -1,5 +1,5 @@
 import { STORAGE_KEYS } from '../types/index.js';
-import { settingsRepository, vocabularyRepository, wordCacheRepository, projectsRepository, bookEditsRepository } from '../repositories/index.js';
+import { settingsRepository, vocabularyRepository, wordCacheRepository } from '../repositories/index.js';
 import { ensureReady, run as sqliteRun, flush as sqliteFlush } from './sqlite.js';
 
 const MIGRATION_KEY = 'bilingual-reader-migration-done';
@@ -76,22 +76,6 @@ export async function migrateFromDexie() {
       ]);
     }
 
-    // projects
-    const projects = await db.projects.toArray();
-    for (const p of projects) {
-      sqliteRun('INSERT OR REPLACE INTO projects (id, sort_index, name, type, createdAt) VALUES (?, ?, ?, ?, ?)', [
-        p.id, Number(p.index) || 0, p.name, p.type, Number(p.createdAt) || Date.now()
-      ]);
-    }
-
-    // book_edits
-    const edits = await db.bookEdits.toArray();
-    for (const e of edits) {
-      sqliteRun('INSERT OR REPLACE INTO book_edits (title, pages, updatedAt) VALUES (?, ?, ?)', [
-        e.title, e.pages !== undefined ? JSON.stringify(e.pages) : null, Number(e.updatedAt) || Date.now()
-      ]);
-    }
-
     sqliteRun("INSERT OR REPLACE INTO settings (key, value) VALUES (?, 'true')", [DEXIE_MIGRATION_KEY]);
     await sqliteFlush();
     console.log('Dexie → SQLite migration completed');
@@ -110,8 +94,6 @@ export async function migrateFromLocalStorage() {
     await migrateSettings();
     await migrateVocabulary();
     await migrateWordCache();
-    await migrateProjects();
-    await migrateBookEdits();
 
     localStorage.setItem(MIGRATION_KEY, 'true');
     console.log('Migration from localStorage completed');
@@ -196,34 +178,5 @@ async function migrateWordCache() {
     }
   } catch {
     console.warn('Word cache migration skipped due to parse error');
-  }
-}
-
-async function migrateProjects() {
-  try {
-    const savedProjects = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROJECTS) || 'null');
-    if (Array.isArray(savedProjects) && savedProjects.length > 0) {
-      for (const project of savedProjects) {
-        await projectsRepository.saveProject(project);
-      }
-    }
-
-    const activeProject = localStorage.getItem(STORAGE_KEYS.ACTIVE_PROJECT);
-    if (activeProject) {
-      await projectsRepository.setActiveProjectId(activeProject);
-    }
-  } catch {
-    console.warn('Projects migration skipped due to parse error');
-  }
-}
-
-async function migrateBookEdits() {
-  try {
-    const savedEdits = JSON.parse(localStorage.getItem(STORAGE_KEYS.BOOK_EDITS) || 'null');
-    if (savedEdits && savedEdits.title) {
-      await bookEditsRepository.saveEdits(savedEdits);
-    }
-  } catch {
-    console.warn('Book edits migration skipped due to parse error');
   }
 }

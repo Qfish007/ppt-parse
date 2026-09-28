@@ -314,7 +314,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowLeft, Plus, ArrowDown, Edit, Upload, Download, Printer, List } from '@element-plus/icons-vue'
 import { speak } from '../../api/voice/index.js'
 import { useBookStore } from '../../stores/book.js'
-import { useProjectsStore } from '../../stores/projects.js'
 import { useVocabularyStore } from '../../stores/vocabulary.js'
 import { VOCABULARY_LEVELS } from '../../types/index.js'
 import { getVocabFormatList, getVocabFormat } from '../../utils/vocabFormats.js'
@@ -323,7 +322,6 @@ import { matchTagFilter } from '../../utils/tagFilter.js'
 import WordEditDialog from '../../components/WordEditDialog.vue'
 
 const router = useRouter()
-const projectsStore = useProjectsStore()
 // 懒加载：只构造 reactive 空壳（<1ms），把昂贵 JSON.parse + normalize 延后到骨架渲染之后
 const vocabularyStore = useVocabularyStore({ lazy: true })
 const bookStore = useBookStore()

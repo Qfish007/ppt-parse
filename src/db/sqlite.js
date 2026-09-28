@@ -7,6 +7,8 @@ const PERSIST_DEBOUNCE_MS = 300
 const SCHEMA_SQL = `
 DROP INDEX IF EXISTS idx_vw_book;
 DROP INDEX IF EXISTS idx_cw_book;
+DROP TABLE IF EXISTS projects;
+DROP TABLE IF EXISTS book_edits;
 
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);
 
@@ -35,13 +37,6 @@ CREATE TABLE IF NOT EXISTS chinese_words (
 );
 CREATE TABLE IF NOT EXISTS chinese_tags (
   id TEXT, bookId TEXT, name TEXT, createdAt INTEGER, PRIMARY KEY (id, bookId)
-);
-
-CREATE TABLE IF NOT EXISTS projects (
-  id TEXT PRIMARY KEY, sort_index INTEGER, name TEXT, type TEXT, createdAt INTEGER
-);
-CREATE TABLE IF NOT EXISTS book_edits (
-  title TEXT PRIMARY KEY, pages TEXT, updatedAt INTEGER
 );
 `
 
