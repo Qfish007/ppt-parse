@@ -13,12 +13,13 @@
               :disabled="!editableWord" />
           </div>
           <div class="word-edit-field">
-            <div class="word-edit-label">中文释义</div>
-            <el-input v-model="formData.meaning" class="word-edit-control" placeholder="输入中文释义" />
-          </div>
-          <div class="word-edit-field">
             <div class="word-edit-label">音标</div>
             <el-input v-model="formData.phonetic" class="word-edit-control" placeholder="输入音标，如 /əˈbɪləti/" />
+          </div>
+          <div class="word-edit-field word-edit-field--full word-edit-field--top">
+            <div class="word-edit-label">中文释义</div>
+            <el-input v-model="formData.meaning" type="textarea" :rows="2" class="word-edit-control"
+              placeholder="输入中文释义" />
           </div>
           <div class="word-edit-field">
             <div class="word-edit-label">掌握水平</div>
@@ -32,10 +33,10 @@
             <div class="word-edit-label">辅助记忆</div>
             <el-input v-model="formData.memoryText" class="word-edit-control" placeholder="例如：fa.mous" clearable />
           </div>
-          <div class="word-edit-field">
+          <div class="word-edit-field word-edit-field--full">
             <div class="word-edit-label">单词标签</div>
-            <div class="word-edit-control-wrap">
-              <el-select v-model="formData.tagIds" multiple clearable placeholder="选择标签" class="word-edit-control"
+            <div class="word-edit-control-wrap word-edit-control">
+              <el-select v-model="formData.tagIds" multiple clearable placeholder="选择标签"
                 :teleported="false">
                 <el-option v-for="tag in tags" :key="tag.id" :label="tag.name" :value="tag.id" />
               </el-select>
@@ -44,22 +45,21 @@
               </div>
             </div>
           </div>
-          <div class="word-edit-field">
+          <div class="word-edit-field word-edit-field--full word-edit-field--top">
             <div class="word-edit-label">备注</div>
             <el-input v-model="formData.note" type="textarea" :rows="3" class="word-edit-control"
               placeholder="添加备注信息" />
           </div>
-          <div class="word-edit-field">
-            <div class="word-edit-label">正确次数</div>
-            <el-input-number v-model="formData.correct" :min="0" :controls="false" class="word-edit-control" />
-          </div>
-          <div class="word-edit-field">
-            <div class="word-edit-label">错误次数</div>
-            <el-input-number v-model="formData.wrong" :min="0" :controls="false" class="word-edit-control" />
-          </div>
-          <div class="word-edit-field">
-            <div class="word-edit-label">总次数</div>
-            <span class="word-edit-total">{{ (Number(formData.correct) || 0) + (Number(formData.wrong) || 0) }} 次</span>
+          <div class="word-edit-field word-edit-field--full">
+            <div class="word-edit-label">测试次数</div>
+            <div class="word-edit-test-counts">
+              <el-input v-model.number="formData.correct" type="number" :min="0" class="word-edit-test-input">
+                <template #prepend>正确</template>
+              </el-input>
+              <el-input v-model.number="formData.wrong" type="number" :min="0" class="word-edit-test-input">
+                <template #prepend>错误</template>
+              </el-input>
+            </div>
           </div>
         </div>
         <div class="word-edit-footer">
@@ -187,7 +187,7 @@ async function save() {
       note: formData.value.note
     })
   }
-  await vocabularyStore.setTestCount(newWord, formData.value.correct, formData.value.wrong)
+  await vocabularyStore.setTestCount(newWord, Number(formData.value.correct) || 0, Number(formData.value.wrong) || 0)
   emit('saved')
   close()
 }
@@ -224,7 +224,7 @@ async function removeWord() {
 }
 
 .word-edit-dialog {
-  width: 460px;
+  width: min(720px, 94vw);
   background: white;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
@@ -260,30 +260,41 @@ async function removeWord() {
 }
 
 .word-edit-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
   padding: 20px;
-  max-height: 60vh;
+  max-height: 65vh;
   overflow-y: auto;
 }
 
 .word-edit-field {
-  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.word-edit-field--full {
+  grid-column: 1 / -1;
+}
+
+.word-edit-field--top {
+  align-items: flex-start;
 }
 
 .word-edit-label {
   font-size: 14px;
   font-weight: 600;
   color: #475569;
-  margin-bottom: 8px;
+  flex-shrink: 0;
+  width: 80px;
+  text-align: right;
 }
 
 .word-edit-control {
-  width: 100%;
-}
-
-.word-edit-total {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1e293b;
+  flex: 1;
+  min-width: 0;
 }
 
 .word-edit-control-wrap {
@@ -296,6 +307,25 @@ async function removeWord() {
   left: 0;
   font-size: 12px;
   color: #94a3b8;
+}
+
+.word-edit-test-counts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.word-edit-test-input {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.word-edit-test-input :deep(.el-input-group__prepend) {
+  font-size: 14px;
+  color: #475569;
+  background: #f5f7fa;
 }
 
 .word-edit-footer {

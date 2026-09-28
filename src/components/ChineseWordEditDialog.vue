@@ -1,41 +1,42 @@
 <template>
-  <el-dialog :model-value="visible" title="设置" width="460px" class="cn-edit-dialog"
+  <el-dialog :model-value="visible" title="设置" width="min(720px, 94vw)" class="cn-edit-dialog"
     :close-on-click-modal="true" @update:model-value="v => !v && emit('close')">
     <div class="cn-edit-body" v-if="entry">
       <div class="cn-edit-word">词条：{{ entry.word }}</div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">拼音</div>
-        <el-input v-model="form.pinyin" clearable placeholder="编辑拼音，如 shǒu zhū dài tù" />
-      </div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">掌握水平</div>
-        <el-select v-model="form.level" :class="['cn-edit-level', levelClass(form.level)]"
-          popper-class="cn-level-popper">
-          <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :class="levelClass(level.value)"
-            :label="level.label" :value="level.value" />
-        </el-select>
-      </div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">选择标签</div>
-        <el-select v-model="form.tagIds" multiple clearable placeholder="选择标签">
-          <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
-        </el-select>
-      </div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">备注</div>
-        <el-input v-model="form.note" type="textarea" :rows="2" placeholder="记录笔记、易错点等" />
-      </div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">正确次数</div>
-        <el-input-number v-model="form.correct" :min="0" :controls="false" />
-      </div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">错误次数</div>
-        <el-input-number v-model="form.wrong" :min="0" :controls="false" />
-      </div>
-      <div class="cn-edit-field">
-        <div class="cn-edit-label">总次数</div>
-        <span class="cn-edit-total">{{ (Number(form.correct) || 0) + (Number(form.wrong) || 0) }} 次</span>
+      <div class="cn-edit-grid">
+        <div class="cn-edit-field">
+          <div class="cn-edit-label">拼音</div>
+          <el-input v-model="form.pinyin" clearable placeholder="编辑拼音，如 shǒu zhū dài tù" />
+        </div>
+        <div class="cn-edit-field">
+          <div class="cn-edit-label">掌握水平</div>
+          <el-select v-model="form.level" :class="['cn-edit-level', levelClass(form.level)]"
+            popper-class="cn-level-popper">
+            <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :class="levelClass(level.value)"
+              :label="level.label" :value="level.value" />
+          </el-select>
+        </div>
+        <div class="cn-edit-field cn-edit-field--full">
+          <div class="cn-edit-label">选择标签</div>
+          <el-select v-model="form.tagIds" multiple clearable placeholder="选择标签">
+            <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
+          </el-select>
+        </div>
+        <div class="cn-edit-field cn-edit-field--full cn-edit-field--top">
+          <div class="cn-edit-label">备注</div>
+          <el-input v-model="form.note" type="textarea" :rows="3" placeholder="记录笔记、易错点等" />
+        </div>
+        <div class="cn-edit-field cn-edit-field--full">
+          <div class="cn-edit-label">测试次数</div>
+          <div class="cn-edit-test-counts">
+            <el-input v-model.number="form.correct" type="number" :min="0" class="cn-edit-test-input">
+              <template #prepend>正确</template>
+            </el-input>
+            <el-input v-model.number="form.wrong" type="number" :min="0" class="cn-edit-test-input">
+              <template #prepend>错误</template>
+            </el-input>
+          </div>
+        </div>
       </div>
     </div>
     <template #footer>
@@ -108,7 +109,7 @@ async function save() {
       tagIds: form.value.tagIds,
       note: form.value.note
     })
-    await chineseStore.setTestCount(entry.value.word, form.value.correct, form.value.wrong)
+    await chineseStore.setTestCount(entry.value.word, Number(form.value.correct) || 0, Number(form.value.wrong) || 0)
     emit('saved')
     emit('close')
   } finally {
@@ -127,24 +128,63 @@ async function save() {
   font-size: 14px;
   font-weight: 700;
   color: #1c1408;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.cn-edit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 20px;
 }
 
 .cn-edit-field {
-  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cn-edit-field--full {
+  grid-column: 1 / -1;
+}
+
+.cn-edit-field--top {
+  align-items: flex-start;
 }
 
 .cn-edit-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #7a563a;
-  margin-bottom: 6px;
   font-weight: 700;
+  flex-shrink: 0;
+  width: 80px;
+  text-align: right;
 }
 
-.cn-edit-total {
+.cn-edit-field :deep(.el-input),
+.cn-edit-field :deep(.el-select),
+.cn-edit-field :deep(.el-textarea) {
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-edit-test-counts {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cn-edit-test-input {
+  width: 140px;
+  flex-shrink: 0;
+}
+
+.cn-edit-test-input :deep(.el-input-group__prepend) {
   font-size: 14px;
-  font-weight: 700;
-  color: #1c1408;
+  color: #7a563a;
+  background: #f5f7fa;
 }
 
 .cn-edit-level.level-unknown :deep(.el-select__wrapper) {
