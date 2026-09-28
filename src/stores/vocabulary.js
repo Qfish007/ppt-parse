@@ -442,6 +442,21 @@ export function useVocabularyStore(options) {
       return entry;
     },
 
+    async setTestCount(word, correct, wrong) {
+      const book = this.getActiveBook();
+      if (!book) return null;
+      const key = normalizeWord(word);
+      const entry = book.words.find(item => item.word === key);
+      if (!entry) return null;
+      entry.testCorrectCount = Math.max(0, Number(correct) || 0);
+      entry.testTotalCount = entry.testCorrectCount + Math.max(0, Number(wrong) || 0);
+      entry.updatedAt = Date.now();
+      book.updatedAt = Date.now();
+      this.syncActiveBook();
+      await this.save();
+      return entry;
+    },
+
     async addTag(name) {
       const book = this.getActiveBook();
       if (!book) return null;

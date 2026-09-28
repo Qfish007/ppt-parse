@@ -277,39 +277,9 @@
       </template>
     </el-dialog>
 
-    <!-- 设置弹窗（标签 + 测试次数） -->
-    <el-dialog v-model="tagDialog.visible" title="设置" width="460px" class="cn-tag-dialog"
-      :close-on-click-modal="true">
-      <div class="cn-tag-dialog-body">
-        <div class="cn-tag-dialog-word">词条：{{ tagDialog.word }}</div>
-        <div class="cn-tag-dialog-field">
-          <div class="cn-tag-dialog-label">拼音</div>
-          <el-input v-model="tagDialog.pinyin" clearable placeholder="编辑拼音，如 shǒu zhū dài tù" />
-        </div>
-        <div class="cn-tag-dialog-field">
-          <div class="cn-tag-dialog-label">选择标签</div>
-          <el-select v-model="tagDialog.tagIds" multiple clearable placeholder="选择标签">
-            <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
-          </el-select>
-        </div>
-        <div class="cn-tag-dialog-field">
-          <div class="cn-tag-dialog-label">正确次数</div>
-          <el-input-number v-model="tagDialog.correct" :min="0" :controls="false" />
-        </div>
-        <div class="cn-tag-dialog-field">
-          <div class="cn-tag-dialog-label">错误次数</div>
-          <el-input-number v-model="tagDialog.wrong" :min="0" :controls="false" />
-        </div>
-        <div class="cn-tag-dialog-field">
-          <div class="cn-tag-dialog-label">总次数</div>
-          <span class="cn-tag-dialog-total">{{ (Number(tagDialog.correct) || 0) + (Number(tagDialog.wrong) || 0) }} 次</span>
-        </div>
-      </div>
-      <template #footer>
-        <el-button @click="tagDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="saveWordTags">保存</el-button>
-      </template>
-    </el-dialog>
+    <!-- 设置弹窗（共享组件） -->
+    <ChineseWordEditDialog :visible="editDialog.visible" :word="editDialog.word"
+      @close="editDialog.visible = false" @saved="onEditSaved" />
 
     <!-- 统计浮窗（和 vocabulary 页保持一致） -->
     <div v-if="chineseStore.statsVisible" ref="statsBarRef" class="cn-stats-bar"
@@ -352,6 +322,7 @@ import { toPinyin } from '../../utils/chinesePinyin.js'
 import { clampPage, slicePage } from '../../utils/pagination.js'
 import { matchTagFilter } from '../../utils/tagFilter.js'
 import { playChineseAudio } from '../../api/hanyu/index.js'
+import ChineseWordEditDialog from '../../components/ChineseWordEditDialog.vue'
 
 const router = useRouter()
 // 懒加载：先构造 reactive 空壳，骨架渲染后再加载昂贵数据
@@ -516,13 +487,9 @@ const formatDialog = ref({
   mode: 'import',
   selectedId: 'comma'
 })
-const tagDialog = ref({
+const editDialog = ref({
   visible: false,
-  word: '',
-  tagIds: [],
-  pinyin: '',
-  correct: 0,
-  wrong: 0
+  word: ''
 })
 const chineseFormatList = getChineseFormatList()
 
@@ -823,29 +790,16 @@ async function deleteSelectedWords() {
   }
 }
 
-// ========================== 单词设置（标签 + 测试次数） ==========================
+// ========================== 单词设置 ==========================
 function openTagDialog(entry) {
-  const total = Number(entry.testTotalCount) || 0
-  const correct = Number(entry.testCorrectCount) || 0
-  tagDialog.value = {
+  editDialog.value = {
     visible: true,
-    word: entry.word,
-    tagIds: [...(entry.tagIds || [])],
-    pinyin: entry.pinyin || '',
-    correct,
-    wrong: Math.max(0, total - correct)
+    word: entry.word
   }
 }
 
-async function saveWordTags() {
-  if (!tagDialog.value.word) return
-  await chineseStore.updateWord(tagDialog.value.word, {
-    pinyin: tagDialog.value.pinyin,
-    tagIds: tagDialog.value.tagIds
-  })
-  await chineseStore.setTestCount(tagDialog.value.word, tagDialog.value.correct, tagDialog.value.wrong)
+function onEditSaved() {
   ElMessage.success('已保存')
-  tagDialog.value.visible = false
 }
 
 // ========================== 掌握水平 ==========================
@@ -1430,31 +1384,6 @@ function doExport(formatId) {
 
 .cn-batch-dialog-spacer {
   flex: 1;
-}
-
-/* 标签设置弹窗 */
-.cn-tag-dialog-word {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1c1408;
-  margin-bottom: 14px;
-}
-
-.cn-tag-dialog-label {
-  font-size: 12px;
-  color: #7a563a;
-  margin-bottom: 6px;
-  font-weight: 700;
-}
-
-.cn-tag-dialog-field {
-  margin-bottom: 14px;
-}
-
-.cn-tag-dialog-total {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1c1408;
 }
 
 /* 统计浮窗（与 vocabulary 页完全一致） */

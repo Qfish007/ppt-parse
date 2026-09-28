@@ -62,33 +62,9 @@
           </div>
         </div>
 
-        <!-- 可编辑区：掌握水平 / 标签 / 备注 -->
+        <!-- 设置按钮 -->
         <div class="cn-hero-edit">
-          <div class="cn-edit-field">
-            <label class="cn-edit-label">拼音</label>
-            <el-input v-model="editPinyin" clearable placeholder="编辑拼音，如 shǒu zhū dài tù" />
-          </div>
-          <div class="cn-edit-field">
-            <label class="cn-edit-label">掌握水平</label>
-            <el-select v-model="editLevel" popper-class="cn-level-popper"
-              :class="['cn-edit-level', levelClass(editLevel)]">
-              <el-option v-for="level in CHINESE_LEVELS" :key="level.value" :class="levelClass(level.value)"
-                :label="level.label" :value="level.value" />
-            </el-select>
-          </div>
-          <div class="cn-edit-field">
-            <label class="cn-edit-label">词条标签</label>
-            <el-select v-model="editTagIds" multiple collapse-tags collapse-tags-tooltip placeholder="选择标签">
-              <el-option v-for="tag in chineseStore.tags" :key="tag.id" :label="tag.name" :value="tag.id" />
-            </el-select>
-          </div>
-          <div class="cn-edit-field cn-edit-field-note">
-            <label class="cn-edit-label">备注</label>
-            <el-input v-model="editNote" type="textarea" :rows="2" placeholder="记录笔记、易错点等" />
-          </div>
-          <div class="cn-edit-actions">
-            <el-button type="primary" :loading="saving" @click="saveEdit">保存修改</el-button>
-          </div>
+          <el-button type="primary" plain @click="openEditDialog">设置</el-button>
         </div>
       </section>
 
@@ -179,6 +155,10 @@
       <p class="cn-detail-missing-hint">它可能已被删除。请返回中文生词本列表重新选择。</p>
       <el-button type="primary" @click="goBack">返回</el-button>
     </section>
+
+    <!-- 设置弹窗（共享组件） -->
+    <ChineseWordEditDialog :visible="editDialog.visible" :word="editDialog.word"
+      @close="editDialog.visible = false" @saved="onEditSaved" />
   </div>
 </template>
 
@@ -188,8 +168,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, Loading } from '@element-plus/icons-vue'
 import { useChineseStore } from '../../stores/chinese.js'
-import { CHINESE_LEVELS } from '../../types/index.js'
 import { fetchHanyuDetail, playChineseAudio } from '../../api/hanyu/index.js'
+import ChineseWordEditDialog from '../../components/ChineseWordEditDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -197,7 +177,6 @@ const chineseStore = useChineseStore({ lazy: true })
 
 const pageLoading = ref(true)
 const refreshing = ref(false)
-const saving = ref(false)
 
 const word = computed(() => String(route.params.word || ''))
 
@@ -238,20 +217,20 @@ const thirdPartyUrl = computed(() => {
     : `https://hanyu.baidu.com/hanyu-page/term/detail?wd=${encodeURIComponent(w)}&device=pc&from=home`
 })
 
-// 编辑态
-const editLevel = ref('unknown')
-const editTagIds = ref([])
-const editNote = ref('')
-const editPinyin = ref('')
+// 设置弹窗
+const editDialog = ref({
+  visible: false,
+  word: ''
+})
 
-watch(entry, (val) => {
-  if (val) {
-    editLevel.value = val.level
-    editTagIds.value = [...(val.tagIds || [])]
-    editNote.value = val.note || ''
-    editPinyin.value = val.pinyin || ''
-  }
-}, { immediate: true })
+function openEditDialog() {
+  if (!entry.value?.word) return
+  editDialog.value = { visible: true, word: entry.value.word }
+}
+
+function onEditSaved() {
+  ElMessage.success('已保存')
+}
 
 const cihuiList = computed(() =>
   String(view.value?.cihui || '')
@@ -266,10 +245,6 @@ const lijuList = computed(() =>
     .map(s => s.trim())
     .filter(Boolean)
 )
-
-function levelClass(level) {
-  return `level-${level || 'unknown'}`
-}
 
 function goBack() {
   if (window.history.length > 1) {
@@ -295,22 +270,6 @@ async function playWord() {
 
 async function playText(text) {
   await playChineseAudio(text)
-}
-
-async function saveEdit() {
-  if (!entry.value?.word) return
-  saving.value = true
-  try {
-    await chineseStore.updateWord(entry.value.word, {
-      level: editLevel.value,
-      tagIds: [...editTagIds.value],
-      note: editNote.value,
-      pinyin: editPinyin.value
-    })
-    ElMessage.success('已保存修改')
-  } finally {
-    saving.value = false
-  }
 }
 
 async function refreshFromHanyu() {
@@ -427,12 +386,13 @@ async function loadFullDetail() {
 
 /* ===== 头部词条区 ===== */
 .cn-hero {
-  display: grid;
-  grid-template-columns: 1fr 320px;
-  gap: 28px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
 }
 
 .cn-hero-main {
+  flex: 1;
   min-width: 0;
 }
 
@@ -572,50 +532,9 @@ async function loadFullDetail() {
   color: #c5a88e;
 }
 
-/* ===== 编辑区 ===== */
+/* ===== 设置按钮 ===== */
 .cn-hero-edit {
-  border-left: 1px solid #f7e8d6;
-  padding-left: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.cn-edit-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.cn-edit-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #7a563a;
-}
-
-.cn-edit-field :deep(.el-select) {
-  width: 100%;
-}
-
-.cn-edit-actions {
-  display: flex;
-  justify-content: flex-end;
-}
-
-.cn-edit-level.level-unknown :deep(.el-select__wrapper) {
-  color: #f56c6c;
-}
-
-.cn-edit-level.level-learning :deep(.el-select__wrapper) {
-  color: #409eff;
-}
-
-.cn-edit-level.level-mastered :deep(.el-select__wrapper) {
-  color: #e6a23c;
-}
-
-.cn-edit-level.level-familiar :deep(.el-select__wrapper) {
-  color: #67c23a;
+  flex-shrink: 0;
 }
 
 /* ===== 详情字段区 ===== */
@@ -797,14 +716,7 @@ async function loadFullDetail() {
 
 @media (max-width: 860px) {
   .cn-hero {
-    grid-template-columns: 1fr;
-  }
-
-  .cn-hero-edit {
-    border-left: none;
-    padding-left: 0;
-    border-top: 1px solid #f7e8d6;
-    padding-top: 20px;
+    flex-direction: column;
   }
 }
 </style>

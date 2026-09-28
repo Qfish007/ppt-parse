@@ -49,6 +49,18 @@
             <el-input v-model="formData.note" type="textarea" :rows="3" class="word-edit-control"
               placeholder="添加备注信息" />
           </div>
+          <div class="word-edit-field">
+            <div class="word-edit-label">正确次数</div>
+            <el-input-number v-model="formData.correct" :min="0" :controls="false" class="word-edit-control" />
+          </div>
+          <div class="word-edit-field">
+            <div class="word-edit-label">错误次数</div>
+            <el-input-number v-model="formData.wrong" :min="0" :controls="false" class="word-edit-control" />
+          </div>
+          <div class="word-edit-field">
+            <div class="word-edit-label">总次数</div>
+            <span class="word-edit-total">{{ (Number(formData.correct) || 0) + (Number(formData.wrong) || 0) }} 次</span>
+          </div>
         </div>
         <div class="word-edit-footer">
           <el-button type="danger" plain @click="removeWord">移除单词</el-button>
@@ -90,7 +102,9 @@ const formData = ref({
   level: null,
   memoryText: '',
   tagIds: [],
-  note: ''
+  note: '',
+  correct: 0,
+  wrong: 0
 })
 
 const entryId = ref(null)
@@ -113,6 +127,8 @@ function loadWordData() {
   const entry = vocabularyStore.words.find(w => w.word === props.word)
   if (entry) {
     entryId.value = entry.id
+    const total = Number(entry.testTotalCount) || 0
+    const correct = Number(entry.testCorrectCount) || 0
     formData.value = {
       word: entry.word,
       meaning: entry.meaning || '',
@@ -120,7 +136,9 @@ function loadWordData() {
       level: entry.level || null,
       memoryText: (entry.memoryParts || []).join('. '),
       tagIds: entry.tagIds || [],
-      note: entry.note || ''
+      note: entry.note || '',
+      correct,
+      wrong: Math.max(0, total - correct)
     }
   }
 }
@@ -169,6 +187,7 @@ async function save() {
       note: formData.value.note
     })
   }
+  await vocabularyStore.setTestCount(newWord, formData.value.correct, formData.value.wrong)
   emit('saved')
   close()
 }
@@ -259,6 +278,12 @@ async function removeWord() {
 
 .word-edit-control {
   width: 100%;
+}
+
+.word-edit-total {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .word-edit-control-wrap {
