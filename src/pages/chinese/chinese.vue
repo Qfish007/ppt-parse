@@ -80,6 +80,14 @@
       <div v-if="tagFilter.length > 1" class="cn-tag-relation-hint" @click="goSettings">
         {{ chineseStore.tagFilterRelation === 'or' ? '或' : '且' }}
       </div>
+      <div class="cn-wrong-count-filter">
+        <span class="cn-wrong-count-label">错误次数</span>
+        <el-input-number v-model="wrongCountMin" :min="0" :controls="false" placeholder="最小"
+          class="cn-wrong-count-input" />
+        <span class="cn-wrong-count-sep">~</span>
+        <el-input-number v-model="wrongCountMax" :min="0" :controls="false" placeholder="最大"
+          class="cn-wrong-count-input" />
+      </div>
       <el-segmented v-model="sortMode" :options="sortOptions" class="cn-sort" />
     </section>
 
@@ -94,6 +102,7 @@
         <span v-if="chineseStore.visibleColumns.pinyin" class="cn-pinyin-head">拼音</span>
         <span v-if="chineseStore.visibleColumns.tags" class="cn-tags-head">标签</span>
         <span v-if="chineseStore.visibleColumns.level" class="cn-level-head">掌握水平</span>
+        <span v-if="chineseStore.visibleColumns.testStats" class="cn-teststats-head">测试次数</span>
         <span v-if="chineseStore.visibleColumns.note" class="cn-note-head">备注</span>
         <span class="cn-action-head">操作</span>
       </div>
@@ -108,6 +117,7 @@
           <div class="cn-skeleton cn-skeleton-pinyin"></div>
           <div class="cn-skeleton cn-skeleton-tags"></div>
           <div class="cn-skeleton cn-skeleton-level"></div>
+          <div class="cn-skeleton cn-skeleton-teststats"></div>
           <div class="cn-skeleton cn-skeleton-action"></div>
         </div>
       </div>
@@ -155,11 +165,17 @@
             </el-select>
             <span v-else class="cn-level-label" :class="levelClass(entry.level)">{{ levelLabel(entry.level) }}</span>
           </div>
+          <div v-if="chineseStore.visibleColumns.testStats" class="cn-teststats">
+            <span class="cn-teststats-correct">正确{{ Number(entry.testCorrectCount) || 0 }}次</span>
+            <span class="cn-teststats-wrong">错误{{ Math.max(0, (Number(entry.testTotalCount) || 0) -
+              (Number(entry.testCorrectCount) || 0)) }}次</span>
+          </div>
           <div v-if="chineseStore.visibleColumns.note" class="cn-note">
             {{ entry.note || '-' }}
           </div>
           <div class="cn-action">
             <el-button size="small" plain @click="openTagDialog(entry)">设置</el-button>
+            <el-button size="small" plain @click="openTestDialog(entry)">测试</el-button>
           </div>
         </div>
       </template>
@@ -309,6 +325,26 @@
         <span class="cn-stat-value">{{ levelStats.familiar }}</span>
       </span>
     </div>
+
+    <!-- 测试次数手动设置弹窗 -->
+    <el-dialog v-model="testDialog.visible" title="设置测试次数" width="360px" class="cn-test-dialog"
+      :close-on-click-modal="true">
+      <el-form @submit.prevent="submitTestCount" :label-width="'80px'">
+        <el-form-item label="正确次数">
+          <el-input-number v-model="testDialog.correct" :min="0" :controls="false" />
+        </el-form-item>
+        <el-form-item label="错误次数">
+          <el-input-number v-model="testDialog.wrong" :min="0" :controls="false" />
+        </el-form-item>
+        <el-form-item label="总次数">
+          <span>{{ (Number(testDialog.correct) || 0) + (Number(testDialog.wrong) || 0) }} 次</span>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="testDialog.visible = false">取消</el-button>
+        <el-button type="primary" @click="submitTestCount">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -347,6 +383,8 @@ async function runWithListLoading(fn) {
 const searchText = ref(router.currentRoute.value.query.searchText || '')
 const levelFilter = ref((router.currentRoute.value.query.levelFilter || '').split(',').filter(Boolean))
 const tagFilter = ref((router.currentRoute.value.query.tagFilter || '').split(',').filter(Boolean))
+const wrongCountMin = ref(router.currentRoute.value.query.wrongCountMin ? Number(router.currentRoute.value.query.wrongCountMin) : null)
+const wrongCountMax = ref(router.currentRoute.value.query.wrongCountMax ? Number(router.currentRoute.value.query.wrongCountMax) : null)
 const sortMode = ref(router.currentRoute.value.query.sortMode || 'pinyin')
 
 const selectedWords = ref([])
@@ -360,16 +398,28 @@ const batchDialog = reactive({
   tagIds: []
 })
 
+const testDialog = reactive({
+  visible: false,
+  word: '',
+  correct: 0,
+  wrong: 0
+})
+
 // ========================== 筛选 + 排序结果 ==========================
 const filteredWords = computed(() => {
   const keyword = searchText.value.trim()
+  const min = wrongCountMin.value !== null ? Number(wrongCountMin.value) : null
+  const max = wrongCountMax.value !== null ? Number(wrongCountMax.value) : null
   let words = chineseStore.words.filter(entry => {
     const matchKeyword = !keyword || entry.word.includes(keyword)
     const selectedLevels = Array.isArray(levelFilter.value) ? levelFilter.value : []
     const matchLevel = !selectedLevels.length || selectedLevels.includes(entry.level)
     const selectedTags = Array.isArray(tagFilter.value) ? tagFilter.value : []
     const matchTags = matchTagFilter(entry.tagIds, selectedTags, chineseStore.tagFilterRelation)
-    return matchKeyword && matchLevel && matchTags
+    const wrongCount = Math.max(0, (Number(entry.testTotalCount) || 0) - (Number(entry.testCorrectCount) || 0))
+    const matchMin = min === null || wrongCount >= min
+    const matchMax = max === null || wrongCount <= max
+    return matchKeyword && matchLevel && matchTags && matchMin && matchMax
   })
   if (sortMode.value === 'createdAt') {
     words = [...words].sort((a, b) => b.createdAt - a.createdAt)
@@ -393,6 +443,7 @@ const gridTemplateColumns = computed(() => {
   if (chineseStore.visibleColumns.pinyin) cols.push('1fr')
   if (chineseStore.visibleColumns.tags) cols.push('150px')
   if (chineseStore.visibleColumns.level) cols.push('96px')
+  if (chineseStore.visibleColumns.testStats) cols.push('110px')
   if (chineseStore.visibleColumns.note) cols.push('minmax(60px, 120px)')
   cols.push('56px')
   return cols.join(' ')
@@ -416,6 +467,8 @@ function updateRouteQuery() {
       searchText: searchText.value,
       levelFilter: levelFilter.value.join(','),
       tagFilter: tagFilter.value.join(','),
+      wrongCountMin: wrongCountMin.value !== null ? wrongCountMin.value : '',
+      wrongCountMax: wrongCountMax.value !== null ? wrongCountMax.value : '',
       sortMode: sortMode.value
     }
   })
@@ -431,7 +484,7 @@ function onPageSizeChange(size) {
   updateRouteQuery()
 }
 
-watch([searchText, levelFilter, tagFilter, sortMode], () => {
+watch([searchText, levelFilter, tagFilter, wrongCountMin, wrongCountMax, sortMode], () => {
   page.value = 1
   updateRouteQuery()
 })
@@ -824,6 +877,23 @@ async function updateLevel(word, level) {
   await chineseStore.updateLevel(word, level)
 }
 
+// ========================== 测试次数手动设置 ==========================
+function openTestDialog(entry) {
+  const total = Number(entry.testTotalCount) || 0
+  const correct = Number(entry.testCorrectCount) || 0
+  testDialog.word = entry.word
+  testDialog.correct = correct
+  testDialog.wrong = Math.max(0, total - correct)
+  testDialog.visible = true
+}
+
+async function submitTestCount() {
+  if (!testDialog.word) return
+  await chineseStore.setTestCount(testDialog.word, testDialog.correct, testDialog.wrong)
+  ElMessage.success('已保存')
+  testDialog.visible = false
+}
+
 // ========================== 导入 / 导出 ==========================
 function openFormatDialog(mode) {
   formatDialog.value = {
@@ -1194,6 +1264,41 @@ function doExport(formatId) {
 .cn-action {
   display: grid;
   place-items: center;
+  gap: 4px;
+}
+
+/* 测试次数列 */
+.cn-teststats-head,
+.cn-teststats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+}
+.cn-teststats-correct {
+  color: #67c23a;
+}
+.cn-teststats-wrong {
+  color: #f56c6c;
+}
+
+/* 错误次数筛选 */
+.cn-wrong-count-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #5a3e20;
+}
+.cn-wrong-count-label {
+  white-space: nowrap;
+}
+.cn-wrong-count-input {
+  width: 60px;
+}
+.cn-wrong-count-sep {
+  color: #a08568;
 }
 
 .cn-empty {
@@ -1237,6 +1342,7 @@ function doExport(formatId) {
 .cn-skeleton-pinyin,
 .cn-skeleton-tags,
 .cn-skeleton-level,
+.cn-skeleton-teststats,
 .cn-skeleton-action {
   height: 22px;
 }

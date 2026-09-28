@@ -1,13 +1,13 @@
-import { DexieSettingsRepository } from './adapters/DexieSettingsRepository.js';
-import { DexieVocabularyRepository } from './adapters/DexieVocabularyRepository.js';
-import { DexieWordCacheRepository } from './adapters/DexieWordCacheRepository.js';
-import { DexieProjectsRepository } from './adapters/DexieProjectsRepository.js';
-import { DexieBookEditsRepository } from './adapters/DexieBookEditsRepository.js';
-import { DexieChineseRepository } from './adapters/DexieChineseRepository.js';
+import { SqliteSettingsRepository } from './adapters/SqliteSettingsRepository.js';
+import { SqliteVocabularyRepository } from './adapters/SqliteVocabularyRepository.js';
+import { SqliteWordCacheRepository } from './adapters/SqliteWordCacheRepository.js';
+import { SqliteProjectsRepository } from './adapters/SqliteProjectsRepository.js';
+import { SqliteBookEditsRepository } from './adapters/SqliteBookEditsRepository.js';
+import { SqliteChineseRepository } from './adapters/SqliteChineseRepository.js';
 
-export const settingsRepository = new DexieSettingsRepository();
-export const vocabularyRepository = new DexieVocabularyRepository();
-export const wordCacheRepository = new DexieWordCacheRepository();
-export const projectsRepository = new DexieProjectsRepository();
-export const bookEditsRepository = new DexieBookEditsRepository();
-export const chineseRepository = new DexieChineseRepository();
+export const settingsRepository = new SqliteSettingsRepository();
+export const vocabularyRepository = new SqliteVocabularyRepository();
+export const wordCacheRepository = new SqliteWordCacheRepository();
+export const projectsRepository = new SqliteProjectsRepository();
+export const bookEditsRepository = new SqliteBookEditsRepository();
+export const chineseRepository = new SqliteChineseRepository();

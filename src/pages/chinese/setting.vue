@@ -32,6 +32,11 @@
               @change="value => updateVisibleColumn('level', value)" />
           </div>
           <div class="cn-column-row">
+            <span class="cn-column-name">测试次数</span>
+            <el-switch :model-value="chineseStore.visibleColumns.testStats"
+              @change="value => updateVisibleColumn('testStats', value)" />
+          </div>
+          <div class="cn-column-row">
             <span class="cn-column-name">备注</span>
             <el-switch :model-value="chineseStore.visibleColumns.note"
               @change="value => updateVisibleColumn('note', value)" />

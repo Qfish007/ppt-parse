@@ -4,12 +4,12 @@ import 'element-plus/dist/index.css'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import App from './App.vue'
 import router from './router'
-import { db } from './db/database.js'
+import { ensureReady } from './db/sqlite.js'
 import { migrateFromLocalStorage } from './db/migration.js'
 
 async function initApp() {
     try {
-        await db.open()
+        await ensureReady()
         await migrateFromLocalStorage()
     } catch (error) {
         console.error('Database initialization failed:', error)

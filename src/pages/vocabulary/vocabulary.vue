@@ -108,7 +108,6 @@
           <el-checkbox :indeterminate="isIndeterminate" v-model="selectAll" @change="handleSelectAll" />
         </span>
         <span>单词</span>
-        <span v-if="vocabularyStore.visibleColumns.pronunciation">发音</span>
         <span v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory-head">辅助记忆</span>
         <span>中文</span>
         <span v-if="vocabularyStore.visibleColumns.tags" class="vocab-tags-head">标签</span>
@@ -122,7 +121,6 @@
       <div v-if="listLoading" class="vocab-list-skeleton" aria-label="加载中">
         <div v-for="n in 8" :key="`sk-${n}`" class="vocab-row vocab-skeleton-row" aria-hidden="true">
           <div class="vocab-skeleton vocab-skeleton-word"></div>
-          <div class="vocab-skeleton vocab-skeleton-pronunciation"></div>
           <div class="vocab-skeleton vocab-skeleton-memory"></div>
           <div class="vocab-skeleton vocab-skeleton-meaning"></div>
           <div class="vocab-skeleton vocab-skeleton-tags"></div>
@@ -142,14 +140,6 @@
             <el-checkbox v-model="selectedWords" :value="entry.word" />
           </span>
           <button class="vocab-word" @click="openWordDetail(entry.word)">{{ entry.word }}</button>
-          <div v-if="vocabularyStore.visibleColumns.pronunciation" class="vocab-pronunciation">
-            <button class="vocab-sound" @click="playWord(entry)">
-              <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"></path>
-              </svg>
-            </button>
-            <span>{{ entry.phonetic || '-' }}</span>
-          </div>
           <div v-if="vocabularyStore.visibleColumns.memory" class="vocab-memory">
             <template v-if="memoryPartsForEntry(entry).length">
               <template v-for="(part, index) in memoryPartsForEntry(entry)" :key="`${entry.word}-${index}-${part}`">
@@ -411,7 +401,6 @@ const filteredWords = computed(() => {
 
 const gridTemplateColumns = computed(() => {
   const cols = ['48px', '150px']
-  if (vocabularyStore.visibleColumns.pronunciation) cols.push('150px')
   if (vocabularyStore.visibleColumns.memory) cols.push('130px')
   cols.push('1fr')
   if (vocabularyStore.visibleColumns.tags) cols.push('100px')
@@ -424,14 +413,12 @@ const gridTemplateColumns = computed(() => {
 
 const listMinWidth = computed(() => {
   let width = 48 + 150 + 220 + 56
-  if (vocabularyStore.visibleColumns.pronunciation) width += 150
   if (vocabularyStore.visibleColumns.memory) width += 130
   if (vocabularyStore.visibleColumns.tags) width += 100
   if (vocabularyStore.visibleColumns.level) width += 56
   if (vocabularyStore.visibleColumns.testStats) width += 90
   if (vocabularyStore.visibleColumns.note) width += 60
   const colCount = 6
-    + (vocabularyStore.visibleColumns.pronunciation ? 1 : 0)
     + (vocabularyStore.visibleColumns.memory ? 1 : 0)
     + (vocabularyStore.visibleColumns.tags ? 1 : 0)
     + (vocabularyStore.visibleColumns.level ? 1 : 0)

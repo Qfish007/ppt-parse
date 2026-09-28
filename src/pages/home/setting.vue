@@ -34,6 +34,11 @@
       <el-card shadow="hover" class="setting-card cache-card">
         <div class="cache-section">
           <h3 class="cache-title">数据管理</h3>
+          <div class="cache-desc">将当前 SQLite 数据库导出到本地文件，可用于备份或迁移。</div>
+          <el-button type="primary" :loading="exporting" @click="exportDatabase">导出数据库</el-button>
+          <div class="cache-desc">从本地 .sqlite 文件导入数据库，将覆盖当前所有数据，此操作不可撤销。</div>
+          <el-button type="warning" :loading="importing" @click="triggerImport">导入数据库</el-button>
+          <input ref="fileInputRef" type="file" accept=".sqlite,.db,application/octet-stream" class="hidden-input" @change="handleFileSelect" />
           <div class="cache-desc">清除本地所有数据缓存，包括生词本、设置、翻译缓存等。此操作不可撤销。</div>
           <el-button type="danger" @click="clearCache">清除缓存</el-button>
         </div>
@@ -49,12 +54,16 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useSettingsStore } from '../../stores/settings.js'
 import { db, DB_NAME } from '../../db/database.js'
+import { ensureReady, rawDb, importDb, clearDb } from '../../db/sqlite.js'
 
 const router = useRouter()
 const settingsStore = useSettingsStore()
 
 const speechRate = ref(0.9)
 const voiceProvider = ref('youdao')
+const exporting = ref(false)
+const importing = ref(false)
+const fileInputRef = ref(null)
 
 onMounted(async () => {
   await settingsStore.load()
@@ -95,7 +104,10 @@ async function clearCache() {
       }
     )
 
-    await db.delete()
+    // 清除当前 SQLite + OPFS 数据（主存储）
+    await clearDb()
+    // 兼容性清除：旧的 Dexie/IndexedDB 残留数据
+    try { await db.delete() } catch {}
     localStorage.clear()
 
     ElMessage.success('缓存已清除，页面将自动刷新')
@@ -105,6 +117,80 @@ async function clearCache() {
     }, 1000)
   } catch {
     // 用户取消
+  }
+}
+
+async function exportDatabase() {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    await ensureReady()
+    const sqliteDb = rawDb()
+    if (!sqliteDb) {
+      ElMessage.error('数据库未初始化')
+      return
+    }
+    const data = sqliteDb.export()
+    const blob = new Blob([data], { type: 'application/octet-stream' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const ts = new Date()
+    const pad = (n) => String(n).padStart(2, '0')
+    const stamp = `${ts.getFullYear()}${pad(ts.getMonth() + 1)}${pad(ts.getDate())}${pad(ts.getHours())}${pad(ts.getMinutes())}${pad(ts.getSeconds())}`
+    a.download = `app-${stamp}.sqlite`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    ElMessage.success(`已导出数据库 (${data.length} bytes)`)
+  } catch (err) {
+    console.error('导出数据库失败:', err)
+    ElMessage.error('导出数据库失败')
+  } finally {
+    exporting.value = false
+  }
+}
+
+function triggerImport() {
+  if (importing.value) return
+  fileInputRef.value?.click()
+}
+
+async function handleFileSelect(e) {
+  const input = e.target
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file) return
+
+  try {
+    await ElMessageBox.confirm(
+      `确定要从文件「${file.name}」导入数据库吗？这将覆盖当前所有数据，且不可撤销！`,
+      '导入数据库',
+      {
+        confirmButtonText: '确认导入',
+        cancelButtonText: '取消',
+        type: 'warning',
+        dangerouslyUseHTMLString: false
+      }
+    )
+  } catch {
+    return
+  }
+
+  importing.value = true
+  try {
+    const buffer = await file.arrayBuffer()
+    await importDb(new Uint8Array(buffer))
+    ElMessage.success('数据库已导入，页面将自动刷新')
+    setTimeout(() => {
+      window.location.reload()
+    }, 1000)
+  } catch (err) {
+    console.error('导入数据库失败:', err)
+    ElMessage.error('导入数据库失败：' + (err?.message || '文件格式错误'))
+  } finally {
+    importing.value = false
   }
 }
 </script>
@@ -199,5 +285,16 @@ async function clearCache() {
   font-size: 13px;
   color: #909399;
   line-height: 1.5;
+}
+
+.hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 </style>

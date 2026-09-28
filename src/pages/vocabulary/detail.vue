@@ -23,7 +23,7 @@
           </div>
           <div class="word-info-phonetic">
             <span class="word-info-label">发音：</span>
-            <span>{{ entry.phonetic || '-' }}</span>
+            <span>{{ displayPhonetic || '-' }}</span>
           </div>
           <div class="word-info-memory">
             <span class="word-info-label">记忆：</span>
@@ -189,6 +189,8 @@ const bookStore = useBookStore()
 const word = computed(() => String(route.params.word || '').toLowerCase())
 const backLabel = computed(() => '返回')
 const entry = computed(() => vocabularyStore.words.find(item => item.word === word.value) || null)
+const remotePhonetic = ref('')
+const displayPhonetic = computed(() => remotePhonetic.value || entry.value?.phonetic || '')
 const refreshing = ref(false)
 const loadingDetail = ref(false)
 const loadedDetail = ref(false)
@@ -218,7 +220,7 @@ function onWordClick(event, word) {
   wordPopup._anchorRect = rect
   wordPopup.word = cleanWord
   const entry = vocabularyStore.words.find(w => w.word === cleanWord)
-  wordPopup.phonetic = normalizePhonetic(entry?.phonetic || bookStore.lookupWordPhonetic?.(cleanWord))
+  wordPopup.phonetic = normalizePhonetic(remotePhonetic.value || bookStore.lookupWordPhonetic?.(cleanWord))
   wordPopup.meaning = entry?.meaning || bookStore.lookupWord(cleanWord) || '暂无释义'
   wordPopup.translating = false
   wordPopup.visible = true
@@ -380,17 +382,17 @@ async function playWord() {
   if (!currentEntry?.word) return
 
   speak(currentEntry.word, 'en-US')
-  if (currentEntry.phonetic) return
+  if (remotePhonetic.value) return
 
   try {
     const result = await bookStore.translateWordToChinese(currentEntry.word)
     const phonetic = typeof result === 'object' ? result?.phonetic : ''
     const meaning = typeof result === 'object' ? result?.meaning : ''
-    if (phonetic || (!currentEntry.meaning && meaning)) {
-      vocabularyStore.updateWord(currentEntry.word, {
-        phonetic: phonetic || currentEntry.phonetic || '',
-        meaning: currentEntry.meaning || meaning || ''
-      })
+    if (phonetic) {
+      remotePhonetic.value = normalizePhonetic(phonetic)
+    }
+    if (!currentEntry.meaning && meaning) {
+      vocabularyStore.updateWord(currentEntry.word, { meaning: String(meaning).trim() })
     }
   } catch {
     // 朗读不受音标补查失败影响
@@ -403,10 +405,12 @@ async function refreshMeaning() {
   try {
     const result = await bookStore.translateWordToChinese(currentEntry.word)
     const meaning = typeof result === 'object' ? result?.meaning : result
+    if (typeof result === 'object' && result?.phonetic) {
+      remotePhonetic.value = normalizePhonetic(result.phonetic)
+    }
     if (meaning) {
       vocabularyStore.updateWord(currentEntry.word, {
-        meaning: String(meaning).trim(),
-        phonetic: typeof result === 'object' ? result?.phonetic || currentEntry.phonetic : currentEntry.phonetic
+        meaning: String(meaning).trim()
       })
     }
   } catch {

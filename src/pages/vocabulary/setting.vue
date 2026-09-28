@@ -20,11 +20,6 @@
         <div class="setting-desc">控制生词本列表中各列的显示与隐藏，以及右侧悬浮统计的显示。</div>
         <div class="column-settings">
           <div class="column-setting-row">
-            <span class="column-name">发音</span>
-            <el-switch :model-value="vocabularyStore.visibleColumns.pronunciation"
-              @change="value => updateVisibleColumn('pronunciation', value)" />
-          </div>
-          <div class="column-setting-row">
             <span class="column-name">辅助记忆</span>
             <el-switch :model-value="vocabularyStore.visibleColumns.memory"
               @change="value => updateVisibleColumn('memory', value)" />

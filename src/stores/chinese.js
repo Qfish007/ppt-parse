@@ -63,20 +63,10 @@ function normalizeEntry(entry) {
     id: String(entry?.id || generateWordId()),
     word,
     pinyin: normalizePinyin(entry?.pinyin),
-    audio: String(entry?.audio || '').trim(),
     meaning: String(entry?.meaning || '').trim(),
-    cihui: String(entry?.cihui || '').trim(),
-    liju: String(entry?.liju || '').trim(),
-    idiomStory: String(entry?.idiomStory || '').trim(),
-    synonyms: String(entry?.synonyms || '').trim(),
-    antonyms: String(entry?.antonyms || '').trim(),
-    sameMeaningDiffForm: String(entry?.sameMeaningDiffForm || '').trim(),
-    chuchu: String(entry?.chuchu || '').trim(),
-    yinzhen: String(entry?.yinzhen || '').trim(),
     tagIds: normalizeTagIds(entry?.tagIds),
     level,
     note: String(entry?.note || '').trim(),
-    // 测试次数保留字段但无修改入口（用户要求去掉测试功能）
     testTotalCount: Math.max(0, Number(entry?.testTotalCount) || 0),
     testCorrectCount: Math.max(0, Number(entry?.testCorrectCount) || 0),
     createdAt: Number(entry?.createdAt) || now,
@@ -144,7 +134,8 @@ export function useChineseStore(options) {
       pinyin: true,
       tags: true,
       level: true,
-      note: false
+      note: false,
+      testStats: false
     },
     // 多标签筛选关系：'and'（同时满足全部标签）/ 'or'（满足任一标签）
     tagFilterRelation: 'or',
@@ -324,7 +315,8 @@ export function useChineseStore(options) {
         pinyin: Boolean(columns?.pinyin) !== false,
         tags: Boolean(columns?.tags) !== false,
         level: Boolean(columns?.level) !== false,
-        note: Boolean(columns?.note) === true
+        note: Boolean(columns?.note) === true,
+        testStats: Boolean(columns?.testStats) === true
       };
       await this.save();
     },
@@ -353,16 +345,7 @@ export function useChineseStore(options) {
           ...normalized,
           id: existing.id,
           pinyin: normalized.pinyin || existing.pinyin,
-          audio: normalized.audio || existing.audio,
           meaning: normalized.meaning || existing.meaning,
-          cihui: normalized.cihui || existing.cihui,
-          liju: normalized.liju || existing.liju,
-          idiomStory: normalized.idiomStory || existing.idiomStory,
-          synonyms: normalized.synonyms || existing.synonyms,
-          antonyms: normalized.antonyms || existing.antonyms,
-          sameMeaningDiffForm: normalized.sameMeaningDiffForm || existing.sameMeaningDiffForm,
-          chuchu: normalized.chuchu || existing.chuchu,
-          yinzhen: normalized.yinzhen || existing.yinzhen,
           tagIds: normalized.tagIds.length ? normalized.tagIds : (existing.tagIds || []),
           testTotalCount: existing.testTotalCount || 0,
           testCorrectCount: existing.testCorrectCount || 0,
@@ -413,16 +396,7 @@ export function useChineseStore(options) {
       if (!entry) return null;
       if (typeof updates.word === 'string') entry.word = normalizeWord(updates.word);
       if (typeof updates.pinyin === 'string') entry.pinyin = normalizePinyin(updates.pinyin);
-      if (typeof updates.audio === 'string') entry.audio = updates.audio.trim();
       if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
-      if (typeof updates.cihui === 'string') entry.cihui = updates.cihui.trim();
-      if (typeof updates.liju === 'string') entry.liju = updates.liju.trim();
-      if (typeof updates.idiomStory === 'string') entry.idiomStory = updates.idiomStory.trim();
-      if (typeof updates.synonyms === 'string') entry.synonyms = updates.synonyms.trim();
-      if (typeof updates.antonyms === 'string') entry.antonyms = updates.antonyms.trim();
-      if (typeof updates.sameMeaningDiffForm === 'string') entry.sameMeaningDiffForm = updates.sameMeaningDiffForm.trim();
-      if (typeof updates.chuchu === 'string') entry.chuchu = updates.chuchu.trim();
-      if (typeof updates.yinzhen === 'string') entry.yinzhen = updates.yinzhen.trim();
       if (typeof updates.note === 'string') entry.note = updates.note.trim();
       if (isValidLevel(updates.level)) entry.level = updates.level;
       if (Array.isArray(updates.tagIds)) {
@@ -432,6 +406,22 @@ export function useChineseStore(options) {
       entry.updatedAt = Date.now();
       book.updatedAt = Date.now();
       book.words = sortByPinyin(book.words);
+      this.syncActiveBook();
+      await this.save();
+      return entry;
+    },
+
+    // 手动设置测试次数：总数 = 正确 + 错误
+    async setTestCount(word, correct, wrong) {
+      const book = this.getActiveBook();
+      if (!book) return null;
+      const key = normalizeWord(word);
+      const entry = book.words.find(item => item.word === key);
+      if (!entry) return null;
+      entry.testCorrectCount = Math.max(0, Number(correct) || 0);
+      entry.testTotalCount = entry.testCorrectCount + Math.max(0, Number(wrong) || 0);
+      entry.updatedAt = Date.now();
+      book.updatedAt = Date.now();
       this.syncActiveBook();
       await this.save();
       return entry;
@@ -598,19 +588,6 @@ export function useChineseStore(options) {
       this.syncActiveBook();
       await this.save();
       return { count, tagIdMap };
-    },
-
-    // 百度汉语缓存层（避免重复 puppeteer 抓取）
-    async getHanyuCache(word) {
-      return await chineseRepository.getHanyuCache(normalizeWord(word));
-    },
-
-    async setHanyuCache(cache) {
-      await chineseRepository.setHanyuCache({ ...cache, word: normalizeWord(cache?.word) });
-    },
-
-    async clearHanyuCache() {
-      await chineseRepository.clearHanyuCache();
     }
   });
 

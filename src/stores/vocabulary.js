@@ -20,12 +20,6 @@ function normalizeWord(word) {
   return String(word || '').trim().toLowerCase();
 }
 
-function normalizePhonetic(value) {
-  const text = String(value || '').trim();
-  if (!text) return '';
-  return text.startsWith('/') ? text : `/${text}/`;
-}
-
 function normalizeTagName(name) {
   return String(name || '').trim();
 }
@@ -70,7 +64,6 @@ function normalizeEntry(entry) {
   return {
     id: String(entry?.id || generateWordId()),
     word,
-    phonetic: normalizePhonetic(entry?.phonetic),
     meaning: String(entry?.meaning || '').trim(),
     tagIds: normalizeTagIds(entry?.tagIds),
     memoryParts: normalizeMemoryParts(entry?.memoryParts),
@@ -132,7 +125,6 @@ export function useVocabularyStore(options) {
     words: [],
     tags: [],
     visibleColumns: {
-      pronunciation: true,
       memory: true,
       tags: true,
       level: true,
@@ -313,7 +305,6 @@ export function useVocabularyStore(options) {
 
     async setVisibleColumns(columns) {
       this.visibleColumns = {
-        pronunciation: Boolean(columns?.pronunciation) !== false,
         memory: Boolean(columns?.memory) !== false,
         tags: Boolean(columns?.tags) !== false,
         level: Boolean(columns?.level) !== false,
@@ -346,7 +337,6 @@ export function useVocabularyStore(options) {
           ...existing,
           ...normalized,
           id: existing.id,
-          phonetic: normalized.phonetic || existing.phonetic,
           meaning: normalized.meaning || existing.meaning,
           tagIds: normalized.tagIds.length ? normalized.tagIds : (existing.tagIds || []),
           memoryParts: normalized.memoryParts.length ? normalized.memoryParts : (existing.memoryParts || []),
@@ -435,7 +425,6 @@ export function useVocabularyStore(options) {
       }
       if (!entry) return null;
       if (typeof updates.word === 'string') entry.word = normalizeWord(updates.word);
-      if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
       if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
       if (typeof updates.note === 'string') entry.note = updates.note.trim();
       if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;
@@ -506,7 +495,6 @@ export function useVocabularyStore(options) {
         const key = normalizeWord(word);
         const entry = book.words.find(item => item.word === key);
         if (!entry) continue;
-        if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
         if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
         if (typeof updates.note === 'string') entry.note = updates.note.trim();
         if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;

@@ -1,9 +1,108 @@
 import { STORAGE_KEYS } from '../types/index.js';
 import { settingsRepository, vocabularyRepository, wordCacheRepository, projectsRepository, bookEditsRepository } from '../repositories/index.js';
+import { ensureReady, run as sqliteRun, flush as sqliteFlush } from './sqlite.js';
 
 const MIGRATION_KEY = 'bilingual-reader-migration-done';
+const DEXIE_MIGRATION_KEY = 'dexie-to-sqlite-done';
+
+// Dexie → SQLite 一次性迁移：从旧 IndexedDB (Dexie) 读取全部数据写入 OPFS SQLite
+export async function migrateFromDexie() {
+  await ensureReady();
+  const done = (await settingsRepository.get(DEXIE_MIGRATION_KEY)) === 'true';
+  if (done) return;
+
+  try {
+    const { db } = await import('./database.js');
+    await db.open();
+
+    // settings（排除迁移标记键，避免重复）
+    const oldSettings = await db.settings.toArray();
+    for (const item of oldSettings) {
+      if (item.key === DEXIE_MIGRATION_KEY) continue;
+      sqliteRun('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [item.key, String(item.value ?? '')]);
+    }
+
+    // vocabulary
+    const vBooks = await db.vocabularyBooks.toArray();
+    for (const book of vBooks) {
+      sqliteRun('INSERT OR REPLACE INTO vocabulary_books (id, name, createdAt, updatedAt) VALUES (?, ?, ?, ?)', [
+        book.id, book.name, Number(book.createdAt) || Date.now(), Number(book.updatedAt) || Date.now()
+      ]);
+    }
+    const vWords = await db.vocabularyWords.toArray();
+    for (const w of vWords) {
+      sqliteRun(`INSERT OR REPLACE INTO vocabulary_words
+        (word, bookId, meaning, tagIds, memoryParts, level, note, testTotalCount, testCorrectCount, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+        w.word, w.bookId, String(w.meaning || ''),
+        JSON.stringify([...(w.tagIds || [])]),
+        JSON.stringify([...(w.memoryParts || [])]),
+        w.level || 'unknown', String(w.note || ''),
+        Number(w.testTotalCount) || 0, Number(w.testCorrectCount) || 0,
+        Number(w.createdAt) || Date.now(), Number(w.updatedAt) || Date.now()
+      ]);
+    }
+    const vTags = await db.vocabularyTags.toArray();
+    for (const t of vTags) {
+      sqliteRun('INSERT OR REPLACE INTO vocabulary_tags (id, bookId, name, createdAt) VALUES (?, ?, ?, ?)', [
+        t.id, t.bookId, t.name, Number(t.createdAt) || Date.now()
+      ]);
+    }
+
+    // chinese
+    const cBooks = await db.chineseBooks.toArray();
+    for (const book of cBooks) {
+      sqliteRun('INSERT OR REPLACE INTO chinese_books (id, name, createdAt, updatedAt) VALUES (?, ?, ?, ?)', [
+        book.id, book.name, Number(book.createdAt) || Date.now(), Number(book.updatedAt) || Date.now()
+      ]);
+    }
+    const cWords = await db.chineseWords.toArray();
+    for (const w of cWords) {
+      // 迁移时丢弃 audio/cihui/liju 等详情字段（schema 中已无这些列）
+      sqliteRun(`INSERT OR REPLACE INTO chinese_words
+        (word, bookId, meaning, pinyin, tagIds, level, note, testTotalCount, testCorrectCount, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
+        w.word, w.bookId, String(w.meaning || ''), String(w.pinyin || ''),
+        JSON.stringify([...(w.tagIds || [])]),
+        w.level || 'unknown', String(w.note || ''),
+        Number(w.testTotalCount) || 0, Number(w.testCorrectCount) || 0,
+        Number(w.createdAt) || Date.now(), Number(w.updatedAt) || Date.now()
+      ]);
+    }
+    const cTags = await db.chineseTags.toArray();
+    for (const t of cTags) {
+      sqliteRun('INSERT OR REPLACE INTO chinese_tags (id, bookId, name, createdAt) VALUES (?, ?, ?, ?)', [
+        t.id, t.bookId, t.name, Number(t.createdAt) || Date.now()
+      ]);
+    }
+
+    // projects
+    const projects = await db.projects.toArray();
+    for (const p of projects) {
+      sqliteRun('INSERT OR REPLACE INTO projects (id, sort_index, name, type, createdAt) VALUES (?, ?, ?, ?, ?)', [
+        p.id, Number(p.index) || 0, p.name, p.type, Number(p.createdAt) || Date.now()
+      ]);
+    }
+
+    // book_edits
+    const edits = await db.bookEdits.toArray();
+    for (const e of edits) {
+      sqliteRun('INSERT OR REPLACE INTO book_edits (title, pages, updatedAt) VALUES (?, ?, ?)', [
+        e.title, e.pages !== undefined ? JSON.stringify(e.pages) : null, Number(e.updatedAt) || Date.now()
+      ]);
+    }
+
+    sqliteRun("INSERT OR REPLACE INTO settings (key, value) VALUES (?, 'true')", [DEXIE_MIGRATION_KEY]);
+    await sqliteFlush();
+    console.log('Dexie → SQLite migration completed');
+  } catch (error) {
+    console.error('Dexie migration failed (continuing with empty DB):', error);
+  }
+}
 
 export async function migrateFromLocalStorage() {
+  await migrateFromDexie();
+
   const migrated = localStorage.getItem(MIGRATION_KEY);
   if (migrated === 'true') return;
 
@@ -15,7 +114,7 @@ export async function migrateFromLocalStorage() {
     await migrateBookEdits();
 
     localStorage.setItem(MIGRATION_KEY, 'true');
-    console.log('Migration from localStorage to Dexie.js completed');
+    console.log('Migration from localStorage completed');
   } catch (error) {
     console.error('Migration failed:', error);
   }
