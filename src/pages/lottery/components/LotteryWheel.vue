@@ -231,7 +231,8 @@ function textStyle(seg) {
   return {
     fontSize: `${(Math.round(fontSize * 2) / 2).toFixed(1)}px`,
     top: `${insetTop}%`,
-    transform: `translateX(-50%) rotate(${textRotate}deg)`
+    // 末尾 translateY(-50%)：把行框中心拉回扇区角平分线（消除半字高的横向偏移）
+    transform: `translateX(-50%) rotate(${textRotate}deg) translateY(-50%)`
   };
 }
 </script>
