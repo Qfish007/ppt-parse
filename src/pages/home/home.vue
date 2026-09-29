@@ -3,7 +3,7 @@
     <header class="home-header">
       <div class="home-header-left"></div>
       <div class="home-header-center">
-        <h1 class="home-title">双语逐页朗读器</h1>
+        <h1 class="home-title">学习辅导工具</h1>
         <p class="home-subtitle">请选择要进入的功能</p>
       </div>
       <button class="home-setting-btn" @click="goSetting" title="全局设置">
