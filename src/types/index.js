@@ -41,5 +41,7 @@ export const STORAGE_KEYS = {
     CHINESE_ACTIVE_BOOK: 'bilingual-reader-active-chinese-book',
     CHINESE_DEFAULT_BOOK: 'bilingual-reader-default-chinese-book',
     CHINESE_STATS_VISIBLE: 'bilingual-reader-chinese-stats-visible',
-    CHINESE_VISIBLE_COLUMNS: 'bilingual-reader-chinese-visible-columns'
+    CHINESE_VISIBLE_COLUMNS: 'bilingual-reader-chinese-visible-columns',
+    LOTTERY_CONFIG: 'bilingual-reader-lottery-config',
+    LOTTERY_ACTIVITIES: 'bilingual-reader-lottery-activities'
 };

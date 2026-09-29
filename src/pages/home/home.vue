@@ -33,6 +33,8 @@
         </div>
       </article>
 
+   
+
       <article class="home-card home-card--chinese" @click="goChinese">
         <div class="home-card-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -45,6 +47,23 @@
           <h2 class="home-card-title">中文生词本</h2>
           <p class="home-card-desc">汉字词、拼音学习、百度汉语释义、田字格默写打印</p>
           <span class="home-card-action">进入中文生词本 →</span>
+        </div>
+      </article>
+
+         <article class="home-card home-card--lottery" @click="goLottery">
+        <div class="home-card-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 3v2M12 19v2M3 12h2M19 12h2" />
+            <path d="M12 12l4-2" />
+            <circle cx="12" cy="12" r="2" fill="currentColor" />
+          </svg>
+        </div>
+        <div class="home-card-body">
+          <h2 class="home-card-title">幸运抽奖</h2>
+          <p class="home-card-desc">大转盘抽奖，可自定义奖项、概率与背景</p>
+          <span class="home-card-action">进入抽奖 →</span>
         </div>
       </article>
     </section>
@@ -62,6 +81,10 @@ function goVocabulary() {
 
 function goChinese() {
   router.push('/chinese')
+}
+
+function goLottery() {
+  router.push('/lottery')
 }
 
 function goSetting() {
@@ -135,7 +158,7 @@ function goSetting() {
   max-width: 1080px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
   gap: 24px;
 }
 
@@ -172,6 +195,19 @@ function goSetting() {
 .home-card-icon svg {
   width: 28px;
   height: 28px;
+}
+
+.home-card--lottery .home-card-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.home-card--lottery .home-card-action {
+  background: #d97706;
+}
+
+.home-card--lottery:hover {
+  border-color: #fbbf24;
 }
 
 .home-card--chinese .home-card-icon {

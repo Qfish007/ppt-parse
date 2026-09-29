@@ -15,6 +15,9 @@ const ChineseSettingsView = () => import('../pages/chinese/setting.vue')
 const ChinesePrintView = () => import('../pages/chinese/print.vue')
 const ChineseDetailView = () => import('../pages/chinese/detail.vue')
 
+const LotteryView = () => import('../pages/lottery/lottery.vue')
+const LotterySettingsView = () => import('../pages/lottery/setting.vue')
+
 const routes = [
   // 根路径 → 新主页面 home
   {
@@ -82,6 +85,16 @@ const routes = [
     path: '/chinese/:word',
     name: 'ChineseDetail',
     component: ChineseDetailView
+  },
+  {
+    path: '/lottery',
+    name: 'Lottery',
+    component: LotteryView
+  },
+  {
+    path: '/lottery/settings',
+    name: 'LotterySettings',
+    component: LotterySettingsView
   }
 ]
 
