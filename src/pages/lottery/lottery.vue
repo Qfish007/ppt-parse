@@ -81,13 +81,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ArrowLeft, Delete, Edit } from '@element-plus/icons-vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import LotteryWheel from './components/LotteryWheel.vue';
 import { useLotteryStore } from '../../stores/lottery.js';
 import { computePrizeSegments, pickPrizeByWeight } from './lotteryDraw.js';
+import { playStartClick, playWinFanfare, startSpinTicks } from './lotterySound.js';
 
 const router = useRouter();
 const lotteryStore = useLotteryStore();
@@ -97,6 +98,13 @@ const isSpinning = ref(false);
 const lastResult = ref(null);
 const resultVisible = ref(false);
 const dialogPrize = ref(null);
+let stopSpinTicks = null;
+let resultTimer = null;
+
+onBeforeUnmount(() => {
+  if (stopSpinTicks) stopSpinTicks();
+  if (resultTimer) window.clearTimeout(resultTimer);
+});
 
 const pageStyle = computed(() => {
   if (!lotteryStore.pageBackgroundImage) return {};
@@ -216,11 +224,20 @@ function onSpin() {
   delta += lotteryStore.spinMinTurns * 360;
   rotationDeg.value += delta;
 
-  window.setTimeout(() => {
+  playStartClick();
+  stopSpinTicks = startSpinTicks(delta, lotteryStore.spinDurationMs);
+
+  resultTimer = window.setTimeout(() => {
+    if (stopSpinTicks) {
+      stopSpinTicks();
+      stopSpinTicks = null;
+    }
     isSpinning.value = false;
     lastResult.value = picked;
     dialogPrize.value = picked;
     resultVisible.value = true;
+    playWinFanfare();
+    resultTimer = null;
   }, lotteryStore.spinDurationMs);
 }
 
