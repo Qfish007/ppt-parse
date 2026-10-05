@@ -17,6 +17,12 @@
         <div class="print-summary">
           共 {{ printWords.length }} 词 · 每页 {{ wordsPerPage }} · {{ printPages.length }} 页
         </div>
+        <el-button :disabled="!printWords.length" @click="doDirectPrint">
+          <el-icon>
+            <Printer />
+          </el-icon>
+          打印
+        </el-button>
         <el-button type="primary" :disabled="!printWords.length || exportingPdf" :loading="exportingPdf"
           @click="doPrint">
           <el-icon>
@@ -610,6 +616,15 @@ watch(availableWords, () => {
   }
 })
 
+async function doDirectPrint() {
+  await nextTick()
+  if (!printPages.value.length) {
+    ElMessage.warning('没有可打印的内容')
+    return
+  }
+  window.print()
+}
+
 async function doPrint() {
   await nextTick()
   const target = document.getElementById('printContent')
@@ -923,6 +938,9 @@ onMounted(() => {
 <style scoped>
 .vocab-print-page {
   --print-max: 1400px;
+  /* 打印时强制输出背景色（下划线等），无需用户勾选「背景图形」 */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
   min-height: 100vh;
   box-sizing: border-box;
   padding: 28px;
@@ -1437,6 +1455,49 @@ onMounted(() => {
 
   .config-row {
     grid-column: 1 / -1;
+  }
+}
+
+/* ===== 打印输出：仅打印 A4 页面内容 ===== */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  .vocab-print-page {
+    padding: 0;
+    background: #fff;
+  }
+
+  .print-header,
+  .print-panel,
+  .empty-card {
+    display: none !important;
+  }
+
+  .print-preview-wrap {
+    border: 0;
+    padding: 0;
+    background: #fff;
+    box-shadow: none;
+    overflow: visible;
+  }
+
+  .print-pages {
+    gap: 0;
+  }
+
+  .a4-page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .a4-page:last-child {
+    page-break-after: auto;
+    break-after: auto;
   }
 }
 </style>

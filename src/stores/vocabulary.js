@@ -20,6 +20,12 @@ function normalizeWord(word) {
   return String(word || '').trim().toLowerCase();
 }
 
+function normalizePhonetic(value) {
+  const text = String(value || '').trim();
+  if (!text) return '';
+  return text.startsWith('/') ? text : `/${text}/`;
+}
+
 function normalizeTagName(name) {
   return String(name || '').trim();
 }
@@ -64,6 +70,7 @@ function normalizeEntry(entry) {
   return {
     id: String(entry?.id || generateWordId()),
     word,
+    phonetic: normalizePhonetic(entry?.phonetic),
     meaning: String(entry?.meaning || '').trim(),
     tagIds: normalizeTagIds(entry?.tagIds),
     memoryParts: normalizeMemoryParts(entry?.memoryParts),
@@ -108,6 +115,17 @@ function normalizeBook(book, fallbackName = '默认生词本') {
   };
 }
 
+function normalizeVisibleColumns(columns) {
+  return {
+    pronunciation: Boolean(columns?.pronunciation) !== false,
+    memory: Boolean(columns?.memory) !== false,
+    tags: Boolean(columns?.tags) !== false,
+    level: Boolean(columns?.level) !== false,
+    note: Boolean(columns?.note) !== false,
+    testStats: Boolean(columns?.testStats) === true
+  };
+}
+
 export function useVocabularyStore(options) {
   const lazy = !!(options && options.lazy);
   if (vocabularyStoreInstance) {
@@ -125,6 +143,7 @@ export function useVocabularyStore(options) {
     words: [],
     tags: [],
     visibleColumns: {
+      pronunciation: true,
       memory: true,
       tags: true,
       level: true,
@@ -188,7 +207,7 @@ export function useVocabularyStore(options) {
         ? savedActiveBookId
         : this.defaultBookId;
       this.statsVisible = await vocabularyRepository.getStatsVisible();
-      this.visibleColumns = await vocabularyRepository.getVisibleColumns();
+      this.visibleColumns = normalizeVisibleColumns(await vocabularyRepository.getVisibleColumns());
       this.tagFilterRelation = await vocabularyRepository.getTagFilterRelation();
       this.syncActiveBook();
       this._loaded = true;
@@ -304,13 +323,7 @@ export function useVocabularyStore(options) {
     },
 
     async setVisibleColumns(columns) {
-      this.visibleColumns = {
-        memory: Boolean(columns?.memory) !== false,
-        tags: Boolean(columns?.tags) !== false,
-        level: Boolean(columns?.level) !== false,
-        note: Boolean(columns?.note) !== false,
-        testStats: Boolean(columns?.testStats) === true
-      };
+      this.visibleColumns = normalizeVisibleColumns(columns);
       await this.save();
     },
 
@@ -337,6 +350,7 @@ export function useVocabularyStore(options) {
           ...existing,
           ...normalized,
           id: existing.id,
+          phonetic: normalized.phonetic || existing.phonetic,
           meaning: normalized.meaning || existing.meaning,
           tagIds: normalized.tagIds.length ? normalized.tagIds : (existing.tagIds || []),
           memoryParts: normalized.memoryParts.length ? normalized.memoryParts : (existing.memoryParts || []),
@@ -425,6 +439,7 @@ export function useVocabularyStore(options) {
       }
       if (!entry) return null;
       if (typeof updates.word === 'string') entry.word = normalizeWord(updates.word);
+      if (typeof updates.phonetic === 'string') entry.phonetic = normalizePhonetic(updates.phonetic);
       if (typeof updates.meaning === 'string') entry.meaning = updates.meaning.trim();
       if (typeof updates.note === 'string') entry.note = updates.note.trim();
       if (VOCABULARY_LEVELS.some(item => item.value === updates.level)) entry.level = updates.level;

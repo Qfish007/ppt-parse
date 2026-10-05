@@ -15,12 +15,20 @@
           </p>
         </div>
       </div>
-      <el-button type="primary" :disabled="!printPages.length" class="cn-print-do" @click="doExportPdf">
-        <el-icon>
-          <Download />
-        </el-icon>
-        导出PDF
-      </el-button>
+      <div class="cn-print-actions">
+        <el-button :disabled="!printPages.length" @click="doDirectPrint">
+          <el-icon>
+            <Printer />
+          </el-icon>
+          打印
+        </el-button>
+        <el-button type="primary" :disabled="!printPages.length" class="cn-print-do" @click="doExportPdf">
+          <el-icon>
+            <Download />
+          </el-icon>
+          导出PDF
+        </el-button>
+      </div>
     </header>
 
     <!-- 设置面板（打印时自动隐藏） -->
@@ -235,7 +243,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, Download, QuestionFilled } from '@element-plus/icons-vue'
+import { ArrowLeft, Download, Printer, QuestionFilled } from '@element-plus/icons-vue'
 import { useChineseStore } from '../../stores/chinese.js'
 import { CHINESE_LEVELS } from '../../types/index.js'
 import { matchTagFilter } from '../../utils/tagFilter.js'
@@ -825,6 +833,11 @@ function goSettings() {
   router.push('/chinese/settings')
 }
 
+function doDirectPrint() {
+  if (!printPages.value.length) return
+  window.print()
+}
+
 async function doExportPdf() {
   if (!printPages.value.length) return
   const container = document.getElementById('cnPrintContent')
@@ -866,6 +879,9 @@ onMounted(() => {
 
 <style scoped>
 .cn-print-page {
+  /* 打印时强制输出背景色（格子线、四横线渐变等），无需用户勾选「背景图形」 */
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
   min-height: 100vh;
   box-sizing: border-box;
   padding: 24px 28px 60px;
@@ -886,6 +902,12 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.cn-print-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .cn-print-title {

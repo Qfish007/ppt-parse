@@ -151,7 +151,7 @@ export class SqliteVocabularyRepository extends IVocabularyRepository {
     if (row?.value) {
       try { return JSON.parse(row.value) } catch { /* ignore */ }
     }
-    return { memory: true, tags: true, level: true, note: false, testStats: false }
+    return { pronunciation: true, memory: true, tags: true, level: true, note: false, testStats: false }
   }
 
   async setVisibleColumns(columns) {
